@@ -1,0 +1,115 @@
+.app-text--heading {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.app-text--body {
+    font-size: 14px;
+    color: var(--text);
+}
+
+.app-text--muted {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.app-button {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 12px 18px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, background 0.24s ease;
+}
+
+.app-button:hover {
+    transform: translateY(-2px);
+}
+
+.app-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.app-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.28), transparent 80%);
+    transform: translateX(-120%);
+    transition: transform 0.5s ease;
+}
+
+.app-button:hover::after {
+    transform: translateX(120%);
+}
+
+.app-button--primary {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: white;
+    box-shadow: 0 16px 32px rgba(37, 99, 235, 0.24);
+}
+
+.app-button--primary:hover {
+    box-shadow: 0 22px 40px rgba(37, 99, 235, 0.3);
+}
+
+.app-button--secondary {
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text);
+    border-color: rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.app-button--secondary:hover {
+    border-color: rgba(148, 163, 184, 0.34);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+.app-button--danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+    box-shadow: 0 16px 32px rgba(220, 38, 38, 0.22);
+}
+
+.app-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.app-field__label {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: var(--text);
+}
+
+.app-input {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 16px;
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    padding: 13px 16px;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.app-input::placeholder {
+    color: #94a3b8;
+}
+
+.app-input:focus {
+    border-color: rgba(37, 99, 235, 0.4);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
