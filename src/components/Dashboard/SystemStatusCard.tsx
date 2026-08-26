@@ -1,41 +1,27 @@
-import type {TSystemStatus} from "../../types/dashboard.type.ts";
-import styles from './SystemStatusCard.module.css'
+import type { TSystemStatus } from "../../types/dashboard.type"
 
 type TProps = {
-    status: TSystemStatus
+  status: TSystemStatus
 }
 
-const toneLabelMap = {
-    healthy: '● HEALTHY',
-    warning: '⚠️ WARNING',
-    critical: '● CRITICAL',
-    info: '● INFO',
-} as const
+export function SystemStatusCard({ status }: TProps) {
+  const isHealthy = status.tone === 'healthy' || status.tone === 'info'
 
-export function SystemStatusCard({status}: TProps) {
-    const progress = status.id === 'sensor-sync' ? 95.8 : null
-    return (
-        <article className={`${styles.card} ${styles[`card_${status.tone}`]}`}>
-            <div className={styles.row}>
-                <div>
-                    <p className={styles.label}>{status.label}</p>
-                    <h4 className={styles.value}>{status.value}</h4>
-                </div>
-                <span className={`${styles.badge} ${styles[`badge_${status.tone}`]}`}>
-          {toneLabelMap[status.tone]}
-        </span>
-            </div>
+  return (
+    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 hover:bg-sky-50/50 hover:border-sky-200 transition-colors">
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-[11px] font-semibold text-slate-500">{status.label}</span>
+        <p className="text-[13px] font-bold text-slate-900 truncate">{status.detail}</p>
+      </div>
 
-            <p className={styles.detail}>{status.detail}</p>
-
-            {progress !== null ? (
-                <div className={styles.progressWrap}>
-                    <div className={styles.progressTrack}>
-                        <div className={styles.progressBar} style={{width: `${progress}%`}}></div>
-                    </div>
-                    <span className={styles.progressText}>{progress}%</span>
-                </div>
-            ) : null}
-        </article>
-    )
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border shrink-0 ${
+        isHealthy
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+          : 'bg-amber-100 text-amber-800 border-amber-300'
+      }`}>
+        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+        {status.value}
+      </span>
+    </div>
+  )
 }

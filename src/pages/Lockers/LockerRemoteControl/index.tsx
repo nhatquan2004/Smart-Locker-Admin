@@ -1,11 +1,11 @@
-import {useEffect, useMemo, useState} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
-import type {TLocker} from '../../../types/locker.type'
-import styles from './LockerRemoteControl.module.css'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { LockerStatusBadge } from '../../../components/Lockers/LockerStatusBadge.tsx'
+import type { TLocker } from '../../../types/locker.type'
 
 export function LockerRemoteControlPage() {
     const navigate = useNavigate()
-    const {lockerId} = useParams()
+    const { lockerId } = useParams()
 
     const [isOpening, setIsOpening] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false)
@@ -14,334 +14,216 @@ export function LockerRemoteControlPage() {
     const lockers = useMemo<TLocker[]>(
         () => [
             {
-                id: '1',
-                code: 'A01',
-                name: 'Locker A01',
-                cluster: 'A',
-                size: 'small',
-                status: 'available',
-                location: 'Tầng 1 - Khu A',
-                lastUpdated: '2 phút trước',
-                note: 'Sẵn sàng nhận hàng',
-                currentUser: undefined,
-                currentPackage: undefined,
+                id: '1', code: 'A01', name: 'Locker A01', cluster: 'A', size: 'small',
+                status: 'available', location: 'Tầng 1 - Khu A', lastUpdated: '2 phút trước',
+                note: 'Sẵn sàng nhận hàng', currentUser: undefined, currentPackage: undefined,
             },
             {
-                id: '2',
-                code: 'A02',
-                name: 'Locker A02',
-                cluster: 'A',
-                size: 'medium',
-                status: 'occupied',
-                location: 'Tầng 1 - Khu A',
-                currentUser: 'Nguyễn Văn A',
-                currentPackage: 'PKG-1024',
-                lastUpdated: '5 phút trước',
-                note: 'Đang chứa hàng chờ nhận',
+                id: '2', code: 'A02', name: 'Locker A02', cluster: 'A', size: 'medium',
+                status: 'occupied', location: 'Tầng 1 - Khu A', currentUser: 'Nguyễn Văn A',
+                currentPackage: 'PKG-1024', lastUpdated: '5 phút trước', note: 'Đang chứa hàng chờ nhận',
             },
             {
-                id: '3',
-                code: 'B01',
-                name: 'Locker B01',
-                cluster: 'B',
-                size: 'large',
-                status: 'maintenance',
-                location: 'Tầng 2 - Khu B',
-                lastUpdated: '12 phút trước',
-                note: 'Đang kiểm tra khóa điện từ',
-                currentUser: undefined,
-                currentPackage: undefined,
+                id: '3', code: 'B01', name: 'Locker B01', cluster: 'B', size: 'large',
+                status: 'maintenance', location: 'Tầng 2 - Khu B', lastUpdated: '12 phút trước',
+                note: 'Đang kiểm tra khóa điện từ', currentUser: undefined, currentPackage: undefined,
             },
             {
-                id: '4',
-                code: 'B02',
-                name: 'Locker B02',
-                cluster: 'B',
-                size: 'small',
-                status: 'offline',
-                location: 'Tầng 2 - Khu B',
-                lastUpdated: '8 phút trước',
-                note: 'Mất kết nối cảm biến',
-                currentUser: undefined,
-                currentPackage: undefined,
-            },
-            {
-                id: '5',
-                code: 'C01',
-                name: 'Locker C01',
-                cluster: 'C',
-                size: 'medium',
-                status: 'available',
-                location: 'Tầng 3 - Khu C',
-                lastUpdated: '1 phút trước',
-                note: 'Hoạt động ổn định',
-                currentUser: undefined,
-                currentPackage: undefined,
-            },
-            {
-                id: '6',
-                code: 'C02',
-                name: 'Locker C02',
-                cluster: 'C',
-                size: 'large',
-                status: 'occupied',
-                location: 'Tầng 3 - Khu C',
-                currentUser: 'Trần Thị B',
-                currentPackage: 'PKG-2048',
-                lastUpdated: '10 phút trước',
-                note: 'Đang có đơn gửi',
-            },
-            {
-                id: '7',
-                code: 'D01',
-                name: 'Locker D01',
-                cluster: 'D',
-                size: 'small',
-                status: 'available',
-                location: 'Sảnh chính - Khu D',
-                lastUpdated: '3 phút trước',
-                note: 'Có thể gán đơn mới',
-                currentUser: undefined,
-                currentPackage: undefined,
-            },
-            {
-                id: '8',
-                code: 'D02',
-                name: 'Locker D02',
-                cluster: 'D',
-                size: 'medium',
-                status: 'occupied',
-                location: 'Sảnh chính - Khu D',
-                currentUser: 'Phạm Văn C',
-                currentPackage: 'PKG-3001',
-                lastUpdated: '6 phút trước',
-                note: 'Khách chưa đến nhận',
+                id: '4', code: 'B02', name: 'Locker B02', cluster: 'B', size: 'small',
+                status: 'offline', location: 'Tầng 2 - Khu B', lastUpdated: '8 phút trước',
+                note: 'Tủ mất kết nối mạng', currentUser: undefined, currentPackage: undefined,
             },
         ],
-        [],
+        []
     )
 
-    const locker = lockers.find((item) => item.id === lockerId)
+    const locker = useMemo(() => {
+        return lockers.find((item) => item.id === lockerId) ?? lockers[0]
+    }, [lockers, lockerId])
 
     useEffect(() => {
         const timer = window.setInterval(() => {
-            setHeartbeatSeconds((prev) => prev + 1)
+            setHeartbeatSeconds((prev) => (prev >= 15 ? 3 : prev + 1))
         }, 1000)
-
         return () => window.clearInterval(timer)
     }, [])
 
+    function handleOpenLock() {
+        if (isOpening) return
+        setIsOpening(true)
+        window.setTimeout(() => {
+            setIsOpening(false)
+        }, 1800)
+    }
+
+    function handleRefreshStatus() {
+        if (isRefreshing) return
+        setIsRefreshing(true)
+        window.setTimeout(() => {
+            setIsRefreshing(false)
+            setHeartbeatSeconds(2)
+        }, 1200)
+    }
+
     if (!locker) {
         return (
-            <div className={styles.page}>
-                <div className={styles.notFoundCard}>
-                    <h2 className={styles.notFoundTitle}>Không tìm thấy locker</h2>
-                    <p className={styles.notFoundText}>
-                        Không thể mở trang điều khiển từ xa vì locker này không tồn tại trong dữ liệu hiện tại.
-                    </p>
-                    <button className={styles.backButton} type="button" onClick={() => navigate('/lockers')}>
-                        Quay về Lockers
-                    </button>
-                </div>
+            <div className="p-8 text-center text-[--color-muted]">
+                <p>Không tìm thấy thông tin locker</p>
+                <button
+                    type="button"
+                    onClick={() => navigate('/lockers')}
+                    className="mt-4 px-4 py-2 rounded-lg bg-[--color-surface-2] text-[13px] text-[--color-text] hover:bg-[--color-surface-3]"
+                >
+                    ← Quay lại danh sách Lockers
+                </button>
             </div>
         )
     }
 
-    const handleOpenRemote = async () => {
-        const confirmed = window.confirm(
-            `Bạn có chắc muốn mở khóa từ xa cho ${locker.name} (${locker.code}) không?`,
-        )
-
-        if (!confirmed) return
-
-        setIsOpening(true)
-
-        window.setTimeout(() => {
-            setIsOpening(false)
-            window.alert('Chức năng mở khóa từ xa sẽ được kết nối khi có API phần cứng.')
-        }, 1400)
-    }
-
-    const handleRefreshStatus = async () => {
-        setIsRefreshing(true)
-
-        window.setTimeout(() => {
-            setIsRefreshing(false)
-            setHeartbeatSeconds(0)
-        }, 1100)
-    }
     return (
-        <div className={styles.page}>
-            <section className={styles.hero}>
-                <div className={styles.heroPattern}></div>
-                <div className={styles.heroGlow}></div>
+        <div className="flex flex-col gap-8 max-w-[1200px]">
 
-                <div className={styles.heroContent}>
+            {/* Hero */}
+            <section data-reveal className="relative overflow-hidden rounded-2xl border border-[--color-border] bg-[--color-surface] p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div className="absolute inset-0 mesh-bg opacity-30 rounded-2xl" />
+                <div className="absolute inset-0 rounded-2xl" style={{ background: "radial-gradient(ellipse at 65% 50%, transparent 30%, var(--color-surface) 80%)" }} />
+
+                <div className="relative z-10 flex-1 min-w-0">
                     <button
-                        className={styles.backLink}
                         type="button"
-                        onClick={() => navigate(`/lockers/${locker.id}`)}
+                        onClick={() => navigate(-1)}
+                        className="inline-flex items-center gap-2 text-[12px] font-medium text-[--color-accent] hover:text-[--color-accent-2] mb-4 transition-colors"
                     >
                         ← Quay lại Locker Detail
                     </button>
 
-                    <span className={styles.eyebrow}>Remote control</span>
-                    <h1 className={styles.title}>Điều khiển từ xa {locker.name}</h1>
-                    <p className={styles.description}>
-                        Theo dõi trạng thái thiết bị, kiểm tra kết nối và thực hiện thao tác mở khóa từ xa cho
-                        locker với giao diện kiểm soát rõ ràng, an toàn và sẵn sàng để nối API phần cứng sau
-                        này.
+                    <p className="eyebrow mb-2">Remote control</p>
+                    <h1 className="text-[22px] font-bold text-[--color-heading] leading-tight truncate">
+                        Điều khiển từ xa {locker.name} ({locker.code})
+                    </h1>
+                    <p className="mt-2 text-[13px] text-[--color-secondary] leading-relaxed max-w-lg">
+                        Gửi lệnh mở khóa tủ từ xa cho admin, theo dõi trạng thái phản hồi từ thiết bị và đồng bộ trực tiếp.
                     </p>
                 </div>
 
-                <div className={styles.heroStatusBadge}>
-                    <span className={styles.heroStatusDot}></span>
-                    AVAILABLE
+                <div className="relative z-10 shrink-0">
+                    <LockerStatusBadge status={locker.status} />
                 </div>
             </section>
 
-            <section className={styles.infoGrid}>
-                <article className={styles.infoCard}>
-                    <span className={styles.infoIcon}>🔒</span>
-                    <span className={styles.infoLabel}>Locker Code</span>
-                    <strong className={styles.infoValue}>{locker.code}</strong>
-                </article>
+            {/* Grid */}
+            <section data-stagger className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                <article className={styles.infoCard}>
-                    <span className={styles.infoIcon}>📍</span>
-                    <span className={styles.infoLabel}>Cluster</span>
-                    <strong className={styles.infoValue}>{locker.cluster}</strong>
-                </article>
-
-                <article className={styles.infoCard}>
-                    <span className={styles.infoIcon}>📦</span>
-                    <span className={styles.infoLabel}>Size</span>
-                    <strong className={styles.infoValue}>{locker.size}</strong>
-                </article>
-
-                <article className={styles.infoCard}>
-                    <span className={styles.infoIcon}>⏱️</span>
-                    <span className={styles.infoLabel}>Last Updated</span>
-                    <strong className={styles.infoValue}>{locker.lastUpdated}</strong>
-                </article>
-            </section>
-
-            <section className={styles.controlGrid}>
-                <article className={styles.glassCard}>
-                    <div className={styles.cardHeader}>
-                        <div>
-                            <p className={styles.cardEyebrow}>Quick controls</p>
-                            <h2 className={styles.cardTitle}>Điều khiển nhanh</h2>
-                        </div>
+                {/* Control Panel */}
+                <article className="flex flex-col gap-5 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
+                    <div>
+                        <p className="eyebrow mb-1">Direct Command</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">Lệnh điều khiển nhanh</h2>
                     </div>
 
-                    <p className={styles.cardDescription}>
-                        Các thao tác dưới đây đang là UI/UX flow chuẩn. Sau này có thể nối trực tiếp tới
-                        backend điều khiển ESP32, relay và log hành động admin.
+                    <div className="flex flex-col gap-3">
+                        <button
+                            type="button"
+                            onClick={handleOpenLock}
+                            disabled={isOpening || locker.status === 'offline'}
+                            className={[
+                                "h-11 px-6 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all duration-150 shadow-sm",
+                                isOpening || locker.status === 'offline'
+                                    ? "bg-[--color-surface-2] text-[--color-muted] border border-[--color-border] cursor-not-allowed opacity-60"
+                                    : "bg-[--color-accent] text-[--color-bg] hover:bg-[--color-accent-2] active:scale-[0.98]",
+                            ].join(" ")}
+                        >
+                            {isOpening ? 'Đang mở khóa...' : 'Mở khóa từ xa'}
+                        </button>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={handleRefreshStatus}
+                                disabled={isRefreshing}
+                                className="flex-1 h-9 px-4 rounded-lg text-[12px] font-medium bg-[--color-surface-2] text-[--color-text] border border-[--color-border] hover:border-[--color-border-2] transition-colors"
+                            >
+                                {isRefreshing ? 'Đang đồng bộ...' : 'Refresh trạng thái'}
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/lockers/${locker.id}/hardware`)}
+                                className="flex-1 h-9 px-4 rounded-lg text-[12px] font-medium bg-[--color-surface-2] text-[--color-secondary] border border-[--color-border] hover:border-[--color-border-2] hover:text-[--color-text] transition-colors"
+                            >
+                                Hardware Detail
+                            </button>
+                        </div>
+                    </div>
+                </article>
+
+                {/* Status Monitor */}
+                <article className="flex flex-col gap-5 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
+                    <div>
+                        <p className="eyebrow mb-1">Operational Status</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">Trạng thái vận hành</h2>
+                    </div>
+
+                    <div className="flex flex-col divide-y divide-[--color-border]">
+                        <div className="flex items-center justify-between py-3">
+                            <span className="text-[13px] text-[--color-muted]">Door status</span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-surface-2] text-[--color-secondary] border border-[--color-border]">
+                                Closed
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-3">
+                            <span className="text-[13px] text-[--color-muted]">Lock state</span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-success-bg] text-[--color-success] border border-[--color-success]/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[--color-success] pulse-dot" />
+                                Ready
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-3">
+                            <span className="text-[13px] text-[--color-muted]">Device connection</span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-success-bg] text-[--color-success] border border-[--color-success]/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[--color-success] pulse-dot" />
+                                Online
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-3">
+                            <span className="text-[13px] text-[--color-muted]">Last heartbeat</span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-accent-bg] text-[--color-accent] border border-[--color-accent-border]">
+                                {heartbeatSeconds}s trước
+                            </span>
+                        </div>
+                    </div>
+                </article>
+
+                {/* Control Notes */}
+                <article className="lg:col-span-2 flex flex-col gap-4 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
+                    <div>
+                        <p className="eyebrow mb-1">Control note</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">Lưu ý điều khiển từ xa</h2>
+                    </div>
+
+                    <p className="text-[13px] text-[--color-secondary] leading-relaxed">
+                        Hành động thực tế phù hợp là <strong>mở khóa để người dùng mở cửa</strong>. Việc đóng cửa là thao tác cơ học của người dùng, hệ thống sẽ tự động cập nhật lại trạng thái qua cảm biến cửa (Reed switch / IR sensor).
                     </p>
 
-                    <div className={styles.actionStack}>
-                        <button
-                            type="button"
-                            className={`${styles.actionButton} ${styles.actionButtonDanger}`}
-                            onClick={handleOpenRemote}
-                            disabled={isOpening}
-                        >
-                            <span className={styles.actionIcon}>{isOpening ? '⏳' : '🔓'}</span>
-                            {isOpening ? 'Đang mở...' : 'Mở khóa từ xa'}
-                            {isOpening ? <span className={styles.spinner}></span> : null}
-                        </button>
-
-                        <button
-                            type="button"
-                            className={`${styles.actionButton} ${styles.actionButtonSecondary}`}
-                            onClick={handleRefreshStatus}
-                            disabled={isRefreshing}
-                        >
-              <span className={`${styles.actionIcon} ${isRefreshing ? styles.iconSpin : ''}`}>
-                🔄
-              </span>
-                            {isRefreshing ? 'Đang đồng bộ...' : 'Refresh trạng thái'}
-                        </button>
-
-                        <button
-                            type="button"
-                            className={`${styles.actionButton} ${styles.actionButtonGhost}`}
-                            onClick={() => navigate(`/lockers/${locker.id}/hardware`)}
-                        >
-                            <span className={styles.actionIcon}>⚙️</span>
-                            Đi tới phần cứng
-                        </button>
-                    </div>
-                </article>
-
-                <article className={styles.glassCard}>
-                    <div className={styles.cardHeader}>
-                        <div>
-                            <p className={styles.cardEyebrow}>Operational status</p>
-                            <h2 className={styles.cardTitle}>Trạng thái vận hành</h2>
-                        </div>
-                    </div>
-
-                    <div className={styles.statusList}>
-                        <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>🚪 Door status</span>
-                            <span className={`${styles.statusBadge} ${styles.statusBadgeNeutral}`}>Closed</span>
-                        </div>
-
-                        <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>🔐 Lock state</span>
-                            <span className={`${styles.statusBadge} ${styles.statusBadgeSuccess}`}>
-                <span className={styles.pulseDot}></span>
-                Ready
-              </span>
-                        </div>
-
-                        <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>📡 Device connection</span>
-                            <span className={`${styles.statusBadge} ${styles.statusBadgeSuccess}`}>
-                <span className={styles.pulseDot}></span>
-                Online
-              </span>
-                        </div>
-
-                        <div className={styles.statusRow}>
-                            <span className={styles.statusLabel}>⏳ Last heartbeat</span>
-                            <span className={`${styles.statusBadge} ${styles.statusBadgeInfo}`}>
-                {heartbeatSeconds} giây trước
-              </span>
-                        </div>
-                    </div>
-                </article>
-
-                <article className={`${styles.glassCard} ${styles.fullWidth}`}>
-                    <div className={styles.cardHeader}>
-                        <div>
-                            <p className={styles.cardEyebrow}>Control note</p>
-                            <h2 className={styles.cardTitle}>Lưu ý điều khiển từ xa</h2>
-                        </div>
-                    </div>
-
-                    <p className={styles.note}>
-                        Với đồ án hiện tại, hành động thực tế phù hợp là <strong>mở khóa để người dùng mở cửa</strong>.
-                        Việc đóng cửa chủ yếu là thao tác tay của người dùng, còn hệ thống sẽ theo dõi lại
-                        trạng thái qua cảm biến và ghi nhận vào log.
-                    </p>
-
-                    <div className={styles.helperBox}>
-                        <ul className={styles.helperList}>
-                            <li>
-                                Chỉ cho phép mở khóa khi thiết bị đang Online và locker không ở trạng thái
-                                maintenance
-                            </li>
-                            <li>Ghi log admin action mỗi lần gửi lệnh mở khóa từ xa</li>
-                            <li>Dùng reed switch / IR sensor để xác nhận cửa đã được mở và đóng lại</li>
-                            <li>Hiển thị command result rõ ràng sau khi nối API phần cứng</li>
-                        </ul>
-                    </div>
+                    <ul className="flex flex-col gap-2 p-4 rounded-xl bg-[--color-surface-2] border border-[--color-border] text-[12px] text-[--color-muted]">
+                        <li className="flex items-start gap-2">
+                            <span className="text-[--color-accent] font-bold">•</span>
+                            Chỉ mở khóa khi thiết bị đang Online và không ở trạng thái bảo trì.
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-[--color-accent] font-bold">•</span>
+                            Ghi log Admin Action mỗi lần gửi lệnh mở khóa từ xa.
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <span className="text-[--color-accent] font-bold">•</span>
+                            Cảm biến cửa ghi nhận kết quả và phát sự kiện realtime.
+                        </li>
+                    </ul>
                 </article>
             </section>
         </div>
     )
 }
-

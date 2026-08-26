@@ -8,7 +8,9 @@ const lockerMockData: TLocker[] = [
         cluster: 'A',
         size: 'small',
         status: 'available',
-        location: 'Tầng 1 - Khu A',
+        location: 'Tầng 1 - TechCorp Building',
+        orgId: 'org-001',
+        orgName: 'TechCorp Office Building',
         lastUpdated: '2 phút trước',
         note: 'Sẵn sàng nhận hàng',
     },
@@ -19,7 +21,9 @@ const lockerMockData: TLocker[] = [
         cluster: 'A',
         size: 'medium',
         status: 'occupied',
-        location: 'Tầng 1 - Khu A',
+        location: 'Tầng 1 - TechCorp Building',
+        orgId: 'org-001',
+        orgName: 'TechCorp Office Building',
         currentUser: 'Nguyễn Văn A',
         currentPackage: 'PKG-1024',
         lastUpdated: '5 phút trước',
@@ -32,7 +36,9 @@ const lockerMockData: TLocker[] = [
         cluster: 'B',
         size: 'large',
         status: 'maintenance',
-        location: 'Tầng 2 - Khu B',
+        location: 'Khu A - Nhà Trọ Hoàng Nam',
+        orgId: 'org-002',
+        orgName: 'Khu Nhà Trọ Hoàng Nam',
         lastUpdated: '12 phút trước',
         note: 'Đang kiểm tra khóa điện từ',
     },
@@ -43,7 +49,9 @@ const lockerMockData: TLocker[] = [
         cluster: 'B',
         size: 'small',
         status: 'offline',
-        location: 'Tầng 2 - Khu B',
+        location: 'Khu B - Nhà Trọ Hoàng Nam',
+        orgId: 'org-002',
+        orgName: 'Khu Nhà Trọ Hoàng Nam',
         lastUpdated: '8 phút trước',
         note: 'Mất kết nối cảm biến',
     },
@@ -54,7 +62,9 @@ const lockerMockData: TLocker[] = [
         cluster: 'C',
         size: 'medium',
         status: 'available',
-        location: 'Tầng 3 - Khu C',
+        location: 'Tầng 1 - KTX Bách Khoa',
+        orgId: 'org-003',
+        orgName: 'Ký Túc Xá Đại Học Bách Khoa',
         lastUpdated: '1 phút trước',
         note: 'Hoạt động ổn định',
     },
@@ -65,76 +75,53 @@ const lockerMockData: TLocker[] = [
         cluster: 'C',
         size: 'large',
         status: 'occupied',
-        location: 'Tầng 3 - Khu C',
+        location: 'Tầng 2 - KTX Bách Khoa',
+        orgId: 'org-003',
+        orgName: 'Ký Túc Xá Đại Học Bách Khoa',
         currentUser: 'Trần Thị B',
         currentPackage: 'PKG-2048',
-        lastUpdated: '10 phút trước',
-        note: 'Đang có đơn gửi',
-    },
-    {
-        id: '7',
-        code: 'D01',
-        name: 'Locker D01',
-        cluster: 'D',
-        size: 'small',
-        status: 'available',
-        location: 'Sảnh chính - Khu D',
         lastUpdated: '3 phút trước',
-        note: 'Có thể gán đơn mới',
-    },
-    {
-        id: '8',
-        code: 'D02',
-        name: 'Locker D02',
-        cluster: 'D',
-        size: 'medium',
-        status: 'occupied',
-        location: 'Sảnh chính - Khu D',
-        currentUser: 'Phạm Văn C',
-        currentPackage: 'PKG-3001',
-        lastUpdated: '6 phút trước',
-        note: 'Khách chưa đến nhận',
+        note: 'Đang có đơn gửi',
     },
 ]
 
 export async function getLockers(): Promise<TLocker[]> {
     return Promise.resolve(lockerMockData)
 }
-export async function getLockerStats(): Promise<TLockerStatItem[]> {
-    const total = lockerMockData.length
-    const available = lockerMockData.filter((item) => item.status === 'available').length
-    const occupied = lockerMockData.filter((item) => item.status === 'occupied').length
-    const issue = lockerMockData.filter(
-        (item) => item.status === 'offline' || item.status === 'maintenance',
-    ).length
 
+export async function getLockerById(id: string): Promise<TLocker | undefined> {
+    const item = lockerMockData.find((l) => l.id === id)
+    return Promise.resolve(item)
+}
+
+export async function getLockerStats(): Promise<TLockerStatItem[]> {
     return Promise.resolve([
         {
             id: 'total',
-            label: 'Tổng số locker',
-            value: String(total),
-            helper: 'Toàn bộ ngăn tủ trong hệ thống',
+            label: 'TỔNG TỦ ĐỒ',
+            value: `${lockerMockData.length}`,
+            helper: 'Tổng ngăn tủ hệ thống',
             tone: 'blue',
         },
         {
             id: 'available',
-            label: 'Đang trống',
-            value: String(available),
-            helper: 'Sẵn sàng nhận đơn mới',
+            label: 'SẴN SÀNG',
+            value: `${lockerMockData.filter((l) => l.status === 'available').length}`,
+            helper: 'Ngăn tủ trống',
             tone: 'green',
         },
         {
             id: 'occupied',
-            label: 'Đang sử dụng',
-            value: String(occupied),
-            helper: 'Đang chứa hàng hoặc chờ nhận',
+            label: 'ĐANG LƯU TRỮ',
+            value: `${lockerMockData.filter((l) => l.status === 'occupied').length}`,
+            helper: 'Có hàng chờ nhận',
             tone: 'orange',
         },
         {
             id: 'issue',
-            label: 'Lỗi / bảo trì',
-            value: String(issue),
-            helper: 'Cần kiểm tra kỹ thuật',
+            label: 'BẢO TRÌ / OFFLINE',
+            value: `${lockerMockData.filter((l) => l.status === 'maintenance' || l.status === 'offline').length}`,
+            helper: 'Cần kiểm tra',
             tone: 'red',
         },
     ])

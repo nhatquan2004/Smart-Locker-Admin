@@ -1,9 +1,8 @@
-import {useMemo} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
-import {UserRoleBadge} from '../../../components/Users/UserRoleBadge'
-import {UserStatusBadge} from "../../../components/Users/UserStatusBadge.tsx";
-import type {TUser} from "../../../types/user.type.ts";
-import styles from './UserHistory.module.css'
+import { useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { UserRoleBadge } from '../../../components/Users/UserRoleBadge'
+import { UserStatusBadge } from "../../../components/Users/UserStatusBadge.tsx";
+import type { TUser } from "../../../types/user.type.ts";
 
 type TUserHistoryItem = {
     id: string
@@ -15,204 +14,111 @@ type TUserHistoryItem = {
 
 export function UserHistoryPage() {
     const navigate = useNavigate()
-    const {userId} = useParams()
+    const { userId } = useParams()
 
     const users = useMemo<TUser[]>(() => {
         return [
             {
-                id: '1',
-                userCode: 'USR-001',
-                fullName: 'Nguyễn Văn An',
-                phone: '0901234567',
-                email: 'nguyenvanan@gmail.com',
-                role: 'customer',
-                status: 'active',
-                createdAt: '2026-04-20 08:10',
-                lastActive: '2026-04-28 09:15',
-                totalShipments: 8,
+                id: '1', userCode: 'USR-001', fullName: 'Nguyễn Văn An', phone: '0901234567',
+                email: 'nguyenvanan@gmail.com', role: 'user', status: 'active',
+                createdAt: '2026-04-20 08:10', lastActive: '2026-04-28 09:15', totalShipments: 8,
                 note: 'Khách hàng nhận hàng thường xuyên',
             },
             {
-                id: '2',
-                userCode: 'USR-002',
-                fullName: 'Trần Minh Long',
-                phone: '0912345678',
-                email: 'tranminhlong@gmail.com',
-                role: 'shipper',
-                status: 'active',
-                createdAt: '2026-04-18 10:30',
-                lastActive: '2026-04-28 08:50',
-                totalShipments: 26,
+                id: '2', userCode: 'USR-002', fullName: 'Trần Minh Long', phone: '0912345678',
+                email: 'tranminhlong@gmail.com', role: 'shipper', status: 'active',
+                createdAt: '2026-04-18 10:30', lastActive: '2026-04-28 08:50', totalShipments: 26,
                 note: 'Shipper phụ trách khu A và B',
-            },
-            {
-                id: '3',
-                userCode: 'USR-003',
-                fullName: 'Lê Khánh Vy',
-                phone: '0988123456',
-                email: 'lekhanhvy@gmail.com',
-                role: 'customer',
-                status: 'inactive',
-                createdAt: '2026-04-15 14:20',
-                lastActive: '2026-04-25 18:05',
-                totalShipments: 3,
-                note: 'Ít hoạt động trong tuần này',
-            },
-            {
-                id: '4',
-                userCode: 'USR-004',
-                fullName: 'Phạm Gia Hưng',
-                phone: '0977001122',
-                email: 'phamgiahung@gmail.com',
-                role: 'admin',
-                status: 'active',
-                createdAt: '2026-04-10 09:00',
-                lastActive: '2026-04-28 09:40',
-                totalShipments: 0,
-                note: 'Quản trị viên hệ thống',
             },
         ]
     }, [])
+
+    const user = useMemo(() => {
+        return users.find((item) => item.id === userId) ?? users[0]
+    }, [users, userId])
 
     const historyItems = useMemo<TUserHistoryItem[]>(() => {
         return [
-            {
-                id: '1',
-                time: '2026-04-28 09:15',
-                title: 'Đã nhận đơn hàng SHP-2026-001',
-                description: 'Người dùng xác thực OTP thành công và mở locker A02 để nhận hàng.',
-                type: 'shipment',
-            },
-            {
-                id: '2',
-                time: '2026-04-28 09:13',
-                title: 'OTP 482913 được sử dụng',
-                description: 'Mã OTP được xác thực hợp lệ trong thời gian hiệu lực.',
-                type: 'otp',
-            },
-            {
-                id: '3',
-                time: '2026-04-28 09:12',
-                title: 'Locker A02 được mở',
-                description: 'Cửa tủ được mở thành công sau khi hệ thống kiểm tra mã OTP.',
-                type: 'locker',
-            },
-            {
-                id: '4',
-                time: '2026-04-27 18:20',
-                title: 'Đơn SHP-2026-004 được gán cho user',
-                description: 'Hệ thống liên kết người nhận với locker B01 và tạo OTP nhận hàng.',
-                type: 'shipment',
-            },
-            {
-                id: '5',
-                time: '2026-04-26 15:10',
-                title: 'Admin cập nhật trạng thái tài khoản',
-                description: 'Tài khoản được kiểm tra và giữ ở trạng thái active.',
-                type: 'admin',
-            },
+            { id: '1', time: '2026-04-28 09:15', title: 'Xác thực OTP thành công', description: 'Đã nhập đúng mã OTP 482913 để mở tủ A02.', type: 'otp' },
+            { id: '2', time: '2026-04-28 08:30', title: 'Đơn hàng mới được tạo', description: 'Tạo đơn hàng SHP-2026-001 lưu trữ tại locker A02.', type: 'shipment' },
+            { id: '3', time: '2026-04-27 16:45', title: 'Nhận hàng từ locker B01', description: 'Đã hoàn tất nhận kiện hàng PKG-8821 thành công.', type: 'locker' },
+            { id: '4', time: '2026-04-25 10:00', title: 'Admin gửi mã OTP mới', description: 'Admin phát lại OTP qua SMS theo yêu cầu người dùng.', type: 'admin' },
         ]
     }, [])
 
-    const user = users.find((item) => item.id === userId)
-
     if (!user) {
         return (
-            <div className={styles.page}>
-                <div className={styles.notFoundCard}>
-                    <h2 className={styles.notFoundTitle}>Không tìm thấy người dùng</h2>
-                    <p className={styles.notFoundText}>
-                        Không thể tải lịch sử hoạt động vì tài khoản này không tồn tại trong dữ liệu hiện tại.
-                    </p>
-                    <button
-                        className={styles.backButton}
-                        type="button"
-                        onClick={() => navigate('/users')}
-                    >
-                        Quay về Users
-                    </button>
-                </div>
+            <div className="p-8 text-center text-[--color-muted]">
+                <p>Không tìm thấy thông tin người dùng</p>
+                <button
+                    type="button"
+                    onClick={() => navigate('/users')}
+                    className="mt-4 px-4 py-2 rounded-lg bg-[--color-surface-2] text-[13px] text-[--color-text] hover:bg-[--color-surface-3]"
+                >
+                    ← Quay lại danh sách Users
+                </button>
             </div>
         )
     }
 
     return (
-        <div className={styles.page}>
-            <section className={styles.hero}>
-                <div className={styles.heroGlow}></div>
+        <div className="flex flex-col gap-8 max-w-[1200px]">
 
-                <div className={styles.heroContent}>
+            {/* Hero */}
+            <section data-reveal className="relative overflow-hidden rounded-2xl border border-[--color-border] bg-[--color-surface] p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div className="absolute inset-0 mesh-bg opacity-30 rounded-2xl" />
+                <div className="absolute inset-0 rounded-2xl" style={{ background: "radial-gradient(ellipse at 65% 50%, transparent 30%, var(--color-surface) 80%)" }} />
+
+                <div className="relative z-10 flex-1 min-w-0">
                     <button
-                        className={styles.backLink}
                         type="button"
-                        onClick={() => navigate(`/users/${user.id}`)}
+                        onClick={() => navigate(-1)}
+                        className="inline-flex items-center gap-2 text-[12px] font-medium text-[--color-accent] hover:text-[--color-accent-2] mb-4 transition-colors"
                     >
                         ← Quay lại User Detail
                     </button>
 
-                    <span className={styles.eyebrow}>User activity history</span>
-                    <h1 className={styles.title}>Lịch sử hoạt động của {user.fullName}</h1>
-                    <p className={styles.description}>
-                        Theo dõi toàn bộ hoạt động liên quan đến đơn hàng, OTP, locker và các thay đổi tài khoản
-                        để admin kiểm tra nhanh hành trình của người dùng trong hệ thống.
+                    <p className="eyebrow mb-2">User history</p>
+                    <h1 className="text-[22px] font-bold text-[--color-heading] leading-tight truncate">
+                        Lịch sử của {user.fullName} ({user.userCode})
+                    </h1>
+                    <p className="mt-2 text-[13px] text-[--color-secondary] leading-relaxed max-w-lg">
+                        Xem dòng thời gian thao tác đơn hàng, OTP, mở tủ và nhật ký quản trị liên quan.
                     </p>
                 </div>
 
-                <div className={styles.heroBadgeGroup}>
-                    <UserRoleBadge role={user.role}/>
-                    <UserStatusBadge status={user.status}/>
+                <div className="relative z-10 flex flex-col items-end gap-2 shrink-0">
+                    <UserRoleBadge role={user.role} />
+                    <UserStatusBadge status={user.status} />
                 </div>
             </section>
 
-            <section className={styles.summaryGrid}>
-                <article className={styles.summaryCard}>
-                    <span className={styles.summaryLabel}>User code</span>
-                    <strong className={styles.summaryValue}>{user.userCode}</strong>
-                </article>
-
-                <article className={styles.summaryCard}>
-                    <span className={styles.summaryLabel}>Phone</span>
-                    <strong className={styles.summaryValue}>{user.phone}</strong>
-                </article>
-
-                <article className={styles.summaryCard}>
-                    <span className={styles.summaryLabel}>Total shipments</span>
-                    <strong className={styles.summaryValue}>{user.totalShipments}</strong>
-                </article>
-
-                <article className={styles.summaryCard}>
-                    <span className={styles.summaryLabel}>Last active</span>
-                    <strong className={styles.summaryValue}>{user.lastActive}</strong>
-                </article>
-            </section>
-
-            <section className={styles.timelineSection}>
-                <div className={styles.sectionHeader}>
+            {/* History Feed */}
+            <section data-stagger className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
                     <div>
-                        <p className={styles.sectionEyebrow}>Activity feed</p>
-                        <h2 className={styles.sectionTitle}>Dòng thời gian hoạt động</h2>
+                        <p className="eyebrow mb-1">Activity Log</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">Dòng thời gian hoạt động</h2>
                     </div>
-
-                    <span className={styles.sectionBadge}>{historyItems.length} events</span>
+                    <span className="px-3 py-1 rounded-full text-[12px] font-mono bg-[--color-surface-2] border border-[--color-border] text-[--color-secondary]">
+                        {historyItems.length} sự kiện
+                    </span>
                 </div>
 
-                <div className={styles.timeline}>
+                <div className="flex flex-col gap-3">
                     {historyItems.map((item) => (
-                        <article key={item.id} className={styles.timelineItem}>
-                            <div className={`${styles.timelineDot} ${styles[`timelineDot_${item.type}`]}`}></div>
-
-                            <div className={styles.timelineCard}>
-                                <div className={styles.timelineTop}>
-                                    <h3 className={styles.timelineTitle}>{item.title}</h3>
-                                    <span className={styles.timelineTime}>{item.time}</span>
+                        <article
+                            key={item.id}
+                            className="relative flex flex-col gap-2 p-5 rounded-2xl border border-[--color-border] bg-[--color-surface] hover:border-[--color-border-2] transition-colors"
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-mono text-[--color-accent] uppercase tracking-wider">{item.type}</span>
+                                    <h3 className="text-[14px] font-semibold text-[--color-heading] mt-0.5">{item.title}</h3>
                                 </div>
-
-                                <p className={styles.timelineDescription}>{item.description}</p>
-
-                                <span className={`${styles.timelineType} ${styles[`timelineType_${item.type}`]}`}>
-                  {item.type}
-                </span>
+                                <time className="text-[11px] font-mono text-[--color-muted] shrink-0">{item.time}</time>
                             </div>
+                            <p className="text-[12px] text-[--color-secondary] leading-relaxed">{item.description}</p>
                         </article>
                     ))}
                 </div>

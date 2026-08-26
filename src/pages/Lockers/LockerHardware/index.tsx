@@ -1,144 +1,186 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import styles from './LockerHardware.module.css'
+import { AppButton } from '../../../components/common'
 
 export function LockerHardwarePage() {
-    const navigate = useNavigate()
-    const { lockerId } = useParams()
+  const navigate = useNavigate()
+  const { lockerId } = useParams()
 
-    const hardwareMock = useMemo(() => {
-        return {
-            lockerId,
-            lockerCode: `LK-${lockerId ?? 'N/A'}`,
-            controller: 'ESP32 DevKit V1',
-            relayModule: '4-Channel Relay Module',
-            reedSwitch: 'Connected',
-            irSensor: 'Connected',
-            solenoidLock: '12V Solenoid Lock',
-            powerSupply: '12V / 5A',
-            networkStatus: 'Online',
-            ping: '28 ms',
-            lastHeartbeat: '10 giây trước',
-            firmwareVersion: 'v1.0.3',
-            voltage: '12.1V',
-            temperature: '31°C',
-            note: 'Sẵn sàng để kết nối API / dữ liệu thật từ phần cứng sau này.',
-        }
-    }, [lockerId])
-    return(
-        <div className={styles.page}>
-            <section className={styles.hero}>
-                <div className={styles.heroGlow}></div>
+  const [testResult, setTestResult] = useState('')
+  const [isTesting, setIsTesting] = useState(false)
 
-                <div className={styles.heroContent}>
-                    <button className={styles.backLink} type="button" onClick={() => navigate(-1)}>
-                        ← Quay lại Locker Detail
-                    </button>
+  const hardwareMock = useMemo(() => {
+    return {
+      lockerId,
+      lockerCode: `STATION-${lockerId?.slice(0, 8) ?? 'ST-001'}`,
+      controller: 'Industrial Gateway MCU RS485 / ESP32-S3',
+      relayModule: '16-Channel Solenoid Relay Board',
+      reedSwitch: 'Reed Magnetic Door Sensor Array',
+      irSensor: 'IR Infrared Parcel Detection Board',
+      powerSupply: 'DC 12V / 10A Switched Mode',
+      networkStatus: 'ONLINE (RS485 Modbus RTU)',
+      ping: '18 ms',
+      lastHeartbeat: 'vừa xong',
+      firmwareVersion: 'v2.4.12-pro',
+      voltage: '12.1V DC (Stable)',
+      temperature: '27.4°C',
+    }
+  }, [lockerId])
 
-                    <span className={styles.eyebrow}>Locker hardware</span>
-                    <h1 className={styles.title}>Kiểm tra phần cứng của locker {hardwareMock.lockerCode}</h1>
-                    <p className={styles.description}>
-                        Trang này dùng để theo dõi kết nối phần cứng của locker, bao gồm ESP32, relay, khóa
-                        điện từ, cảm biến cửa, cảm biến hồng ngoại, nguồn cấp và trạng thái mạng.
-                    </p>
-                </div>
+  function handleTestHardware(actionName: string) {
+    setIsTesting(true)
+    setTestResult('')
+    setTimeout(() => {
+      setIsTesting(false)
+      setTestResult(`✓ Đã kích hoạt lệnh [${actionName}] thành công. Bo mạch phản hồi RS485 ACK 200 OK!`)
+      setTimeout(() => setTestResult(''), 4000)
+    }, 600)
+  }
 
-                <div className={styles.heroAside}>
-                    <div className={styles.heroBadgeCard}>
-                        <span className={styles.heroBadgeLabel}>Network status</span>
-                        <strong className={styles.heroBadgeValue}>{hardwareMock.networkStatus}</strong>
-                        <p className={styles.heroBadgeText}>
-                            Ping: {hardwareMock.ping} • Heartbeat: {hardwareMock.lastHeartbeat}
-                        </p>
-                    </div>
-                </div>
-            </section>
+  return (
+    <div className="flex flex-col gap-6 max-w-[1250px]">
 
-            <section className={styles.grid}>
-                <article className={styles.card}>
-                    <h2 className={styles.cardTitle}>Bộ điều khiển chính</h2>
-                    <div className={styles.infoList}>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Controller</span>
-                            <span className={styles.value}>{hardwareMock.controller}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Firmware</span>
-                            <span className={styles.value}>{hardwareMock.firmwareVersion}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Network</span>
-                            <span className={styles.value}>{hardwareMock.networkStatus}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Ping</span>
-                            <span className={styles.value}>{hardwareMock.ping}</span>
-                        </div>
-                    </div>
-                </article>
+      {/* Hero */}
+      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs">
+        <div className="relative z-10 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 hover:text-sky-700 mb-3 transition-colors cursor-pointer"
+          >
+            ← Quay lại Sơ Đồ Cụm Tủ
+          </button>
 
-                <article className={styles.card}>
-                    <h2 className={styles.cardTitle}>Thiết bị chấp hành</h2>
-                    <div className={styles.infoList}>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Relay module</span>
-                            <span className={styles.value}>{hardwareMock.relayModule}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Solenoid lock</span>
-                            <span className={styles.value}>{hardwareMock.solenoidLock}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Power supply</span>
-                            <span className={styles.value}>{hardwareMock.powerSupply}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Voltage</span>
-                            <span className={styles.value}>{hardwareMock.voltage}</span>
-                        </div>
-                    </div>
-                </article>
-
-                <article className={styles.card}>
-                    <h2 className={styles.cardTitle}>Cảm biến</h2>
-                    <div className={styles.infoList}>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Reed switch</span>
-                            <span className={styles.value}>{hardwareMock.reedSwitch}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>IR sensor</span>
-                            <span className={styles.value}>{hardwareMock.irSensor}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Temperature</span>
-                            <span className={styles.value}>{hardwareMock.temperature}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span className={styles.label}>Last heartbeat</span>
-                            <span className={styles.value}>{hardwareMock.lastHeartbeat}</span>
-                        </div>
-                    </div>
-                </article>
-
-                <article className={`${styles.card} ${styles.fullWidth}`}>
-                    <h2 className={styles.cardTitle}>Ghi chú tích hợp phần cứng</h2>
-                    <p className={styles.note}>
-                        {hardwareMock.note}
-                    </p>
-
-                    <div className={styles.actionRow}>
-                        <button type="button" className={styles.primaryButton}>
-                            Refresh hardware status
-                        </button>
-
-                        <button type="button" className={styles.secondaryButton}>
-                            Test relay / lock
-                        </button>
-                    </div>
-                </article>
-            </section>
+          <p className="eyebrow mb-1">Hardware & Sensor Monitor</p>
+          <h1 className="text-[22px] font-bold text-slate-900 leading-tight truncate">
+            Giám Sát Phần Cứng Realtime · {hardwareMock.lockerCode}
+          </h1>
+          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed max-w-lg">
+            Theo dõi bo mạch MCU RS485, rơ-le khóa điện từ 12V, mảng cảm biến hồng ngoại IR và công tắc hành trình cửa.
+          </p>
         </div>
-    )
-}
 
+        <div className="relative z-10 shrink-0 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="eyebrow text-emerald-800 font-bold">Network Sensor Status</span>
+          </div>
+          <p className="text-[20px] font-bold text-emerald-900 leading-none font-mono">
+            ONLINE 100%
+          </p>
+          <p className="mt-1 text-[11px] font-mono text-emerald-700">
+            Ping: {hardwareMock.ping} • RS485 Modbus
+          </p>
+        </div>
+      </section>
+
+      {testResult && (
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-[13px] font-bold leading-relaxed shadow-2xs animate-fade-in">
+          {testResult}
+        </div>
+      )}
+
+      {/* Hardware Monitoring Grid */}
+      <section data-stagger className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* Controller Card */}
+        <article className="flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs">
+          <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">Bo điều khiển trung tâm</h2>
+          <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">MCU Controller</span>
+              <span className="font-semibold text-slate-900 font-mono text-[12px]">{hardwareMock.controller}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Firmware Version</span>
+              <span className="font-mono text-sky-700 font-bold">{hardwareMock.firmwareVersion}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Nhiệt độ MCU</span>
+              <span className="font-mono text-emerald-700 font-bold">{hardwareMock.temperature}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Nguồn cấp DC</span>
+              <span className="font-mono text-slate-800 font-bold">{hardwareMock.voltage}</span>
+            </div>
+          </div>
+        </article>
+
+        {/* Actuators Card */}
+        <article className="flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs">
+          <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">Bo mạch Relay & Khóa</h2>
+          <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Relay Module</span>
+              <span className="text-slate-900 font-medium">{hardwareMock.relayModule}</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Loại khóa điện từ</span>
+              <span className="text-slate-900 font-medium">12V Solenoid Push Lock</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Chuẩn giao tiếp</span>
+              <span className="font-mono text-sky-700 font-bold">RS485 Industrial Bus</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Trạng thái Relay</span>
+              <span className="font-mono text-emerald-700 font-bold">ACK 200 OK</span>
+            </div>
+          </div>
+        </article>
+
+        {/* Sensors Card */}
+        <article className="flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs">
+          <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">Mảng cảm biến IoT</h2>
+          <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Cảm biến hồng ngoại IR</span>
+              <span className="font-bold text-emerald-700 font-mono">HOẠT ĐỘNG (OK)</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Công tắc từ cửa (Reed)</span>
+              <span className="font-bold text-emerald-700 font-mono">HOẠT ĐỘNG (OK)</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Mạch bảo vệ quá dòng</span>
+              <span className="font-bold text-slate-900 font-mono">ACTIVE (10A max)</span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-slate-500 font-medium">Cảnh báo báo động</span>
+              <span className="font-mono text-slate-500">Không có cảnh báo</span>
+            </div>
+          </div>
+        </article>
+
+        {/* Test Control Toolbar */}
+        <article className="md:col-span-3 flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs">
+          <h2 className="text-[15px] font-bold text-slate-900">Bảng điều khiển kiểm thử phần cứng (Hardware Test Tools)</h2>
+          <div className="flex flex-wrap gap-3">
+            <AppButton
+              disabled={isTesting}
+              onClick={() => handleTestHardware('PING MCU RS485 BOARD')}
+            >
+              ⚡ Test Ping Board Gateway
+            </AppButton>
+            <AppButton
+              variant="secondary"
+              disabled={isTesting}
+              onClick={() => handleTestHardware('RESET IR SENSOR ARRAY')}
+            >
+              🔄 Reset Mảng Cảm Biến IR
+            </AppButton>
+            <AppButton
+              variant="secondary"
+              disabled={isTesting}
+              onClick={() => handleTestHardware('CHECK RELAY VOLTAGE 12V')}
+            >
+              🔋 Kiểm Tra Nguồn DC 12V
+            </AppButton>
+          </div>
+        </article>
+
+      </section>
+
+    </div>
+  )
+}

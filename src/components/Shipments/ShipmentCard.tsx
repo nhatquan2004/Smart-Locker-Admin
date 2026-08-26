@@ -1,67 +1,76 @@
-import {useNavigate} from 'react-router-dom'
-import {ShipmentStatusBadge} from './ShipmentStatusBadge'
-import type {TShipment} from '../../types/shipment.type'
-import styles from './ShipmentCard.module.css'
+import { useNavigate } from 'react-router-dom'
+import { ShipmentStatusBadge } from './ShipmentStatusBadge'
+import type { TShipment } from '../../types/shipment.type'
+import { useTranslation } from '../../context/LanguageContext'
 
 type TProps = {
-    shipment: TShipment
+  shipment: TShipment
 }
 
-function formatRelative(dateText: string) {
-    const timePart = dateText.split(' ')[1] ?? dateText
-    return `hôm qua lúc ${timePart}`
-}
+export function ShipmentCard({ shipment }: TProps) {
+  const navigate = useNavigate()
+  const { t } = useTranslation()
 
-export function ShipmentCard({shipment}: TProps) {
-    const navigate = useNavigate()
+  return (
+    <article className="group flex flex-col gap-4 p-5 rounded-2xl border border-[--color-border] bg-[--color-surface] hover:border-[--color-border-2] hover:bg-[--color-surface-2] hover:-translate-y-0.5 transition-all duration-200">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] font-mono text-[--color-muted] uppercase tracking-wider">{shipment.shipmentCode}</p>
+          <h3 className="mt-0.5 text-[14px] font-semibold text-[--color-heading] truncate">{shipment.recipientName}</h3>
+          <p className="text-[12px] text-[--color-muted]">{shipment.recipientPhone}</p>
+        </div>
+        <div className="flex flex-col items-end gap-1.5">
+          <ShipmentStatusBadge type="shipment" shipmentStatus={shipment.shipmentStatus} />
+          <ShipmentStatusBadge type="otp" otpStatus={shipment.otpStatus} />
+        </div>
+      </div>
 
-    return (
-        <article className={`${styles.card} ${styles[`status_${shipment.shipmentStatus}`]}`}>
-            <div className={styles.header}>
-                <div>
-                    <p className={styles.code}>{shipment.shipmentCode}</p>
-                    <h3 className={styles.name}>{shipment.recipientName}</h3>
-                    <p className={styles.phone}>{shipment.recipientPhone}</p>
-                </div>
+      {/* Info tags */}
+      <div className="flex flex-wrap gap-2 text-[11px] text-[--color-secondary]">
+        <span className="bg-[--color-surface-2] border border-[--color-border] px-2 py-0.5 rounded-md font-mono">
+          {shipment.lockerCode}
+        </span>
+        <span className="bg-[--color-surface-2] border border-[--color-border] px-2 py-0.5 rounded-md">
+          CL-{shipment.cluster}
+        </span>
+        <span className="bg-[--color-surface-2] border border-[--color-border] px-2 py-0.5 rounded-md capitalize">
+          {shipment.lockerSize}
+        </span>
+        <span className="bg-[--color-accent-bg] border border-[--color-accent-border] text-[--color-accent] px-2 py-0.5 rounded-md font-mono">
+          OTP: {shipment.otpCode}
+        </span>
+      </div>
 
-                <div className={styles.badges}>
-                    <ShipmentStatusBadge type="shipment" shipmentStatus={shipment.shipmentStatus}/>
-                    <ShipmentStatusBadge type="otp" otpStatus={shipment.otpStatus}/>
-                </div>
-            </div>
+      {/* Meta info */}
+      <div className="flex flex-col gap-1.5 text-[12px] text-[--color-secondary]">
+        <p className="truncate">{t('shipments.sender')}: <span className="text-[--color-text]">{shipment.shipperName}</span></p>
+        <p>{t('shipments.depositedAt')}: <span className="font-mono text-[--color-muted]">{shipment.createdAt}</span></p>
+      </div>
 
-            <div className={styles.infoLine}>
-                <span>🔒 {shipment.lockerCode}</span>
-                <span>📍 Cluster {shipment.cluster}</span>
-                <span>📐 {shipment.lockerSize}</span>
-                <span>🔑 OTP: {shipment.otpCode}</span>
-            </div>
+      {shipment.note && (
+        <p className="text-[11px] text-[--color-warning] bg-[--color-warning-bg] border border-[--color-warning]/20 px-3 py-2 rounded-lg leading-relaxed">
+          {shipment.note}
+        </p>
+      )}
 
-            <div className={styles.metaBlock}>
-                <p className={styles.metaLine}>👤 {shipment.shipperName}</p>
-                <p className={styles.metaLine}>🕐 {formatRelative(shipment.createdAt)}</p>
-                <p className={styles.metaLine}>🔄 {formatRelative(shipment.updatedAt)}</p>
-            </div>
-
-            {shipment.note ? <p className={styles.note}>{shipment.note}</p> : null}
-
-            <div className={styles.actions}>
-                <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={() => navigate(`/shipments/${shipment.id}`)}
-                >
-                    Xem chi tiết
-                </button>
-
-                <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={() => navigate(`/shipments/${shipment.id}/otp`)}
-                >
-                    Kiểm tra OTP
-                </button>
-            </div>
-        </article>
-    )
+      {/* Actions */}
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => navigate(`/shipments/${shipment.id}`)}
+          className="flex-1 h-8 rounded-lg text-[12px] font-medium bg-[--color-accent-bg] text-[--color-accent] border border-[--color-accent-border] hover:bg-[--color-accent] hover:text-[--color-bg] transition-all duration-150"
+        >
+          {t('shipments.btnDetail')}
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(`/shipments/${shipment.id}/otp`)}
+          className="flex-1 h-8 rounded-lg text-[12px] font-medium bg-[--color-surface-2] text-[--color-secondary] border border-[--color-border] hover:border-[--color-border-2] hover:text-[--color-text] transition-all duration-150"
+        >
+          OTP
+        </button>
+      </div>
+    </article>
+  )
 }

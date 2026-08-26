@@ -1,7 +1,6 @@
 import {FilterSelect} from '../shared/FilterSelect/FilterSelect'
 import {SearchField} from '../shared/SearchField/SearchField'
 import type {TLockerCluster, TLockerFilter, TLockerSize, TLockerStatus} from '../../types/locker.type'
-import styles from './LockerFilterBar.module.css'
 
 type TProps = {
     filter: TLockerFilter
@@ -33,8 +32,8 @@ const clusterOptions: Array<{ label: string; value: 'all' | TLockerCluster }> = 
 
 export function LockerFilterBar({filter, onChange}: TProps) {
     return (
-        <section className={styles.wrapper}>
-            <div className={styles.searchGroup}>
+        <section className="flex flex-wrap gap-3 p-5 rounded-2xl glass-card">
+            <div className="flex-1 min-w-[200px]">
                 <SearchField
                     id="locker-search"
                     label="Tìm locker"
@@ -90,3 +89,4 @@ export function LockerFilterBar({filter, onChange}: TProps) {
         </section>
     )
 }
+

@@ -10,12 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "i18next": "^26.0.8",
     "qs": "^6.15.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-i18next": "^17.0.4",
     "react-router-dom": "^7.14.2",
+    "tailwindcss": "^4.3.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

@@ -1,37 +1,21 @@
-import {StatusBadge} from '../shared/StatusBadge/StatusBadge'
-import type {TUserRole} from '../../types/user.type'
+import { StatusBadge } from '../shared/StatusBadge/StatusBadge'
+import type { TUserRole } from '../../types/user.type'
+import { useTranslation } from '../../context/LanguageContext'
+import type { TranslationKey } from '../../i18n/translations'
 
 type TProps = {
-    role: TUserRole
+  role: TUserRole
 }
 
-const roleMap: Record<
-    TUserRole,
-    {
-        label: string
-        tone: 'green' | 'blue' | 'red'
-        pulse?: boolean
-    }
-> = {
-    customer: {
-        label: 'CUSTOMER',
-        tone: 'green',
-        pulse: false,
-    },
-    shipper: {
-        label: 'SHIPPER',
-        tone: 'blue',
-        pulse: false,
-    },
-    admin: {
-        label: 'ADMIN',
-        tone: 'red',
-        pulse: false,
-    },
+const roleKeyMap: Record<TUserRole, { key: TranslationKey; tone: 'green' | 'blue' | 'red'; pulse?: boolean }> = {
+  user: { key: 'role.user', tone: 'blue', pulse: false },
+  shipper: { key: 'role.shipper', tone: 'green', pulse: false },
+  org_admin: { key: 'role.org_admin', tone: 'red', pulse: false },
+  super_admin: { key: 'role.super_admin', tone: 'red', pulse: true },
 }
 
-export function UserRoleBadge({role}: TProps) {
-    const config = roleMap[role]
-
-    return <StatusBadge label={config.label} tone={config.tone} pulse={config.pulse}/>
+export function UserRoleBadge({ role }: TProps) {
+  const { t } = useTranslation()
+  const config = roleKeyMap[role] || roleKeyMap.user
+  return <StatusBadge label={t(config.key).toUpperCase()} tone={config.tone} pulse={config.pulse} />
 }

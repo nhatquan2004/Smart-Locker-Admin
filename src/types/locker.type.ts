@@ -12,6 +12,8 @@ export type TLocker = {
     size: TLockerSize
     status: TLockerStatus
     location: string
+    orgId?: string
+    orgName?: string
     currentUser?: string
     currentPackage?: string
     lastUpdated: string

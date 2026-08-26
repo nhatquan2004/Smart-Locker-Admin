@@ -1,59 +1,49 @@
-import {useEffect, useState} from 'react'
-import type {TSettingStatItem} from '../../types/settings.type'
-import styles from './SettingStatCard.module.css'
+import { useEffect, useState } from 'react'
+import type { TSettingStatItem } from '../../types/settings.type'
 
 type TProps = {
-    item: TSettingStatItem
-    onClick?: (sectionId: string) => void
+  item: TSettingStatItem
+  onClick?: (sectionId: string) => void
 }
 
-const iconMap: Record<string, string> = {
-    'otp-rules': '🔐',
-    clusters: '🗄',
-    hardware: '🔧',
-    alerts: '🔔',
-    preferences: '⚙️',
+const toneConfig: Record<string, { dot: string; bg: string; border: string; text: string }> = {
+  blue:   { dot: "bg-[--color-accent]",   bg: "bg-[--color-accent-bg]",   border: "border-[--color-accent-border]", text: "text-[--color-accent]"   },
+  green:  { dot: "bg-[--color-success]",  bg: "bg-[--color-success-bg]",  border: "border-[--color-success]/25",   text: "text-[--color-success]"  },
+  orange: { dot: "bg-[--color-warning]",  bg: "bg-[--color-warning-bg]",  border: "border-[--color-warning]/25",   text: "text-[--color-warning]"  },
+  red:    { dot: "bg-[--color-danger]",   bg: "bg-[--color-danger-bg]",   border: "border-[--color-danger]/25",    text: "text-[--color-danger]"   },
+  purple: { dot: "bg-[--color-info]",     bg: "bg-[--color-info-bg]",     border: "border-[--color-info]/25",      text: "text-[--color-info]"     },
 }
 
-export function SettingStatCard({item, onClick}: TProps) {
-    const [display, setDisplay] = useState(0)
+export function SettingStatCard({ item, onClick }: TProps) {
+  const [display, setDisplay] = useState(0)
 
-    useEffect(() => {
-        const target = Number(item.value)
-        let progress = 0
+  useEffect(() => {
+    const target = Number(item.value)
+    let progress = 0
+    const timer = window.setInterval(() => {
+      progress += 0.05
+      if (progress >= 1) { progress = 1; window.clearInterval(timer) }
+      setDisplay(Math.round(target * progress))
+    }, 16)
+    return () => window.clearInterval(timer)
+  }, [item.value])
 
-        const timer = window.setInterval(() => {
-            progress += 0.05
+  const tone = toneConfig[item.tone] ?? toneConfig.blue
 
-            if (progress >= 1) {
-                progress = 1
-                window.clearInterval(timer)
-            }
-
-            setDisplay(Math.round(target * progress))
-        }, 16)
-
-        return () => window.clearInterval(timer)
-    }, [item.value])
-
-    return (
-        <button
-            type="button"
-            className={`${styles.card} ${styles[`tone_${item.tone}`]}`}
-            onClick={() => onClick?.(item.sectionId)}
-        >
-            <div className={styles.glow}></div>
-
-            <div className={styles.topRow}>
-                <div className={styles.heading}>
-                    <span className={styles.icon}>{iconMap[item.id] ?? '⚙️'}</span>
-                    <span className={styles.label}>{item.label}</span>
-                </div>
-                <span className={styles.dot}></span>
-            </div>
-
-            <h3 className={styles.value}>{display}</h3>
-            <p className={styles.helper}>{item.helper}</p>
-        </button>
-    )
+  return (
+    <button
+      type="button"
+      className={`text-left flex flex-col gap-3 p-5 rounded-2xl border ${tone.bg} ${tone.border} transition-all duration-200 hover:-translate-y-0.5 w-full cursor-pointer`}
+      onClick={() => onClick?.(item.sectionId)}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-[11px] font-semibold ${tone.text}`}>{item.label}</span>
+        <span className={`w-2 h-2 rounded-full ${tone.dot} pulse-dot`} />
+      </div>
+      <p className={`text-[30px] font-bold leading-none ${tone.text}`} style={{ fontFamily: "var(--font-display)" }}>
+        {display}
+      </p>
+      <p className="text-[12px] text-[--color-secondary] leading-relaxed">{item.helper}</p>
+    </button>
+  )
 }

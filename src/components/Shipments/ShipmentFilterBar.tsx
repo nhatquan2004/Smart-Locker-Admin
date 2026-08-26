@@ -1,46 +1,47 @@
 import {FilterSelect} from '../shared/FilterSelect/FilterSelect'
 import {SearchField} from '../shared/SearchField/SearchField'
 import type {TOtpStatus, TShipmentCluster, TShipmentFilter, TShipmentStatus,} from '../../types/shipment.type'
-import styles from './ShipmentFilterBar.module.css'
+import { useTranslation } from '../../context/LanguageContext'
 
 type TProps = {
     filter: TShipmentFilter
     onChange: (nextFilter: TShipmentFilter) => void
 }
 
-const shipmentStatusOptions: Array<{ label: string; value: 'all' | TShipmentStatus }> = [
-    {label: 'Tất cả trạng thái đơn', value: 'all'},
-    {label: 'Pending', value: 'pending'},
-    {label: 'Stored', value: 'stored'},
-    {label: 'Waiting Pickup', value: 'waiting_pickup'},
-    {label: 'Picked Up', value: 'picked_up'},
-    {label: 'Expired', value: 'expired'},
-    {label: 'Failed', value: 'failed'},
-]
-
-const otpStatusOptions: Array<{ label: string; value: 'all' | TOtpStatus }> = [
-    {label: 'Tất cả trạng thái OTP', value: 'all'},
-    {label: 'Active', value: 'active'},
-    {label: 'Used', value: 'used'},
-    {label: 'Expired', value: 'expired'},
-]
-
-const clusterOptions: Array<{ label: string; value: 'all' | TShipmentCluster }> = [
-    {label: 'Tất cả cụm tủ', value: 'all'},
-    {label: 'Cluster A', value: 'A'},
-    {label: 'Cluster B', value: 'B'},
-    {label: 'Cluster C', value: 'C'},
-    {label: 'Cluster D', value: 'D'},
-]
-
 export function ShipmentFilterBar({filter, onChange}: TProps) {
+    const { t } = useTranslation()
+
+    const shipmentStatusOptions: Array<{ label: string; value: 'all' | TShipmentStatus }> = [
+        {label: t('role.all'), value: 'all'},
+        {label: 'Pending', value: 'pending'},
+        {label: 'Stored', value: 'stored'},
+        {label: t('shipments.waitingFilter'), value: 'waiting_pickup'},
+        {label: t('shipments.completedFilter'), value: 'picked_up'},
+        {label: 'Expired', value: 'expired'},
+        {label: 'Failed', value: 'failed'},
+    ]
+
+    const otpStatusOptions: Array<{ label: string; value: 'all' | TOtpStatus }> = [
+        {label: t('role.all'), value: 'all'},
+        {label: 'Active', value: 'active'},
+        {label: 'Used', value: 'used'},
+        {label: 'Expired', value: 'expired'},
+    ]
+
+    const clusterOptions: Array<{ label: string; value: 'all' | TShipmentCluster }> = [
+        {label: t('lockers.allClusters'), value: 'all'},
+        {label: 'Cluster A', value: 'A'},
+        {label: 'Cluster B', value: 'B'},
+        {label: 'Cluster C', value: 'C'},
+        {label: 'Cluster D', value: 'D'},
+    ]
 
     return (
-        <section className={styles.wrapper}>
-            <div className={styles.searchGroup}>
+        <section className="flex flex-wrap gap-3 p-5 rounded-2xl border border-[--color-border] bg-[--color-surface]">
+            <div className="flex-1 min-w-[200px]">
                 <SearchField
                     id="shipment-search"
-                    label="Tìm đơn hàng"
+                    label={t('common.search')}
                     value={filter.search}
                     placeholder="Mã đơn, tên người nhận, số điện thoại..."
                     onChange={(value) =>
@@ -54,7 +55,7 @@ export function ShipmentFilterBar({filter, onChange}: TProps) {
 
             <FilterSelect
                 id="shipment-status"
-                label="Trạng thái đơn"
+                label={t('common.status')}
                 value={filter.shipmentStatus}
                 options={shipmentStatusOptions}
                 onChange={(value) =>
@@ -67,7 +68,7 @@ export function ShipmentFilterBar({filter, onChange}: TProps) {
 
             <FilterSelect
                 id="otp-status"
-                label="Trạng thái OTP"
+                label={t('shipments.colOtp')}
                 value={filter.otpStatus}
                 options={otpStatusOptions}
                 onChange={(value) =>
@@ -80,7 +81,7 @@ export function ShipmentFilterBar({filter, onChange}: TProps) {
 
             <FilterSelect
                 id="shipment-cluster"
-                label="Cụm tủ"
+                label={t('lockers.allClusters')}
                 value={filter.cluster}
                 options={clusterOptions}
                 onChange={(value) =>
