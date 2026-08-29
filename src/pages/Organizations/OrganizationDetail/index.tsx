@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getOrganizations } from '../../../service/organization.service'
+import { getLockerStations } from '../../../service/lockerStation.service'
 import type { TOrganization, TOrgType } from '../../../types/organization.type'
+import type { TLockerStation } from '../../../types/lockerStation.type'
 import { AppButton } from '../../../components/common'
 
 export function OrganizationDetailPage() {
@@ -9,10 +11,17 @@ export function OrganizationDetailPage() {
   const { orgId } = useParams()
 
   const [org, setOrg] = useState<TOrganization | null>(null)
+  const [stations, setStations] = useState<TLockerStation[]>([])
+
   const [formName, setFormName] = useState('')
   const [formType, setFormType] = useState<TOrgType>('enterprise')
   const [formAddress, setFormAddress] = useState('')
-  const [formLockers, setFormLockers] = useState(12)
+  
+  // Compartment Size Breakdown State
+  const [formSizeS, setFormSizeS] = useState(4)
+  const [formSizeM, setFormSizeM] = useState(4)
+  const [formSizeL, setFormSizeL] = useState(2)
+
   const [formAdminName, setFormAdminName] = useState('')
   const [formAdminEmail, setFormAdminEmail] = useState('')
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('')
@@ -26,9 +35,21 @@ export function OrganizationDetailPage() {
         setFormName(found.name)
         setFormType(found.type)
         setFormAddress(found.address)
-        setFormLockers(found.totalLockers)
         setFormAdminName(found.adminName)
         setFormAdminEmail(found.adminEmail)
+      }
+    })
+
+    getLockerStations().then((list) => {
+      const matched = list.filter((s) => s.orgId === orgId)
+      setStations(matched)
+      if (matched.length > 0) {
+        const sCount = matched[0].compartments.filter((c) => c.size === 'small').length
+        const mCount = matched[0].compartments.filter((c) => c.size === 'medium').length
+        const lCount = matched[0].compartments.filter((c) => c.size === 'large').length
+        setFormSizeS(sCount || 4)
+        setFormSizeM(mCount || 4)
+        setFormSizeL(lCount || 2)
       }
     })
   }, [orgId])
@@ -38,6 +59,8 @@ export function OrganizationDetailPage() {
     if (!org) return
 
     setIsSubmitting(true)
+    const totalBoxes = formSizeS + formSizeM + formSizeL
+
     setTimeout(() => {
       setOrg((prev) =>
         prev
@@ -46,21 +69,21 @@ export function OrganizationDetailPage() {
               name: formName,
               type: formType,
               address: formAddress,
-              totalLockers: formLockers,
+              totalLockers: totalBoxes,
               adminName: formAdminName,
               adminEmail: formAdminEmail,
             }
           : null
       )
       setIsSubmitting(false)
-      setSaveSuccessMsg(`✓ Đã cập nhật cấu hình đơn vị "${formName}" thành công!`)
+      setSaveSuccessMsg(`✓ Đã cập nhật thông tin và cấu hình ${totalBoxes} ngăn tủ cho đơn vị "${formName}" thành công!`)
       setTimeout(() => setSaveSuccessMsg(''), 4000)
     }, 400)
   }
 
   if (!org) {
     return (
-      <div className="p-8 text-center text-slate-500">
+      <div className="p-8 text-center text-slate-500 dark:text-slate-400">
         <p>Đang tải thông tin đơn vị...</p>
       </div>
     )
@@ -79,31 +102,31 @@ export function OrganizationDetailPage() {
     <div className="flex flex-col gap-6 max-w-[1250px]">
 
       {/* Hero Banner */}
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs">
+      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200 dark:border-slate-800">
         <div className="relative z-10 flex-1 min-w-0">
           <button
             type="button"
             onClick={() => navigate('/organizations')}
-            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 hover:text-sky-700 mb-3 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline mb-3 transition-colors cursor-pointer"
           >
             ← Quay lại danh sách Doanh Nghiệp / Khu Trọ
           </button>
 
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-[10px] font-mono text-sky-800 font-bold bg-sky-100 px-2 py-0.5 rounded border border-sky-200">
+            <span className="text-[10px] font-mono text-sky-800 dark:text-sky-300 font-bold bg-sky-100 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
               {org.code}
             </span>
-            <span className="text-[11px] font-mono text-slate-500 uppercase font-bold">{org.type}</span>
+            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">{org.type}</span>
           </div>
-          <h1 className="text-[22px] font-bold text-slate-900 leading-tight truncate">{org.name}</h1>
-          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed max-w-lg truncate">📍 {org.address}</p>
+          <h1 className="text-[22px] font-bold text-slate-900 dark:text-white leading-tight truncate">{org.name}</h1>
+          <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg truncate">📍 {org.address}</p>
         </div>
 
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={() => navigate('/users')}
-            className="h-10 px-4 rounded-xl text-[13px] font-bold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-600 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-2"
+            className="h-10 px-4 rounded-xl text-[13px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-2"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
@@ -117,7 +140,7 @@ export function OrganizationDetailPage() {
       </section>
 
       {saveSuccessMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-[13px] font-bold leading-relaxed shadow-2xs animate-fade-in">
+        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[13px] font-bold leading-relaxed shadow-2xs animate-fade-in">
           {saveSuccessMsg}
         </div>
       )}
@@ -126,110 +149,224 @@ export function OrganizationDetailPage() {
       <form onSubmit={handleSave} data-reveal className="flex flex-col gap-6">
         
         {/* Section 1: Basic Information */}
-        <article className="p-6 rounded-2xl glass-card border border-slate-200 shadow-xs flex flex-col gap-5">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-[16px] font-bold text-slate-900">1. Thông tin cơ bản & Địa chỉ</h2>
-            <p className="text-[12px] text-slate-500 mt-0.5">Chỉnh sửa tên doanh nghiệp/khu trọ, mã định danh và địa chỉ sở hữu.</p>
+        <article className="setting-card-custom p-6 rounded-2xl border shadow-xs flex flex-col gap-5">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h2 className="setting-title-custom text-[16px] font-bold">1. Thông tin cơ bản & Địa chỉ</h2>
+            <p className="setting-desc-custom text-[12px] mt-0.5">Chỉnh sửa tên doanh nghiệp/khu trọ, mã định danh và địa chỉ sở hữu.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Tên Doanh Nghiệp / Khu Trọ</label>
+              <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Tên Doanh Nghiệp / Khu Trọ</label>
               <input
                 type="text"
                 required
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
-                className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 font-bold"
+                className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-bold"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Mã Đơn Vị (Code)</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Mã Đơn Vị (Code)</label>
                 <input
                   type="text"
                   disabled
                   value={org.code}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-100 text-slate-500 border border-slate-300 font-mono font-bold cursor-not-allowed"
+                  className="setting-input-custom opacity-75 h-10 px-3.5 rounded-xl text-[13px] border font-mono font-bold cursor-not-allowed"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Loại Hình</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Loại Hình Quy Mô</label>
                 <select
                   value={formType}
                   onChange={(e) => setFormType(e.target.value as TOrgType)}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 cursor-pointer"
+                  className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                 >
-                  <option value="enterprise">Doanh nghiệp văn phòng</option>
-                  <option value="apartment">Khu nhà trọ / Chung cư</option>
-                  <option value="dormitory">Ký túc xá trường học</option>
-                  <option value="commercial">Trung tâm thương mại</option>
+                  <option value="enterprise" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Doanh nghiệp văn phòng</option>
+                  <option value="apartment" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu nhà trọ / Chung cư</option>
+                  <option value="dormitory" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký túc xá trường học</option>
+                  <option value="commercial" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Trung tâm thương mại</option>
                 </select>
               </div>
             </div>
 
             <div className="md:col-span-2 flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Địa Chỉ Chi Tiết</label>
+              <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Địa Chỉ Chi Tiết</label>
               <input
                 type="text"
                 required
                 value={formAddress}
                 onChange={(e) => setFormAddress(e.target.value)}
-                className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+                className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
               />
             </div>
           </div>
         </article>
 
-        {/* Section 2: Admin Representative & Capacity */}
-        <article className="p-6 rounded-2xl glass-card border border-slate-200 shadow-xs flex flex-col gap-5">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-[16px] font-bold text-slate-900">2. Admin Đại Diện & Quy Mô Tủ</h2>
-            <p className="text-[12px] text-slate-500 mt-0.5">Cấu hình thông tin đăng nhập của Admin quản lý và giới hạn số tủ gán.</p>
+        {/* Section 2: Admin Representative & Compartment Size Breakdown */}
+        <article className="setting-card-custom p-6 rounded-2xl border shadow-xs flex flex-col gap-5">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3">
+            <h2 className="setting-title-custom text-[16px] font-bold">2. Admin Đại Diện & Cấu Hình Ngăn Tủ Smart Locker</h2>
+            <p className="setting-desc-custom text-[12px] mt-0.5">Cấu hình tài khoản đăng nhập của Admin quản lý và phân bổ kích thước ngăn tủ S, M, L.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Họ Tên Admin Đại Diện</label>
+              <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold truncate">Họ Tên Admin Đại Diện</label>
               <input
                 type="text"
                 required
                 value={formAdminName}
                 onChange={(e) => setFormAdminName(e.target.value)}
-                className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+                className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Email Admin Đăng Nhập</label>
+              <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold truncate">Email Admin Đăng Nhập</label>
               <input
                 type="email"
                 required
                 value={formAdminEmail}
                 onChange={(e) => setFormAdminEmail(e.target.value)}
-                className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 font-mono"
+                className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
               />
             </div>
+          </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Số Lượng Tủ Quy Định</label>
-              <input
-                type="number"
-                required
-                min={1}
-                value={formLockers}
-                onChange={(e) => setFormLockers(Number(e.target.value))}
-                className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 font-mono font-bold"
-              />
+          {/* Compartment Size Breakdown Card */}
+          <div className="hardware-card-custom p-4 rounded-2xl border flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-[14px]">📦</span>
+                <span className="hardware-title-custom text-[13px] font-bold truncate">
+                  Phân Bổ Kích Thước Ngăn Tủ Smart Locker (S, M, L Layout)
+                </span>
+              </div>
+              <span className="px-3 py-1 rounded-full text-[12px] font-mono font-bold bg-sky-600 text-white shadow-2xs shrink-0">
+                Tổng Cộng: {formSizeS + formSizeM + formSizeL} Ngăn Tủ
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-1">
+              <div className="flex flex-col gap-1">
+                <label className="modal-label-custom text-[11px] font-mono font-semibold">
+                  Size S (Ngăn Nhỏ)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={formSizeS}
+                  onChange={(e) => setFormSizeS(Math.max(0, Number(e.target.value)))}
+                  className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="modal-label-custom text-[11px] font-mono font-semibold">
+                  Size M (Ngăn Vừa)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={formSizeM}
+                  onChange={(e) => setFormSizeM(Math.max(0, Number(e.target.value)))}
+                  className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="modal-label-custom text-[11px] font-mono font-semibold">
+                  Size L (Ngăn Lớn)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={formSizeL}
+                  onChange={(e) => setFormSizeL(Math.max(0, Number(e.target.value)))}
+                  className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                />
+              </div>
             </div>
           </div>
         </article>
 
+        {/* Section 3: Linked Hardware Locker Stations */}
+        <article className="setting-card-custom p-6 rounded-2xl border shadow-xs flex flex-col gap-5">
+          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div>
+              <h2 className="setting-title-custom text-[16px] font-bold">3. Trạm Tủ Phần Cứng (`Locker Stations`) Thuộc Đơn Vị</h2>
+              <p className="setting-desc-custom text-[12px] mt-0.5">Danh sách trạm tủ IoT và các ngăn tủ phần cứng đang hoạt động.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/lockers')}
+              className="h-9 px-3.5 rounded-xl text-[12px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white transition-all cursor-pointer"
+            >
+              + Quản Lý Cụm Tủ
+            </button>
+          </div>
+
+          {stations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {stations.map((st) => (
+                <div key={st.id} className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
+                        {st.code}
+                      </span>
+                      <h4 className="font-bold text-slate-900 dark:text-white text-[14px] mt-1">{st.name}</h4>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      ● ONLINE
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center font-mono text-[11px] font-bold">
+                    <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      S: {formSizeS}
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                      M: {formSizeM}
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                      L: {formSizeL}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/lockers/${st.id}`)}
+                      className="text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline"
+                    >
+                      Xem chi tiết sơ đồ tủ →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/lockers/${st.id}/hardware`)}
+                      className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    >
+                      🔧 Hardware Specs
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-center text-slate-500 dark:text-slate-400 text-[12px]">
+              Chưa gán trạm tủ phần cứng riêng. Hệ thống tự động phân bổ trạm tủ khi khởi tạo.
+            </div>
+          )}
+        </article>
+
         {/* Form Actions Footer */}
-        <div className="flex items-center justify-between p-6 rounded-2xl glass-card border border-slate-200 shadow-xs">
-          <p className="text-[13px] text-slate-600 font-medium">
+        <div className="setting-card-custom p-6 rounded-2xl border shadow-xs flex items-center justify-between">
+          <p className="setting-desc-custom text-[13px] font-medium">
             Mọi thay đổi sẽ có hiệu lực ngay lập tức trên toàn hệ thống quản lý.
           </p>
 
@@ -237,7 +374,7 @@ export function OrganizationDetailPage() {
             <button
               type="button"
               onClick={() => navigate('/organizations')}
-              className="h-10 px-4 rounded-xl text-[13px] font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              className="modal-cancel-custom h-10 px-4 rounded-xl text-[13px] font-semibold transition-colors cursor-pointer"
             >
               Hủy
             </button>

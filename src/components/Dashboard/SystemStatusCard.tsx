@@ -1,23 +1,35 @@
 import type { TSystemStatus } from "../../types/dashboard.type"
+import { Cpu, Server, Wifi, CheckCircle2 } from 'lucide-react'
 
 type TProps = {
   status: TSystemStatus
+}
+
+const statusIcons: Record<string, React.ReactNode> = {
+  mcu: <Cpu className="w-4 h-4 text-sky-600 dark:text-sky-400" />,
+  server: <Server className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+  gateway: <Wifi className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />,
 }
 
 export function SystemStatusCard({ status }: TProps) {
   const isHealthy = status.tone === 'healthy' || status.tone === 'info'
 
   return (
-    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 hover:bg-sky-50/50 hover:border-sky-200 transition-colors">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-[11px] font-semibold text-slate-500">{status.label}</span>
-        <p className="text-[13px] font-bold text-slate-900 truncate">{status.detail}</p>
+    <div className="setting-card-custom flex items-center justify-between gap-4 p-3.5 rounded-xl border hover:border-sky-300 dark:hover:border-sky-700 transition-all duration-150">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center shrink-0">
+          {statusIcons[status.id] || <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+        </div>
+        <div className="flex flex-col min-w-0">
+          <span className="setting-desc-custom text-[11px] font-semibold">{status.label}</span>
+          <p className="setting-title-custom text-[13px] font-bold truncate">{status.detail}</p>
+        </div>
       </div>
 
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border shrink-0 ${
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border shrink-0 ${
         isHealthy
-          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-          : 'bg-amber-100 text-amber-800 border-amber-300'
+          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+          : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
       }`}>
         <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
         {status.value}

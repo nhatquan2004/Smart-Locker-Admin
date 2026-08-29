@@ -48,31 +48,31 @@ export function LockerDetailPage() {
     <div className="flex flex-col gap-6 max-w-[1250px]">
 
       {/* Hero */}
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs">
+      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200 dark:border-slate-800">
         <div className="relative z-10 flex-1 min-w-0">
           <button
             type="button"
             onClick={() => navigate('/lockers')}
-            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 hover:text-sky-700 mb-3 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline mb-3 transition-colors cursor-pointer"
           >
             ← {t('common.back')}
           </button>
 
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-[10px] font-mono text-sky-800 font-bold bg-sky-100 px-2 py-0.5 rounded border border-sky-200">
+            <span className="text-[10px] font-mono text-sky-800 dark:text-sky-300 font-bold bg-sky-100 dark:bg-sky-950/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
               {station.code}
             </span>
-            <span className="text-[11px] font-mono text-slate-500 uppercase font-bold">{station.orgName}</span>
+            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase font-bold">{station.orgName}</span>
           </div>
-          <h1 className="text-[22px] font-bold text-slate-900 leading-tight truncate">{station.name}</h1>
-          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed max-w-lg">📍 {station.location}</p>
+          <h1 className="text-[22px] font-bold text-slate-900 dark:text-white leading-tight truncate">{station.name}</h1>
+          <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">📍 {station.location}</p>
         </div>
 
         <div className="relative z-10 flex items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={() => navigate(`/lockers/${station.id}/hardware`)}
-            className="h-10 px-4 rounded-xl text-[13px] font-bold bg-slate-100 text-slate-800 border border-slate-300 hover:bg-slate-800 hover:text-white transition-all cursor-pointer shadow-2xs active:scale-95"
+            className="btn-sec-custom h-10 px-4 rounded-xl text-[13px] font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center gap-1.5"
           >
             🔧 {t('lockers.hardwareSensors')}
           </button>
@@ -84,26 +84,37 @@ export function LockerDetailPage() {
 
         {/* Left Col: Interactive Physical Cabinet Rack Simulation (7 cols) */}
         <div className="lg:col-span-7 flex flex-col gap-4">
-          <div className="p-6 rounded-2xl glass-card shadow-xs flex flex-col gap-5 border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="setting-card-custom p-6 rounded-2xl shadow-xs flex flex-col gap-5 border">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <span className="eyebrow mb-1">Interactive Rack View</span>
-                <h2 className="text-[16px] font-bold text-slate-900">{t('lockers.title')}</h2>
+                <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                  Interactive Rack View
+                </span>
+                <h2 className="setting-title-custom text-[16px] font-bold mt-1.5">{t('lockers.title')}</h2>
               </div>
 
-              {/* Status Legend */}
-              <div className="flex items-center gap-3 text-[11px] font-mono">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-emerald-500" /> {t('lockers.statusAvailable')}</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-sky-500" /> {t('lockers.statusOccupied')}</span>
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-md bg-red-500" /> {t('lockers.statusMaintenance')}</span>
+              {/* Status Legend with Guaranteed High-Contrast Text Color */}
+              <div className="flex items-center gap-3 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-md bg-emerald-500 shrink-0 shadow-2xs" />
+                  <span>{t('lockers.statusAvailable')}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-md bg-sky-500 shrink-0 shadow-2xs" />
+                  <span>{t('lockers.statusOccupied')}</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-md bg-red-500 shrink-0 shadow-2xs" />
+                  <span>{t('lockers.statusMaintenance')}</span>
+                </span>
               </div>
             </div>
 
             {/* Cabinet Physical Frame Box */}
-            <div className="p-5 rounded-2xl bg-slate-800 border-4 border-slate-700 shadow-inner flex flex-col gap-4">
+            <div className="p-5 rounded-2xl bg-slate-900 dark:bg-slate-950 border-4 border-slate-800 shadow-inner flex flex-col gap-4">
               <div className="flex items-center justify-between text-white text-[11px] font-mono px-2">
-                <span>MASTER CONTROL PANEL</span>
-                <span className="text-emerald-400">MCU: {station.masterController.temperatureCelsius}°C · ONLINE</span>
+                <span className="font-bold tracking-wider text-slate-300">MASTER CONTROL PANEL</span>
+                <span className="text-emerald-400 font-bold">MCU: {station.masterController.temperatureCelsius}°C · ONLINE</span>
               </div>
 
               {/* Locker Doors Rack Grid */}
@@ -160,71 +171,73 @@ export function LockerDetailPage() {
         {/* Right Col: Selected Compartment Inspector & Remote Controls (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           {selectedCompartment ? (
-            <div className="p-6 rounded-2xl glass-card shadow-xs flex flex-col gap-5 border border-slate-200 sticky top-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="setting-card-custom p-6 rounded-2xl shadow-xs flex flex-col gap-5 border sticky top-6">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div>
-                  <span className="eyebrow mb-1">Compartment Inspector</span>
-                  <h3 className="text-[18px] font-bold text-slate-900">{t('common.details')} {selectedCompartment.code}</h3>
+                  <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                    Compartment Inspector
+                  </span>
+                  <h3 className="setting-title-custom text-[18px] font-bold mt-1.5">{t('common.details')} {selectedCompartment.code}</h3>
                 </div>
-                <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-100 text-sky-800 border border-sky-200 capitalize">
+                <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 capitalize">
                   Size: {selectedCompartment.size}
                 </span>
               </div>
 
               {unlockMessage && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-[12px] font-bold leading-relaxed animate-fade-in">
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-[12px] font-bold leading-relaxed animate-fade-in">
                   {unlockMessage}
                 </div>
               )}
 
               {/* Parcel / Shipment Info if Occupied */}
               {selectedCompartment.currentShipment ? (
-                <div className="p-4 rounded-xl bg-sky-50 border border-sky-200 flex flex-col gap-2">
+                <div className="p-4 rounded-xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/80 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono font-bold text-sky-700">{t('shipments.title')}</span>
-                    <span className="text-[11px] font-mono font-bold text-slate-500">{selectedCompartment.currentShipment.storedAt}</span>
+                    <span className="text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300">{t('shipments.title')}</span>
+                    <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">{selectedCompartment.currentShipment.storedAt}</span>
                   </div>
-                  <p className="text-[15px] font-bold text-slate-900">{selectedCompartment.currentShipment.recipientName}</p>
-                  <p className="text-[12px] font-mono text-slate-700 font-semibold">SĐT: {selectedCompartment.currentShipment.recipientPhone}</p>
-                  <div className="pt-2 border-t border-sky-200/60 flex items-center justify-between text-[12px]">
-                    <span>OTP:</span>
-                    <span className="font-mono font-bold text-sky-800 text-[14px]">{selectedCompartment.currentShipment.otpCode || '----'}</span>
+                  <p className="text-[15px] font-bold text-slate-900 dark:text-white">{selectedCompartment.currentShipment.recipientName}</p>
+                  <p className="text-[12px] font-mono text-slate-700 dark:text-slate-300 font-semibold">SĐT: {selectedCompartment.currentShipment.recipientPhone}</p>
+                  <div className="pt-2 border-t border-sky-200/60 dark:border-sky-800/60 flex items-center justify-between text-[12px]">
+                    <span className="setting-desc-custom">OTP:</span>
+                    <span className="font-mono font-bold text-sky-800 dark:text-sky-300 text-[14px]">{selectedCompartment.currentShipment.otpCode || '----'}</span>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center text-slate-500 text-[12px]">
+                <div className="p-4 rounded-xl setting-input-custom text-center text-[12px] font-bold">
                   <span>{t('lockers.statusAvailable')}</span>
                 </div>
               )}
 
               {/* Hardware Sensors Status */}
               <div className="flex flex-col gap-2">
-                <h4 className="text-[12px] font-mono font-bold text-slate-600 uppercase">{t('lockers.hardwareSensors')}</h4>
+                <h4 className="text-[12px] font-mono font-bold setting-desc-custom uppercase">{t('lockers.hardwareSensors')}</h4>
                 <div className="grid grid-cols-2 gap-2 text-[12px]">
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex flex-col gap-1">
-                    <span className="text-[10px] text-slate-500 font-mono">{t('lockers.relayState')}</span>
-                    <span className={`font-bold font-mono ${selectedCompartment.hardwareState.relayLock === 'LOCKED' ? 'text-slate-800' : 'text-amber-600'}`}>
+                  <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
+                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.relayState')}</span>
+                    <span className={`font-bold font-mono ${selectedCompartment.hardwareState.relayLock === 'LOCKED' ? 'setting-title-custom' : 'text-amber-500'}`}>
                       {selectedCompartment.hardwareState.relayLock}
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex flex-col gap-1">
-                    <span className="text-[10px] text-slate-500 font-mono">{t('lockers.irSensor')}</span>
-                    <span className="font-bold font-mono text-slate-800">
+                  <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
+                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.irSensor')}</span>
+                    <span className="font-bold font-mono setting-title-custom">
                       {selectedCompartment.hardwareState.irObjectSensor}
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex flex-col gap-1">
-                    <span className="text-[10px] text-slate-500 font-mono">{t('lockers.doorStatus')}</span>
-                    <span className="font-bold font-mono text-slate-800">
+                  <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
+                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.doorStatus')}</span>
+                    <span className="font-bold font-mono setting-title-custom">
                       {selectedCompartment.hardwareState.doorSwitch}
                     </span>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex flex-col gap-1">
-                    <span className="text-[10px] text-slate-500 font-mono">{t('lockers.battery')}</span>
-                    <span className="font-bold font-mono text-emerald-700">
+                  <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
+                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.battery')}</span>
+                    <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">
                       {selectedCompartment.hardwareState.voltage}
                     </span>
                   </div>
@@ -243,7 +256,7 @@ export function LockerDetailPage() {
               </div>
             </div>
           ) : (
-            <div className="p-6 rounded-2xl glass-card shadow-xs text-center text-slate-500 text-[13px]">
+            <div className="p-6 rounded-2xl setting-card-custom text-center setting-desc-custom text-[13px]">
               {t('lockers.desc')}
             </div>
           )}

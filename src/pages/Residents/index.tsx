@@ -203,22 +203,24 @@ export function ResidentsPage() {
       {/* Modal: Create Resident / Employee */}
       {isCreateModalOpen && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in"
           onClick={() => setIsCreateModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg p-6 rounded-3xl glass-card shadow-2xl border border-white/15 flex flex-col gap-5 my-8 overflow-y-auto max-h-[90vh]"
+            className="modal-card-custom w-full max-w-lg p-6 rounded-3xl shadow-2xl border flex flex-col gap-5 my-8 overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
-                <p className="eyebrow mb-1">Directory Addition</p>
-                <h3 className="text-[17px] font-bold text-white">Thêm Cư Dân / Nhân Viên Mới</h3>
+                <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                  DIRECTORY ADDITION
+                </span>
+                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">Thêm Cư Dân / Nhân Viên Mới</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800"
+                className="w-8 h-8 rounded-xl flex items-center justify-center modal-subtitle-custom hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 ✕
               </button>
@@ -226,36 +228,36 @@ export function ResidentsPage() {
 
             <form onSubmit={handleCreateResident} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase">Họ và tên thành viên</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Họ và tên thành viên <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="VD: Nguyễn Văn An"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500"
+                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase">Số điện thoại</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Số điện thoại <span className="text-red-500">*</span></label>
                   <input
                     type="tel"
                     required
                     placeholder="VD: 0901234567"
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500 font-mono"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase">Vai trò thành viên</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Vai trò thành viên</label>
                   <select
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value as TResidentRole)}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
                     <option value="resident" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Cư dân nhà trọ / Chung cư</option>
                     <option value="employee" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Nhân viên công ty</option>
@@ -267,7 +269,7 @@ export function ResidentsPage() {
 
               {isSuperAdmin && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase">Gán cho Đơn vị / Doanh nghiệp</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Gán cho Đơn vị / Doanh nghiệp</label>
                   <select
                     value={formOrgId}
                     onChange={(e) => {
@@ -280,7 +282,7 @@ export function ResidentsPage() {
                       }
                       setFormOrgName(orgMap[e.target.value] || 'Đơn vị quản lý')
                     }}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
                     <option value="org-002" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu Nhà Trọ Hoàng Nam</option>
                     <option value="org-001" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">TechCorp Office Building</option>
@@ -291,32 +293,32 @@ export function ResidentsPage() {
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase">Số phòng / Vị trí / Mã NV</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Số phòng / Vị trí / Mã NV</label>
                 <input
                   type="text"
                   placeholder="VD: Phòng 101 - Tầng 1, Tầng 4 - Dept Marketing..."
                   value={formUnit}
                   onChange={(e) => setFormUnit(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500"
+                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase">Ghi chú bổ sung</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Ghi chú bổ sung</label>
                 <input
                   type="text"
                   placeholder="Ghi chú về nhận hàng, thói quen gửi..."
                   value={formNote}
                   onChange={(e) => setFormNote(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-800 text-white border border-white/15 focus:outline-none focus:border-sky-400"
+                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="h-9 px-4 rounded-xl text-[12px] font-medium text-slate-300 hover:bg-slate-800"
+                  className="modal-cancel-custom h-9 px-4 rounded-xl text-[12px] font-medium transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>

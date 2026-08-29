@@ -127,10 +127,108 @@ const mockStations: TLockerStation[] = [
 ]
 
 export async function getLockerStations(): Promise<TLockerStation[]> {
-  return Promise.resolve(mockStations)
+  return Promise.resolve([...mockStations])
 }
 
 export async function getLockerStationById(id: string): Promise<TLockerStation | undefined> {
   const station = mockStations.find((s) => s.id === id)
   return Promise.resolve(station)
+}
+
+export type TCreateLockerStationPayload = {
+  name: string
+  code: string
+  orgId: string
+  orgName: string
+  location: string
+  sizeS: number
+  sizeM: number
+  sizeL: number
+}
+
+export async function createLockerStation(payload: TCreateLockerStationPayload): Promise<TLockerStation> {
+  const stationId = `station-${Date.now().toString().slice(-4)}`
+  const prefix = payload.code.replace(/[^A-Za-z0-9]/g, '').slice(-2).toUpperCase() || 'ST'
+  
+  const compartments: any[] = []
+  let boxIndex = 1
+
+  // Generate Size S compartments
+  for (let i = 0; i < payload.sizeS; i++) {
+    const codeNum = boxIndex < 10 ? `0${boxIndex}` : `${boxIndex}`
+    compartments.push({
+      id: `c-${stationId}-s${i + 1}`,
+      code: `${prefix}-${codeNum}`,
+      size: 'small',
+      status: 'available',
+      hardwareState: {
+        relayLock: 'LOCKED',
+        irObjectSensor: 'EMPTY',
+        doorSwitch: 'DOOR_CLOSED',
+        voltage: '12.1V',
+        lastSignalAt: 'Vừa kết nối',
+      },
+    })
+    boxIndex++
+  }
+
+  // Generate Size M compartments
+  for (let i = 0; i < payload.sizeM; i++) {
+    const codeNum = boxIndex < 10 ? `0${boxIndex}` : `${boxIndex}`
+    compartments.push({
+      id: `c-${stationId}-m${i + 1}`,
+      code: `${prefix}-${codeNum}`,
+      size: 'medium',
+      status: 'available',
+      hardwareState: {
+        relayLock: 'LOCKED',
+        irObjectSensor: 'EMPTY',
+        doorSwitch: 'DOOR_CLOSED',
+        voltage: '12.1V',
+        lastSignalAt: 'Vừa kết nối',
+      },
+    })
+    boxIndex++
+  }
+
+  // Generate Size L compartments
+  for (let i = 0; i < payload.sizeL; i++) {
+    const codeNum = boxIndex < 10 ? `0${boxIndex}` : `${boxIndex}`
+    compartments.push({
+      id: `c-${stationId}-l${i + 1}`,
+      code: `${prefix}-${codeNum}`,
+      size: 'large',
+      status: 'available',
+      hardwareState: {
+        relayLock: 'LOCKED',
+        irObjectSensor: 'EMPTY',
+        doorSwitch: 'DOOR_CLOSED',
+        voltage: '12.1V',
+        lastSignalAt: 'Vừa kết nối',
+      },
+    })
+    boxIndex++
+  }
+
+  const newStation: TLockerStation = {
+    id: stationId,
+    code: payload.code.toUpperCase(),
+    name: payload.name,
+    orgId: payload.orgId,
+    orgName: payload.orgName,
+    location: payload.location || 'Sảnh Tòa Nhà Main Hall',
+    status: 'online',
+    masterController: {
+      ipAddress: `192.168.${Math.floor(Math.random() * 10 + 1)}.${Math.floor(Math.random() * 200 + 10)}`,
+      gatewayStatus: 'RS485 Gateway Connected',
+      temperatureCelsius: 28.5,
+      firmwareVersion: 'v2.4.12-pro',
+    },
+    createdAt: new Date().toISOString().slice(0, 10),
+    lastHeartbeat: 'Vừa xong',
+    compartments,
+  }
+
+  mockStations.unshift(newStation)
+  return Promise.resolve(newStation)
 }

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { AppButton } from '../../components/common'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
 import { createOrganization, deleteOrganization, getOrganizations } from '../../service/organization.service'
+import { createUser } from '../../service/user.service'
+import { createLockerStation } from '../../service/lockerStation.service'
 import type { TCreateOrgPayload, TOrganization, TOrgType } from '../../types/organization.type'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useTranslation } from '../../context/LanguageContext'
@@ -23,12 +25,14 @@ export function OrganizationsPage() {
     commercial: { label: t('org.typeApartment'), style: 'bg-amber-100 text-amber-800 border-amber-200' },
   }
 
-  // Form states for creating new org
+  // Form states for creating new org with S/M/L compartment layout breakdown
   const [formName, setFormName] = useState('')
   const [formCode, setFormCode] = useState('')
   const [formType, setFormType] = useState<TOrgType>('enterprise')
   const [formAddress, setFormAddress] = useState('')
-  const [formLockers, setFormLockers] = useState(12)
+  const [formSizeS, setFormSizeS] = useState(4)
+  const [formSizeM, setFormSizeM] = useState(4)
+  const [formSizeL, setFormSizeL] = useState(2)
   const [formAdminName, setFormAdminName] = useState('')
   const [formAdminEmail, setFormAdminEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -48,21 +52,49 @@ export function OrganizationsPage() {
 
   function handleCreateOrg(e: React.FormEvent) {
     e.preventDefault()
-    if (!formName || !formCode || !formAdminEmail) return
+    if (!formName || !formCode) return
 
     setIsSubmitting(true)
+    const adminEmail = formAdminEmail || `admin.${formCode.toLowerCase()}@smartlocker.vn`
+    const adminName = formAdminName || `Admin ${formName}`
+    const totalBoxes = formSizeS + formSizeM + formSizeL
+
     const payload: TCreateOrgPayload = {
       name: formName,
       code: formCode,
       type: formType,
-      address: formAddress,
-      totalLockers: formLockers,
-      adminName: formAdminName || 'Admin Đại Diện',
-      adminEmail: formAdminEmail,
+      address: formAddress || 'Địa chỉ đơn vị',
+      totalLockers: totalBoxes,
+      adminName: adminName,
+      adminEmail: adminEmail,
     }
 
     createOrganization(payload).then((newOrg) => {
       setOrganizations((prev) => [newOrg, ...prev])
+
+      // Auto-create hardware Locker Station with exact S/M/L compartments!
+      createLockerStation({
+        name: `Trạm Tủ - ${newOrg.name}`,
+        code: `ST-${newOrg.code}`,
+        orgId: newOrg.id,
+        orgName: newOrg.name,
+        location: formAddress || 'Sảnh Lễ Tân Chính',
+        sizeS: formSizeS,
+        sizeM: formSizeM,
+        sizeL: formSizeL,
+      })
+
+      // Auto-create Org Admin user account for this new organization!
+      createUser({
+        fullName: adminName,
+        phone: '090' + Math.floor(1000000 + Math.random() * 9000000),
+        email: adminEmail,
+        role: 'org_admin',
+        orgId: newOrg.id,
+        companyName: newOrg.name,
+        unitNumber: 'Quản Lý Đơn Vị',
+      })
+
       setIsSubmitting(false)
       setIsCreateModalOpen(false)
       // Reset form
@@ -71,6 +103,9 @@ export function OrganizationsPage() {
       setFormAddress('')
       setFormAdminName('')
       setFormAdminEmail('')
+      setFormSizeS(4)
+      setFormSizeM(4)
+      setFormSizeL(2)
     })
   }
 
@@ -231,18 +266,20 @@ export function OrganizationsPage() {
           onClick={() => setIsCreateModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg p-6 rounded-3xl bg-white shadow-2xl border border-slate-200 flex flex-col gap-5 my-8 overflow-y-auto max-h-[90vh]"
+            className="modal-card-custom w-full max-w-lg p-6 rounded-3xl shadow-2xl border flex flex-col gap-5 my-8 overflow-y-auto max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
-                <p className="eyebrow mb-1">Super Admin Action</p>
-                <h3 className="text-[17px] font-bold text-slate-900">Thêm Đơn Vị Quản Lý Mới</h3>
+                <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
+                  SUPER ADMIN ACTION
+                </span>
+                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">Thêm Đơn Vị Quản Lý Mới</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100"
+                className="w-8 h-8 rounded-xl flex items-center justify-center modal-subtitle-custom hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 ✕
               </button>
@@ -250,98 +287,145 @@ export function OrganizationsPage() {
 
             <form onSubmit={handleCreateOrg} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Tên Đơn vị / Doanh nghiệp / Khu trọ</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Tên Đơn vị / Doanh nghiệp / Khu trọ <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="VD: Doanh nghiệp TechCorp, Khu Nhà Trọ Hoàng Nam..."
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Mã Đơn vị (Code)</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Mã Đơn vị (Code) <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
                     placeholder="VD: TECHCORP"
                     value={formCode}
                     onChange={(e) => setFormCode(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 font-mono"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Số tủ quy định</label>
-                  <input
-                    type="number"
-                    required
-                    min={1}
-                    value={formLockers}
-                    onChange={(e) => setFormLockers(Number(e.target.value))}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 font-mono"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Loại hình</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Loại hình quy mô</label>
                   <select
                     value={formType}
                     onChange={(e) => setFormType(e.target.value as TOrgType)}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 cursor-pointer"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
-                    <option value="enterprise">Doanh nghiệp văn phòng</option>
-                    <option value="apartment">Khu nhà trọ / Chung cư</option>
-                    <option value="dormitory">Ký túc xá trường học</option>
-                    <option value="commercial">Trung tâm thương mại</option>
+                    <option value="enterprise" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Doanh nghiệp văn phòng</option>
+                    <option value="apartment" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu nhà trọ / Chung cư</option>
+                    <option value="dormitory" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký túc xá trường học</option>
+                    <option value="commercial" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Trung tâm thương mại</option>
                   </select>
                 </div>
               </div>
 
+              {/* Compartment Size Breakdown Configuration Card */}
+              <div className="p-3.5 rounded-2xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/80 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[14px]">📦</span>
+                    <span className="text-[12px] font-bold text-sky-900 dark:text-sky-200 truncate">
+                      Cấu Hình Ngăn Tủ Smart Locker
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-sky-600 text-white shadow-2xs shrink-0">
+                    Tổng: {formSizeS + formSizeM + formSizeL} Ngăn Tủ
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="modal-label-custom text-[11px] font-mono font-semibold">
+                      Size S (Nhỏ)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formSizeS}
+                      onChange={(e) => setFormSizeS(Math.max(0, Number(e.target.value)))}
+                      className="modal-input-custom h-9 px-3 rounded-xl text-[12px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="modal-label-custom text-[11px] font-mono font-semibold">
+                      Size M (Vừa)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formSizeM}
+                      onChange={(e) => setFormSizeM(Math.max(0, Number(e.target.value)))}
+                      className="modal-input-custom h-9 px-3 rounded-xl text-[12px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="modal-label-custom text-[11px] font-mono font-semibold">
+                      Size L (Lớn)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formSizeL}
+                      onChange={(e) => setFormSizeL(Math.max(0, Number(e.target.value)))}
+                      className="modal-input-custom h-9 px-3 rounded-xl text-[12px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Địa chỉ chi tiết</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Địa chỉ chi tiết</label>
                 <input
                   type="text"
                   placeholder="Số nhà, Tên đường, Quận/Huyện, Tỉnh/Thành..."
                   value={formAddress}
                   onChange={(e) => setFormAddress(e.target.value)}
-                  className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 items-start">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Họ tên Admin đại diện</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold truncate">
+                    Họ tên Admin đại diện
+                  </label>
                   <input
                     type="text"
                     placeholder="VD: Nguyễn Văn Minh"
                     value={formAdminName}
                     onChange={(e) => setFormAdminName(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">Email Admin đăng nhập</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold truncate">
+                    Email Admin đăng nhập
+                  </label>
                   <input
                     type="email"
-                    required
                     placeholder="admin@doanhnghiep.com"
                     value={formAdminEmail}
                     onChange={(e) => setFormAdminEmail(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 font-mono"
+                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="h-9 px-4 rounded-xl text-[12px] font-medium text-slate-600 hover:bg-slate-100"
+                  className="modal-cancel-custom h-9 px-4 rounded-xl text-[12px] font-medium transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>

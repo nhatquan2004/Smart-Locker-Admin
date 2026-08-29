@@ -1,93 +1,24 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Building2,
+  Boxes,
+  Users,
+  PackageCheck,
+  Activity,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Globe,
+  Sun,
+  Moon,
+  ShieldAlert,
+} from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useTranslation } from "../../context/LanguageContext";
 import lockerLogo from "../../assets/locker.png";
-
-// SVG icons — 18px
-const IconDashboard = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/>
-    <rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/>
-    <rect x="14" y="14" width="7" height="7" rx="1"/>
-  </svg>
-);
-
-const IconOrg = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 21h18"/>
-    <path d="M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16"/>
-    <path d="M9 9h6"/>
-    <path d="M9 13h6"/>
-    <path d="M9 17h6"/>
-  </svg>
-);
-
-const IconLockers = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-    <line x1="9" y1="3" x2="9" y2="21"/>
-    <line x1="15" y1="3" x2="15" y2="21"/>
-    <circle cx="6" cy="12" r="1" fill="currentColor"/>
-    <circle cx="12" cy="12" r="1" fill="currentColor"/>
-    <circle cx="18" cy="12" r="1" fill="currentColor"/>
-  </svg>
-);
-
-const IconActivity = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-  </svg>
-);
-
-const IconShipments = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-    <line x1="12" y1="22.08" x2="12" y2="12"/>
-  </svg>
-);
-
-const IconUsers = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-    <circle cx="9" cy="7" r="4"/>
-    <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-    <path d="M16 3.13a4 4 0 010 7.75"/>
-  </svg>
-);
-
-const IconSettings = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
-    <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-  </svg>
-);
-
-const IconLogout = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-    <polyline points="16 17 21 12 16 7"/>
-    <line x1="21" y1="12" x2="9" y2="12"/>
-  </svg>
-);
-
-const IconMenu = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <line x1="3" y1="6" x2="21" y2="6"/>
-    <line x1="3" y1="12" x2="21" y2="12"/>
-    <line x1="3" y1="18" x2="21" y2="18"/>
-  </svg>
-);
-
-const IconClose = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-    <line x1="18" y1="6" x2="6" y2="18"/>
-    <line x1="6" y1="6" x2="18" y2="18"/>
-  </svg>
-);
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -125,25 +56,26 @@ export function AdminLayout() {
     {
       title: "TỔNG QUAN",
       items: [
-        { label: t("nav.dashboard"), icon: <IconDashboard />, to: "/dashboard" },
+        { label: t("nav.dashboard"), icon: <LayoutDashboard className="w-[18px] h-[18px]" />, to: "/dashboard" },
       ],
     },
     {
       title: "QUẢN LÝ",
       items: [
         ...(isSuperAdmin
-          ? [{ label: t("nav.organizations"), icon: <IconOrg />, to: "/organizations" }]
+          ? [{ label: t("nav.organizations"), icon: <Building2 className="w-[18px] h-[18px]" />, to: "/organizations" }]
           : []),
-        { label: t("nav.lockers"), icon: <IconLockers />, to: "/lockers" },
-        { label: t("nav.users"), icon: <IconUsers />, to: "/users" },
-        { label: t("nav.shipments"), icon: <IconShipments />, to: "/shipments" },
+        { label: t("nav.lockers"), icon: <Boxes className="w-[18px] h-[18px]" />, to: "/lockers" },
+        { label: t("nav.users"), icon: <Users className="w-[18px] h-[18px]" />, to: "/users" },
+        { label: t("nav.shipments"), icon: <PackageCheck className="w-[18px] h-[18px]" />, to: "/shipments" },
+        { label: "Báo lỗi & Sự cố", icon: <ShieldAlert className="w-[18px] h-[18px]" />, to: "/issues" },
       ],
     },
     {
       title: "HỆ THỐNG",
       items: [
-        { label: t("nav.activities"), icon: <IconActivity />, to: "/activities" },
-        { label: t("nav.settings"), icon: <IconSettings />, to: "/settings" },
+        { label: t("nav.activities"), icon: <Activity className="w-[18px] h-[18px]" />, to: "/activities" },
+        { label: t("nav.settings"), icon: <Settings className="w-[18px] h-[18px]" />, to: "/settings" },
       ],
     },
   ];
@@ -176,7 +108,7 @@ export function AdminLayout() {
             className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? <IconClose /> : <IconMenu />}
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
           {/* Logo & Brand Name */}
@@ -210,21 +142,22 @@ export function AdminLayout() {
           <button
             type="button"
             onClick={toggleLanguage}
-            className="nav-pill h-9 px-2.5 sm:px-3.5 rounded-full flex items-center gap-1 text-[11px] font-semibold border transition-all cursor-pointer shrink-0"
+            className="nav-pill h-9 px-2.5 sm:px-3.5 rounded-full flex items-center gap-1.5 text-[11px] font-semibold border transition-all cursor-pointer shrink-0"
             title={t("nav.langTooltip")}
           >
-            <span>{language === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}</span>
+            <Globe className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>{language === 'vi' ? 'VI' : 'EN'}</span>
           </button>
 
           {/* Theme Switcher Button */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="nav-pill h-9 px-2.5 sm:px-3.5 rounded-full flex items-center gap-1 text-[11px] font-semibold border transition-all cursor-pointer shrink-0"
+            className="nav-pill h-9 px-3 rounded-full flex items-center gap-1.5 text-[11px] font-bold border transition-all cursor-pointer shrink-0"
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            <span>{isDarkMode ? "🌙" : "☀️"}</span>
-            <span className="hidden sm:inline">{isDarkMode ? " Dark" : " Light"}</span>
+            {isDarkMode ? <Moon className="w-3.5 h-3.5 text-amber-300" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+            <span className="hidden sm:inline">{isDarkMode ? "Dark" : "Light"}</span>
           </button>
 
           {/* Realtime Status Badge */}
@@ -305,7 +238,7 @@ export function AdminLayout() {
                 onClick={handleLogout}
                 className="logout-btn flex items-center justify-center gap-2 h-8 rounded-lg text-[11px] font-semibold border hover:bg-red-600 hover:text-white transition-colors w-full cursor-pointer mt-1"
               >
-                <IconLogout /> {t("nav.logout")}
+                <LogOut className="w-3.5 h-3.5" /> {t("nav.logout")}
               </button>
             </div>
           </div>

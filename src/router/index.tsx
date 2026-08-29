@@ -17,13 +17,13 @@ import { SettingsPage } from "../pages/Settings"
 import { ActivitiesPage } from "../pages/Activities"
 import { OrganizationsPage } from '../pages/Organizations'
 import { OrganizationDetailPage } from '../pages/Organizations/OrganizationDetail'
+import { IssuesPage } from '../pages/Issues'
 import { LoginPage } from '../pages/Auth/LoginPage'
-import { RegisterPage } from '../pages/Auth/RegisterPage'
 import { ProtectedRoute } from './ProtectedRoute'
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/register', element: <Navigate to="/login" replace /> },
   {
     path: '/',
     element: <ProtectedRoute />,
@@ -44,6 +44,7 @@ const router = createBrowserRouter([
           { path: 'shipments', element: <ShipmentsPage /> },
           { path: 'shipments/:shipmentId', element: <ShipmentDetailPage /> },
           { path: 'shipments/:shipmentId/otp', element: <ShipmentOtpPage /> },
+          { path: 'issues', element: <IssuesPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'users/:userId', element: <UserDetailPage /> },
           { path: 'users/:userId/manage', element: <UserManagePage /> },

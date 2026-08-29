@@ -4,6 +4,7 @@ import type { TShipment, TShipmentFilter, TShipmentStatus } from '../../types/sh
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../../context/LanguageContext'
+import { Search } from 'lucide-react'
 
 const statusBadges: Record<TShipmentStatus, { label: string; style: string }> = {
   pending:        { label: 'Chờ gửi tủ', style: 'bg-slate-100 text-slate-700 border-slate-300' },
@@ -116,16 +117,16 @@ export function ShipmentsPage() {
       </section>
 
       {/* Filter Bar */}
-      <div data-reveal className="p-4 rounded-2xl glass-card flex flex-col md:flex-row items-center gap-3 shadow-2xs border border-slate-200">
+      <div data-reveal className="setting-card-custom p-4 rounded-2xl flex flex-col md:flex-row items-center gap-3 shadow-2xs border">
         <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Tìm theo Mã đơn, Tên người nhận, SĐT, Mã tủ..."
             value={filter.search}
             onChange={(e) => setFilter((prev) => ({ ...prev, search: e.target.value }))}
-            className="w-full h-10 px-3.5 pl-9 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+            className="setting-input-custom w-full h-10 pl-9 pr-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
           />
-          <span className="absolute left-3 top-2.5 text-slate-400 text-[14px]">🔍</span>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto shrink-0">

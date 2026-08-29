@@ -1,6 +1,6 @@
 import type { TOrgType } from './organization.type'
 
-export type TRole = 'super_admin' | 'org_admin' | 'shipper' | 'resident_employee'
+export type TRole = 'super_admin' | 'org_admin' | 'shipper_admin' | 'shipper' | 'resident_employee'
 
 export type TAdminUser = {
   id: string

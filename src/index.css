@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─────────────────────────────────────────────────────────────
    CLEAN SOFT LIGHT MODE PALETTE — Slate & Sky Blue
    Ultra readable, gentle on eyes, high contrast typography
@@ -95,6 +97,15 @@
     --stat-pill-border: #e2e8f0;
     --stat-pill-text: #0f172a;
 
+    --table-footer-bg: #f8fafc;
+    --table-footer-border: #e2e8f0;
+    --table-footer-text: #475569;
+
+    --page-btn-bg: #ffffff;
+    --page-btn-border: #cbd5e1;
+    --page-btn-text: #1e293b;
+    --page-btn-hover-bg: #f1f5f9;
+
     --btn-sec-bg: #ffffff;
     --btn-sec-border: #cbd5e1;
     --btn-sec-text: #1e293b;
@@ -109,6 +120,17 @@
     --setting-input-bg: #ffffff;
     --setting-input-border: #cbd5e1;
     --setting-input-text: #0f172a;
+
+    --modal-bg: #ffffff;
+    --modal-border: #e2e8f0;
+    --modal-title: #0f172a;
+    --modal-subtitle: #64748b;
+    --modal-label: #334155;
+    --modal-input-bg: #f8fafc;
+    --modal-input-border: #cbd5e1;
+    --modal-input-text: #0f172a;
+    --modal-cancel-text: #475569;
+    --modal-cancel-hover: #f1f5f9;
   }
 
   html.dark {
@@ -153,6 +175,15 @@
     --stat-pill-border: #334155;
     --stat-pill-text: #ffffff;
 
+    --table-footer-bg: #111827;
+    --table-footer-border: #1f2937;
+    --table-footer-text: #9ca3af;
+
+    --page-btn-bg: #1e293b;
+    --page-btn-border: #334155;
+    --page-btn-text: #f8fafc;
+    --page-btn-hover-bg: #334155;
+
     --btn-sec-bg: #1e293b;
     --btn-sec-border: #334155;
     --btn-sec-text: #f8fafc;
@@ -167,6 +198,17 @@
     --setting-input-bg: #0f172a;
     --setting-input-border: #334155;
     --setting-input-text: #ffffff;
+
+    --modal-bg: #1e293b;
+    --modal-border: #334155;
+    --modal-title: #ffffff;
+    --modal-subtitle: #94a3b8;
+    --modal-label: #cbd5e1;
+    --modal-input-bg: #0f172a;
+    --modal-input-border: #334155;
+    --modal-input-text: #ffffff;
+    --modal-cancel-text: #94a3b8;
+    --modal-cancel-hover: #334155;
   }
 
   body {
@@ -235,6 +277,21 @@
     color: var(--stat-pill-text) !important;
   }
 
+  .table-footer-custom {
+    background-color: var(--table-footer-bg) !important;
+    border-color: var(--table-footer-border) !important;
+    color: var(--table-footer-text) !important;
+  }
+
+  .page-btn-custom {
+    background-color: var(--page-btn-bg) !important;
+    border-color: var(--page-btn-border) !important;
+    color: var(--page-btn-text) !important;
+  }
+  .page-btn-custom:hover:not(:disabled) {
+    background-color: var(--page-btn-hover-bg) !important;
+  }
+
   .btn-sec-custom {
     background-color: var(--btn-sec-bg) !important;
     border-color: var(--btn-sec-border) !important;
@@ -263,6 +320,52 @@
     background-color: var(--setting-input-bg) !important;
     border-color: var(--setting-input-border) !important;
     color: var(--setting-input-text) !important;
+  }
+
+  .modal-card-custom {
+    background-color: var(--modal-bg) !important;
+    border-color: var(--modal-border) !important;
+  }
+
+  .modal-title-custom {
+    color: var(--modal-title) !important;
+  }
+
+  .modal-subtitle-custom {
+    color: var(--modal-subtitle) !important;
+  }
+
+  .modal-label-custom {
+    color: var(--modal-label) !important;
+  }
+
+  .modal-input-custom {
+    background-color: var(--modal-input-bg) !important;
+    border-color: var(--modal-input-border) !important;
+    color: var(--modal-input-text) !important;
+  }
+
+  .modal-cancel-custom {
+    color: var(--modal-cancel-text) !important;
+  }
+  .modal-cancel-custom:hover {
+    background-color: var(--modal-cancel-hover) !important;
+  }
+
+  .hardware-card-custom {
+    background-color: #f0f9ff !important;
+    border-color: #bae6fd !important;
+  }
+  html.dark .hardware-card-custom {
+    background-color: rgba(12, 74, 110, 0.35) !important;
+    border-color: rgba(3, 105, 161, 0.6) !important;
+  }
+
+  .hardware-title-custom {
+    color: #0369a1 !important;
+  }
+  html.dark .hardware-title-custom {
+    color: #7dd3fc !important;
   }
 
 
@@ -385,23 +488,25 @@
     font-family: inherit;
   }
 
-  /* SELECT OPTION STYLING FOR LIGHT MODE */
-  select {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-  }
+  /* SELECT OPTION STYLING FOR LIGHT & DARK MODES */
   select option {
     background-color: #ffffff !important;
     color: #0f172a !important;
     padding: 10px 14px;
     font-size: 13px;
   }
+
+  html.dark select option {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+  }
+
   select option:hover,
   select option:focus,
   select option:active,
   select option:checked {
-    background-color: #e0f2fe !important;
-    color: #0369a1 !important;
+    background-color: #0284c7 !important;
+    color: #ffffff !important;
   }
 
   /* Custom scrollbar */
