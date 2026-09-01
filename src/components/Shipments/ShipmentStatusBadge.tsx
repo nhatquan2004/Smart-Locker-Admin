@@ -46,6 +46,11 @@ const shipmentStatusMap: Record<
         tone: 'red',
         pulse: true,
     },
+    moved_to_storage: {
+        label: 'MOVED TO STORAGE',
+        tone: 'orange',
+        pulse: false,
+    },
     failed: {
         label: 'FAILED',
         tone: 'red',

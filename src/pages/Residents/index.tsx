@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppButton, AppInput } from '../../components/common'
+import { AppTable } from '../../components/common/AppTable'
 import { FilterSelect } from '../../components/shared/FilterSelect/FilterSelect'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
-import { createResident, getResidents } from '../../service/resident.service'
 import type { TCreateResidentPayload, TResident, TResidentRole } from '../../types/resident.type'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useToast } from '../../context/ToastContext'
+
+import { useUserStore } from '../../store/useUserStore'
 
 const roleBadges: Record<TResidentRole, { label: string; style: string }> = {
   resident: { label: 'Cư dân trọ', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
@@ -15,6 +18,11 @@ const roleBadges: Record<TResidentRole, { label: string; style: string }> = {
 
 export function ResidentsPage() {
   const { user, selectedOrgId } = useAuthStore()
+  const toast = useToast()
+  const masterUsers = useUserStore((state) => state.users)
+  const createResidentStore = useUserStore((state) => state.createResident)
+  const fetchResidentsStore = useUserStore((state) => state.fetchResidents)
+
   const [residents, setResidents] = useState<TResident[]>([])
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -32,12 +40,11 @@ export function ResidentsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSuperAdmin = user?.role === 'super_admin'
+  const activeOrg = isSuperAdmin ? selectedOrgId : user?.orgId
 
   useEffect(() => {
-    // If Org Admin, scoped to their orgId. If Super Admin, scoped to selectedOrgId.
-    const activeOrg = isSuperAdmin ? selectedOrgId : user?.orgId
-    getResidents(activeOrg).then(setResidents)
-  }, [isSuperAdmin, selectedOrgId, user?.orgId])
+    fetchResidentsStore(activeOrg).then(setResidents)
+  }, [activeOrg, masterUsers, fetchResidentsStore])
 
   const filteredResidents = useMemo(() => {
     return residents.filter((r) => {
@@ -50,24 +57,27 @@ export function ResidentsPage() {
 
   function handleCreateResident(e: React.FormEvent) {
     e.preventDefault()
-    if (!formName || !formPhone) return
+    if (!formName.trim() || !formPhone.trim()) {
+      toast.error('Vui lòng nhập Họ tên và Số điện thoại thành viên!')
+      return
+    }
 
     setIsSubmitting(true)
     const payload: TCreateResidentPayload = {
-      fullName: formName,
-      phone: formPhone,
-      email: formEmail,
+      fullName: formName.trim(),
+      phone: formPhone.trim(),
+      email: formEmail.trim(),
       orgId: isSuperAdmin ? formOrgId : (user?.orgId || 'org-002'),
       orgName: isSuperAdmin ? formOrgName : (user?.orgName || 'Khu Nhà Trọ Hoàng Nam'),
-      unitNumber: formUnit || 'Phòng Trọ / Văn Phòng',
+      unitNumber: formUnit.trim() || 'Phòng Trọ / Văn Phòng',
       role: formRole,
-      note: formNote,
+      note: formNote.trim(),
     }
 
-    createResident(payload).then((newRes) => {
-      setResidents((prev) => [newRes, ...prev])
+    createResidentStore(payload).then((newRes) => {
       setIsSubmitting(false)
       setIsCreateModalOpen(false)
+      toast.success(`Đã thêm thành viên "${newRes.fullName}" (${newRes.phone}) thành công!`)
       setFormName('')
       setFormPhone('')
       setFormEmail('')
@@ -136,69 +146,94 @@ export function ResidentsPage() {
         </span>
       </div>
 
-      {/* Grid */}
-      {filteredResidents.length > 0 ? (
-        <section data-stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredResidents.map((res) => {
-            const badge = roleBadges[res.role] ?? roleBadges.resident
-            const initials = res.fullName.trim().split(' ').slice(-2).map((n) => n[0]).join('').toUpperCase()
-
-            return (
-              <article
-                key={res.id}
-                className="flex flex-col gap-4 p-5 rounded-2xl glass-card glass-card-hover relative"
-              >
-                {/* Top info */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-500/30 text-sky-600 dark:text-sky-300 flex items-center justify-center text-[12px] font-bold font-mono shrink-0">
+      {/* Main Residents Table using AppTable */}
+      <div data-reveal>
+        <AppTable
+          columns={[
+            {
+              key: 'code',
+              title: 'Mã & Họ Tên',
+              render: (res) => {
+                const initials = res.fullName.trim().split(' ').slice(-2).map((n) => n[0]).join('').toUpperCase()
+                return (
+                  <div className="flex items-center gap-3">
+                    <div className="w-8.5 h-8.5 rounded-xl bg-sky-500/20 border border-sky-500/30 text-sky-600 dark:text-sky-300 flex items-center justify-center text-[12px] font-bold font-mono shrink-0">
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] font-mono text-sky-600 dark:text-sky-400 font-bold">{res.code}</p>
-                      <h3 className="text-[14px] font-bold text-slate-900 dark:text-white truncate">{res.fullName}</h3>
-                      <p className="text-[11px] font-mono text-slate-600 dark:text-slate-300">{res.phone}</p>
+                      <span className="text-[10px] font-mono text-sky-600 dark:text-sky-400 font-bold block">{res.code}</span>
+                      <h3 className="text-[13px] font-bold text-slate-900 dark:text-white truncate">{res.fullName}</h3>
                     </div>
                   </div>
-
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border shrink-0 ${badge.style}`}>
+                )
+              },
+            },
+            {
+              key: 'phone',
+              title: 'Liên Hệ',
+              render: (res) => (
+                <div className="flex flex-col text-[12px]">
+                  <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">{res.phone}</span>
+                  <span className="text-[11px] text-slate-400 truncate max-w-[180px]">{res.email}</span>
+                </div>
+              ),
+            },
+            {
+              key: 'role',
+              title: 'Vai Trò',
+              render: (res) => {
+                const badge = roleBadges[res.role] ?? roleBadges.resident
+                return (
+                  <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border whitespace-nowrap ${badge.style}`}>
                     {badge.label}
                   </span>
-                </div>
-
-                {/* Organization & Unit info */}
-                <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-[12px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">Đơn vị:</span>
-                    <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[170px]">{res.orgName}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">Số phòng / Vị trí:</span>
-                    <span className="font-mono text-sky-600 dark:text-sky-400 font-semibold">{res.unitNumber}</span>
-                  </div>
+                )
+              },
+            },
+            {
+              key: 'orgName',
+              title: 'Đơn Vị Quản Lý',
+              render: (res) => (
+                <span className="font-semibold text-slate-800 dark:text-slate-200 text-[12px] truncate block max-w-[180px]">
+                  {res.orgName}
+                </span>
+              ),
+            },
+            {
+              key: 'unitNumber',
+              title: 'Phòng / Vị Trí',
+              render: (res) => (
+                <div className="flex flex-col text-[12px]">
+                  <span className="font-mono text-sky-600 dark:text-sky-400 font-semibold">{res.unitNumber}</span>
                   {res.assignedLockerCode && (
-                    <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                      <span className="text-slate-400 text-[11px]">Gán tủ:</span>
-                      <span className="font-mono text-emerald-400 font-bold">Locker {res.assignedLockerCode}</span>
-                    </div>
+                    <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      Gán: Locker {res.assignedLockerCode}
+                    </span>
                   )}
                 </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                  <span>Hoạt động: <strong className="text-slate-200">{res.lastActive}</strong></span>
-                  <span>{res.createdAt.split(' ')[0]}</span>
-                </div>
-              </article>
-            )
-          })}
-        </section>
-      ) : (
-        <EmptyState
-          title="Không tìm thấy thành viên / cư dân nào"
-          description="Thử tìm kiếm theo tên, số điện thoại hoặc số phòng trọ."
+              ),
+            },
+            {
+              key: 'lastActive',
+              title: 'Hoạt Động Cuối',
+              render: (res) => (
+                <span className="text-[12px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                  {res.lastActive}
+                </span>
+              ),
+            },
+          ]}
+          data={filteredResidents}
+          pageSize={6}
+          minWidth="950px"
+          emptyState={
+            <EmptyState
+              title="Không tìm thấy thành viên / cư dân nào"
+              description="Thử tìm kiếm theo tên, số điện thoại hoặc số phòng trọ."
+            />
+          }
         />
-      )}
+      </div>
 
       {/* Modal: Create Resident / Employee */}
       {isCreateModalOpen && (

@@ -1,4 +1,4 @@
-import type { TLockerStation } from '../types/lockerStation.type'
+import type { TCompartmentStatus, TLockerStation } from '../types/lockerStation.type'
 
 const mockStations: TLockerStation[] = [
   {
@@ -232,3 +232,54 @@ export async function createLockerStation(payload: TCreateLockerStationPayload):
   mockStations.unshift(newStation)
   return Promise.resolve(newStation)
 }
+
+export async function updateCompartmentStatus(
+  stationId: string,
+  compartmentId: string,
+  newStatus: TCompartmentStatus,
+  note?: string
+): Promise<boolean> {
+  const station = mockStations.find((s) => s.id === stationId)
+  if (!station) return Promise.resolve(false)
+  const comp = station.compartments.find((c) => c.id === compartmentId)
+  if (!comp) return Promise.resolve(false)
+
+  comp.status = newStatus
+  if (note !== undefined) {
+    comp.note = note
+  }
+  if (newStatus === 'available') {
+    delete comp.currentShipment
+    comp.hardwareState.irObjectSensor = 'EMPTY'
+  } else if (newStatus === 'maintenance' || newStatus === 'fault') {
+    comp.hardwareState.irObjectSensor = 'EMPTY'
+  }
+  return Promise.resolve(true)
+}
+
+export async function freeCompartmentByLockerCode(lockerCode: string): Promise<boolean> {
+  const cleanTarget = lockerCode.replace(/[^A-Za-z0-9]/g, '').toLowerCase()
+  for (const station of mockStations) {
+    const comp = station.compartments.find(
+      (c) =>
+        c.code.toLowerCase() === lockerCode.toLowerCase() ||
+        c.code.replace(/[^A-Za-z0-9]/g, '').toLowerCase() === cleanTarget
+    )
+    if (comp) {
+      comp.status = 'available'
+      delete comp.currentShipment
+      comp.hardwareState.irObjectSensor = 'EMPTY'
+      return Promise.resolve(true)
+    }
+  }
+  return Promise.resolve(false)
+}
+
+export async function getAvailableCompartments(stationId?: string): Promise<any[]> {
+  const targetStations = stationId ? mockStations.filter((s) => s.id === stationId) : mockStations
+  const availList = targetStations.flatMap((station) =>
+    station.compartments.filter((c) => c.status === 'available')
+  )
+  return Promise.resolve(availList)
+}
+

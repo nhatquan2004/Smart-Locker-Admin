@@ -1,11 +1,14 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ShipmentStatusBadge } from '../../../components/Shipments/ShipmentStatusBadge'
 import type { TShipment } from '../../../types/shipment.type'
+import { useToast } from '../../../context/ToastContext'
 
 export function ShipmentOtpPage() {
     const navigate = useNavigate()
     const { shipmentId } = useParams()
+    const toast = useToast()
+    const [isRevoked, setIsRevoked] = useState(false)
 
     const shipments = useMemo<TShipment[]>(() => {
         return [
@@ -130,15 +133,22 @@ export function ShipmentOtpPage() {
                     <div className="flex flex-wrap gap-3">
                         <button
                             type="button"
-                            className="h-9 px-5 rounded-lg text-[13px] font-semibold bg-[--color-accent] text-[--color-bg] hover:bg-[--color-accent-2] transition-all shadow-sm"
+                            onClick={() => {
+                                toast.success(`Đã gửi lại mã OTP ${shipment.otpCode} qua tin nhắn SMS tới ${shipment.recipientPhone}!`)
+                            }}
+                            className="h-9 px-5 rounded-lg text-[13px] font-semibold bg-[--color-accent] text-[--color-bg] hover:bg-[--color-accent-2] transition-all shadow-sm cursor-pointer"
                         >
                             Gửi lại OTP SMS
                         </button>
                         <button
                             type="button"
-                            className="h-9 px-5 rounded-lg text-[13px] font-medium bg-[--color-surface-2] text-[--color-text] border border-[--color-border] hover:border-[--color-border-2] hover:bg-[--color-surface-3] transition-all"
+                            onClick={() => {
+                                setIsRevoked(true)
+                                toast.info(`Đã thu hồi / hủy hiệu lực mã OTP ${shipment.otpCode} của đơn ${shipment.shipmentCode}!`)
+                            }}
+                            className="h-9 px-5 rounded-lg text-[13px] font-medium bg-[--color-surface-2] text-[--color-text] border border-[--color-border] hover:border-[--color-border-2] hover:bg-[--color-surface-3] transition-all cursor-pointer"
                         >
-                            Hủy hiệu lực OTP
+                            {isRevoked ? 'Đã Hủy Hiệu Lực' : 'Hủy hiệu lực OTP'}
                         </button>
                     </div>
                 </article>

@@ -264,3 +264,14 @@ export async function getActivitiesByUserId(userId: string): Promise<TActivityIt
 export async function getActivitiesByUserPhone(phone: string): Promise<TActivityItem[]> {
   return Promise.resolve(activitiesMock.filter((item) => item.actorPhone === phone))
 }
+
+export function logActivity(item: Omit<TActivityItem, 'id' | 'createdAt' | 'timeLabel'>): void {
+  const newActivity: TActivityItem = {
+    ...item,
+    id: `act-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    timeLabel: 'Vừa xong',
+  }
+  activitiesMock.unshift(newActivity)
+}
+

@@ -1,19 +1,37 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getLockerStationById } from '../../../service/lockerStation.service'
+import { getLockerStationById, updateCompartmentStatus } from '../../../service/lockerStation.service'
+import { logActivity } from '../../../service/activity.service'
+import { useAuthStore } from '../../../store/useAuthStore'
 import type { TCompartment, TLockerStation } from '../../../types/lockerStation.type'
 import { AppButton } from '../../../components/common'
 import { useTranslation } from '../../../context/LanguageContext'
+import { useToast } from '../../../context/ToastContext'
+import { AlertTriangle, CheckCircle2, Lock, Wrench, X } from 'lucide-react'
 
 export function LockerDetailPage() {
   const navigate = useNavigate()
   const { lockerId } = useParams()
   const { t } = useTranslation()
+  const toast = useToast()
+  const { user: loggedUser } = useAuthStore()
 
   const [station, setStation] = useState<TLockerStation | null>(null)
   const [selectedCompartment, setSelectedCompartment] = useState<TCompartment | null>(null)
   const [unlockMessage, setUnlockMessage] = useState('')
   const [isUnlocking, setIsUnlocking] = useState(false)
+
+  // Confirmation Modal State for Remote Unlock
+  const [showUnlockModal, setShowUnlockModal] = useState(false)
+  const [unlockReason, setUnlockReason] = useState('')
+
+  // Maintenance Modal State
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+  const [maintenanceReason, setMaintenanceReason] = useState('')
+
+  // Restore Confirmation Modal State
+  const [showRestoreModal, setShowRestoreModal] = useState(false)
+  const [restoreTargetComp, setRestoreTargetComp] = useState<{ id: string; code: string } | null>(null)
 
   useEffect(() => {
     getLockerStationById(lockerId || 'station-001').then((res) => {
@@ -26,14 +44,127 @@ export function LockerDetailPage() {
     })
   }, [lockerId])
 
-  function handleRemoteUnlock(compCode: string) {
+  function handleOpenUnlockModal() {
+    setUnlockReason('')
+    setShowUnlockModal(true)
+  }
+
+  function handleConfirmRemoteUnlock() {
+    if (!unlockReason.trim() || !selectedCompartment) return
+    const compCode = selectedCompartment.code
+    const reason = unlockReason.trim()
+
     setIsUnlocking(true)
+    setShowUnlockModal(false)
     setUnlockMessage('')
+
     setTimeout(() => {
       setIsUnlocking(false)
-      setUnlockMessage(`✓ ${t('lockers.unlockLocker')} ${compCode} ${t('common.success')} (RS485 ACK)!`)
+      setUnlockMessage(`✓ ${t('lockers.unlockLocker')} ${compCode} ${t('common.success')} (RS485 ACK)! [Lý do: ${reason}]`)
+      toast.success(`Đã mở tủ ${compCode} thành công! (Lý do: ${reason})`)
       setTimeout(() => setUnlockMessage(''), 4000)
     }, 600)
+  }
+
+  function handleOpenMaintenanceModal() {
+    setMaintenanceReason('')
+    setShowMaintenanceModal(true)
+  }
+
+  function handleConfirmMaintenance() {
+    if (!maintenanceReason.trim() || !selectedCompartment || !station) return
+    const compId = selectedCompartment.id
+    const compCode = selectedCompartment.code
+    const reason = maintenanceReason.trim()
+
+    updateCompartmentStatus(station.id, compId, 'maintenance', reason).then(() => {
+      const updatedCompartments = station.compartments.map((comp) => {
+        if (comp.id === compId) {
+          return {
+            ...comp,
+            status: 'maintenance' as const,
+            note: reason,
+          }
+        }
+        return comp
+      })
+
+      setStation({ ...station, compartments: updatedCompartments })
+      setSelectedCompartment({
+        ...selectedCompartment,
+        status: 'maintenance',
+        note: reason,
+      })
+      setShowMaintenanceModal(false)
+
+      logActivity({
+        actorName: loggedUser?.fullName || 'Admin',
+        actorRole: 'admin',
+        title: 'Chuyển ngăn tủ sang Bảo trì',
+        description: `Ngăn ${compCode} thuộc ${station.name} đã được chuyển sang trạng thái Bảo trì. Lý do: ${reason}`,
+        targetId: compId,
+        targetType: 'locker',
+        targetLabel: `Ngăn ${compCode}`,
+        category: 'hardware',
+        status: 'warning',
+        orgId: station.orgId,
+        orgName: station.orgName,
+      })
+
+      toast.success(`Đã chuyển ngăn tủ ${compCode} sang trạng thái Bảo trì!`)
+    })
+  }
+
+  function handleRestoreCompartment(compId: string, compCode: string) {
+    // Mở modal xác nhận thay vì window.confirm() — nhất quán với Bảo trì Modal
+    setRestoreTargetComp({ id: compId, code: compCode })
+    setShowRestoreModal(true)
+  }
+
+  function handleConfirmRestore() {
+    if (!restoreTargetComp || !station) return
+    const { id: compId, code: compCode } = restoreTargetComp
+
+    updateCompartmentStatus(station.id, compId, 'available').then(() => {
+      const updatedCompartments = station.compartments.map((comp) => {
+        if (comp.id === compId) {
+          return {
+            ...comp,
+            status: 'available' as const,
+            note: undefined,
+          }
+        }
+        return comp
+      })
+
+      setStation({ ...station, compartments: updatedCompartments })
+      if (selectedCompartment?.id === compId) {
+        setSelectedCompartment({
+          ...selectedCompartment,
+          status: 'available',
+          note: undefined,
+        })
+      }
+
+      setShowRestoreModal(false)
+      setRestoreTargetComp(null)
+
+      logActivity({
+        actorName: loggedUser?.fullName || 'Admin',
+        actorRole: 'admin',
+        title: 'Khôi phục ngăn tủ hoạt động',
+        description: `Ngăn ${compCode} thuộc ${station.name} đã được khôi phục về trạng thái Sẵn sàng (Available).`,
+        targetId: compId,
+        targetType: 'locker',
+        targetLabel: `Ngăn ${compCode}`,
+        category: 'hardware',
+        status: 'success',
+        orgId: station.orgId,
+        orgName: station.orgName,
+      })
+
+      toast.success(`Đã khôi phục ngăn tủ ${compCode} trở lại trạng thái Sẵn sàng (Available)!`)
+    })
   }
 
   if (!station) {
@@ -45,7 +176,7 @@ export function LockerDetailPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1250px]">
+    <div className="flex flex-col gap-6 max-w-[1250px] relative">
 
       {/* Hero */}
       <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200 dark:border-slate-800">
@@ -93,7 +224,7 @@ export function LockerDetailPage() {
                 <h2 className="setting-title-custom text-[16px] font-bold mt-1.5">{t('lockers.title')}</h2>
               </div>
 
-              {/* Status Legend with Guaranteed High-Contrast Text Color */}
+              {/* Status Legend */}
               <div className="flex items-center gap-3 text-[11px] font-mono font-bold text-slate-700 dark:text-slate-200">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-md bg-emerald-500 shrink-0 shadow-2xs" />
@@ -244,15 +375,41 @@ export function LockerDetailPage() {
                 </div>
               </div>
 
-              {/* Remote Control Button */}
-              <div className="pt-2">
-                <AppButton
-                  className="w-full h-11"
-                  disabled={isUnlocking}
-                  onClick={() => handleRemoteUnlock(selectedCompartment.code)}
-                >
-                  {isUnlocking ? t('common.saving') : `🔓 ${t('lockers.unlockLocker')} ${selectedCompartment.code}`}
-                </AppButton>
+              {/* Actions Section */}
+              <div className="pt-2 flex flex-col gap-2">
+                {selectedCompartment.status === 'maintenance' || selectedCompartment.status === 'fault' ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleRestoreCompartment(selectedCompartment.id, selectedCompartment.code)}
+                      className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[13px] transition-all cursor-pointer shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 active:scale-95"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Đưa Ngăn {selectedCompartment.code} Về Hoạt Động</span>
+                    </button>
+                    <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11.5px] font-medium text-center">
+                      ⚠️ Ngăn đang bảo trì, không thể mở khoá thông thường.
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <AppButton
+                      className="h-11 text-[12.5px]"
+                      disabled={isUnlocking}
+                      onClick={handleOpenUnlockModal}
+                    >
+                      {isUnlocking ? t('common.saving') : `🔓 ${t('lockers.unlockLocker')}`}
+                    </AppButton>
+                    <button
+                      type="button"
+                      onClick={handleOpenMaintenanceModal}
+                      className="h-11 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-600 hover:text-white transition-all text-[12.5px] font-bold cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-95"
+                    >
+                      <Wrench className="w-4 h-4" />
+                      <span>Đưa vào Bảo trì</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -263,6 +420,221 @@ export function LockerDetailPage() {
         </div>
 
       </div>
+
+      {/* Confirmation Modal for Remote Unlock */}
+      {showUnlockModal && selectedCompartment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col p-6 gap-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
+                    Xác Nhận Mở Tủ Từ Xa
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Ngăn tủ: <strong className="text-sky-600 dark:text-sky-400 font-bold">{selectedCompartment.code}</strong> ({station.name})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUnlockModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Notice */}
+            <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-[12px] text-amber-800 dark:text-amber-300 leading-relaxed">
+              ⚠️ <strong>Cảnh báo:</strong> Lệnh này sẽ phát xung relay kích mở khóa ngăn tủ vật lý ngay lập tức. Vui lòng kiểm tra kỹ và nhập lý do mở tủ để lưu nhật ký Audit Log.
+            </div>
+
+            {/* Required Reason Textarea */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Lý do mở tủ từ xa <span className="text-red-500">*</span></span>
+                <span className="text-[11px] text-slate-400 font-normal">Bắt buộc</span>
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={unlockReason}
+                onChange={(e) => setUnlockReason(e.target.value)}
+                placeholder="Nhập lý do chi tiết (VD: Hỗ trợ cư dân quên mã OTP / Kiểm tra kĩ thuật rơ-le...)"
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowUnlockModal(false)}
+                className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+
+              <button
+                type="button"
+                disabled={!unlockReason.trim() || isUnlocking}
+                onClick={handleConfirmRemoteUnlock}
+                className={`h-10 px-4 rounded-xl text-[12.5px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                  !unlockReason.trim() || isUnlocking
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-75'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer active:scale-95'
+                }`}
+              >
+                <Lock className="w-4 h-4" />
+                <span>{isUnlocking ? 'Đang mở...' : 'Xác Nhận Mở Tủ'}</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Maintenance */}
+      {showMaintenanceModal && selectedCompartment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col p-6 gap-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
+                    Xác Nhận Đưa Ngăn Tủ Vào Bảo Trì
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Ngăn tủ: <strong className="text-sky-600 dark:text-sky-400 font-bold">{selectedCompartment.code}</strong> ({station.name})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMaintenanceModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body / Notice */}
+            <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-[12px] text-amber-800 dark:text-amber-300 leading-relaxed">
+              ⚠️ <strong>Cảnh báo:</strong> Ngăn tủ sau khi chuyển sang Bảo trì sẽ <strong>tự động bị khóa</strong> khỏi danh sách ngăn trống khả dụng và không thể tiếp nhận bất kỳ đơn hàng mới nào.
+            </div>
+
+            {/* Required Reason Textarea */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Lý do bảo trì ngăn tủ <span className="text-red-500">*</span></span>
+                <span className="text-[11px] text-slate-400 font-normal">Bắt buộc</span>
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={maintenanceReason}
+                onChange={(e) => setMaintenanceReason(e.target.value)}
+                placeholder="Nhập lý do bảo trì chi tiết (VD: Cảm biến hồng ngoại hỏng, Chốt khóa bị kẹt...)"
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowMaintenanceModal(false)}
+                className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+
+              <button
+                type="button"
+                disabled={!maintenanceReason.trim()}
+                onClick={handleConfirmMaintenance}
+                className={`h-10 px-4 rounded-xl text-[12.5px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                  !maintenanceReason.trim()
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-75'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer active:scale-95'
+                }`}
+              >
+                <Wrench className="w-4 h-4" />
+                <span>Xác Nhận Bảo Trì</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Restore Compartment */}
+      {showRestoreModal && restoreTargetComp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col p-6 gap-4">
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
+                    Xác Nhận Đưa Ngăn Về Hoạt Động
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Ngăn tủ: <strong className="text-sky-600 dark:text-sky-400 font-bold">{restoreTargetComp.code}</strong> ({station.name})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowRestoreModal(false); setRestoreTargetComp(null) }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Confirmation Message */}
+            <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 text-[12.5px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
+              ✅ Bạn có chắc muốn đưa ngăn tủ <strong>{restoreTargetComp.code}</strong> từ trạng thái Bảo trì/Cảnh báo về trạng thái <strong>Hoạt động bình thường (Sẵn sàng)</strong>? Ngăn sẽ có thể tiếp nhận đơn hàng mới sau khi xác nhận.
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => { setShowRestoreModal(false); setRestoreTargetComp(null) }}
+                className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRestore}
+                className="h-10 px-4 rounded-xl text-[12.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Xác Nhận Khôi Phục</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   )

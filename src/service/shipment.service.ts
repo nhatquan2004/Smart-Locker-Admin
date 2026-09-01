@@ -146,3 +146,20 @@ export async function getShipmentStats(): Promise<TShipmentStatItem[]> {
         },
     ])
 }
+
+export async function updateShipmentStatus(
+    shipmentId: string,
+    newStatus: TShipment['shipmentStatus'],
+    locationNote?: string
+): Promise<TShipment | undefined> {
+    const item = shipmentMockData.find((s) => s.id === shipmentId)
+    if (item) {
+        item.shipmentStatus = newStatus
+        if (locationNote) {
+            item.storageLocationNote = locationNote
+        }
+        item.updatedAt = new Date().toISOString().replace('T', ' ').slice(0, 16)
+    }
+    return Promise.resolve(item)
+}
+

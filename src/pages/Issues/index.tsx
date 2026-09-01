@@ -5,6 +5,8 @@ import { useAuthStore } from '../../store/useAuthStore'
 import type { TIssueCategory, TIssueFilter, TIssueItem, TIssuePriority, TIssueStatus } from '../../types/issue.type'
 import type { TOrganization } from '../../types/organization.type'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
+import { AppTable } from '../../components/common/AppTable'
+import { useToast } from '../../context/ToastContext'
 import {
   Search,
   Building2,
@@ -49,6 +51,7 @@ const statusBadges: Record<TIssueStatus, { label: string; dotColor: string; text
 }
 
 export function IssuesPage() {
+  const toast = useToast()
   const { user: loggedUser } = useAuthStore()
   const [issues, setIssues] = useState<TIssueItem[]>([])
   const [orgsList, setOrgsList] = useState<TOrganization[]>([])
@@ -106,9 +109,20 @@ export function IssuesPage() {
     updateIssueStatus(issueId, newStatus, resolutionInput).then((updated) => {
       setIssues((prev) => prev.map((item) => (item.id === issueId ? { ...updated } : item)))
       setSelectedTicket({ ...updated })
-      setActionSuccessMsg(`✓ Đã cập nhật trạng thái ticket ${updated.ticketCode} sang ${statusBadges[newStatus].label}`)
+      const statusLabel = statusBadges[newStatus]?.label || newStatus
+      setActionSuccessMsg(`✓ Đã cập nhật trạng thái ticket ${updated.ticketCode} sang ${statusLabel}`)
       setResolutionInput('')
       setTimeout(() => setActionSuccessMsg(''), 3000)
+
+      if (newStatus === 'resolved') {
+        toast.success(`Đã giải quyết sự cố ${updated.ticketCode} thành công!`)
+      } else if (newStatus === 'closed') {
+        toast.success(`Đã đóng ticket sự cố ${updated.ticketCode}!`)
+      } else if (newStatus === 'in_progress') {
+        toast.info(`Sự cố ${updated.ticketCode} đã chuyển sang trạng thái đang xử lý.`)
+      } else {
+        toast.info(`Đã cập nhật trạng thái sự cố ${updated.ticketCode} thành "${statusLabel}".`)
+      }
     })
   }
 
@@ -120,6 +134,7 @@ export function IssuesPage() {
       setEscalateReasonInput('')
       setActionSuccessMsg(`🚀 Đã LEO THANG sự cố ${updated.ticketCode} lên Super Admin thành công!`)
       setTimeout(() => setActionSuccessMsg(''), 3000)
+      toast.success(`Đã leo thang sự cố ${updated.ticketCode} lên Super Admin thành công!`)
     })
   }
 
@@ -251,141 +266,144 @@ export function IssuesPage() {
         </div>
       </div>
 
-      {/* Main Tickets Table */}
-      <div data-reveal className="setting-card-custom rounded-2xl overflow-hidden shadow-xs border">
-        {filteredIssues.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1100px]">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  <th className="py-3.5 px-5 whitespace-nowrap">Mã Ticket & Thời Gian</th>
-                  <th className="py-3.5 px-5 whitespace-nowrap">Người Báo Lỗi</th>
-                  <th className="py-3.5 px-5 whitespace-nowrap">Khu Trọ & Locker</th>
-                  <th className="py-3.5 px-5 whitespace-nowrap">Nội Dung & Bằng Chứng</th>
-                  <th className="py-3.5 px-5 whitespace-nowrap">Mức Độ</th>
-                  <th className="py-3.5 px-5 whitespace-nowrap">Trạng Thái Xử Lý</th>
-                  <th className="py-3.5 px-5 text-right whitespace-nowrap">Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[13px] bg-white dark:bg-slate-900">
-                {filteredIssues.map((iss) => {
-                  const prioBadge = priorityBadges[iss.priority] || priorityBadges.medium
-                  const stBadge = statusBadges[iss.status] || statusBadges.pending
-                  const catBadge = categoryBadges[iss.category] || categoryBadges.locker
-                  const hasPhoto = iss.attachments && iss.attachments.length > 0
-
-                  return (
-                    <tr key={iss.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                      
-                      {/* Ticket Code */}
-                      <td className="py-3.5 px-5 whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono font-bold text-sky-600 dark:text-sky-400 text-[13px]">
-                            {iss.ticketCode}
-                          </span>
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                            {iss.createdAt}
-                          </span>
-                          {iss.escalatedToSuperAdmin && (
-                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 w-max mt-0.5 whitespace-nowrap">
-                              <Rocket className="w-2.5 h-2.5" /> ESCALATED SUPER ADMIN
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Reporter */}
-                      <td className="py-3.5 px-5">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">{iss.reporterName}</span>
-                          <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
-                            {iss.reporterRole === 'shipper' ? (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 whitespace-nowrap">
-                                <Truck className="w-3 h-3" /> Shipper
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800 whitespace-nowrap">
-                                <User className="w-3 h-3" /> Cư Dân / User
-                              </span>
-                            )}
-                            <span className="font-mono text-slate-500 text-[11px] whitespace-nowrap">{iss.reporterPhone}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Org & Locker */}
-                      <td className="py-3.5 px-5">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1.5 text-[12px] font-mono font-bold text-slate-800 dark:text-slate-200">
-                            <Building2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-                            <span className="truncate max-w-[170px]">{iss.orgName}</span>
-                          </div>
-                          {iss.lockerCode && (
-                            <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 w-max whitespace-nowrap">
-                              Ngăn Tủ {iss.lockerCode}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Title, Category & Photo Evidence Chip */}
-                      <td className="py-3.5 px-5 min-w-[260px] max-w-[340px]">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border whitespace-nowrap shrink-0 ${catBadge.style}`}>
-                              {catBadge.icon}
-                              {catBadge.label}
-                            </span>
-                            {hasPhoto && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 whitespace-nowrap shrink-0">
-                                <ImageIcon className="w-3 h-3" /> {iss.attachments?.length} Ảnh đính kèm
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{iss.title}</span>
-                        </div>
-                      </td>
-
-                      {/* Priority */}
-                      <td className="py-3.5 px-5">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border whitespace-nowrap ${prioBadge.style}`}>
-                          {prioBadge.dot && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />}
-                          {prioBadge.label}
+      {/* Main Tickets Table using AppTable */}
+      <div data-reveal>
+        <AppTable
+          columns={[
+            {
+              key: 'ticketCode',
+              title: 'Mã Ticket & Thời Gian',
+              render: (iss) => (
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-mono font-bold text-sky-600 dark:text-sky-400 text-[13px]">
+                    {iss.ticketCode}
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                    {iss.createdAt}
+                  </span>
+                  {iss.escalatedToSuperAdmin && (
+                    <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 w-max mt-0.5 whitespace-nowrap">
+                      <Rocket className="w-2.5 h-2.5" /> ESCALATED SUPER ADMIN
+                    </span>
+                  )}
+                </div>
+              ),
+            },
+            {
+              key: 'reporterName',
+              title: 'Người Báo Lỗi',
+              render: (iss) => (
+                <div className="flex flex-col gap-1">
+                  <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">{iss.reporterName}</span>
+                  <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
+                    {iss.reporterRole === 'shipper' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 whitespace-nowrap">
+                        <Truck className="w-3 h-3" /> Shipper
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800 whitespace-nowrap">
+                        <User className="w-3 h-3" /> Cư Dân / User
+                      </span>
+                    )}
+                    <span className="font-mono text-slate-500 text-[11px] whitespace-nowrap">{iss.reporterPhone}</span>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: 'orgName',
+              title: 'Khu Trọ & Locker',
+              render: (iss) => (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5 text-[12px] font-mono font-bold text-slate-800 dark:text-slate-200">
+                    <Building2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
+                    <span className="truncate max-w-[170px]">{iss.orgName}</span>
+                  </div>
+                  {iss.lockerCode && (
+                    <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 w-max whitespace-nowrap">
+                      Ngăn Tủ {iss.lockerCode}
+                    </span>
+                  )}
+                </div>
+              ),
+            },
+            {
+              key: 'title',
+              title: 'Nội Dung & Bằng Chứng',
+              className: 'min-w-[260px] max-w-[340px]',
+              render: (iss) => {
+                const catBadge = categoryBadges[iss.category] || categoryBadges.locker
+                const hasPhoto = iss.attachments && iss.attachments.length > 0
+                return (
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border whitespace-nowrap shrink-0 ${catBadge.style}`}>
+                        {catBadge.icon}
+                        {catBadge.label}
+                      </span>
+                      {hasPhoto && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 whitespace-nowrap shrink-0">
+                          <ImageIcon className="w-3 h-3" /> {iss.attachments?.length} Ảnh đính kèm
                         </span>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap">
-                          <span className={`w-2 h-2 rounded-full ${stBadge.dotColor}`} />
-                          <span className={stBadge.textColor}>{stBadge.label}</span>
-                        </div>
-                      </td>
-
-                      {/* Actions - No Line Wrap Fix */}
-                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTicket(iss)}
-                          className="h-8 px-3.5 rounded-xl text-[12px] font-bold bg-sky-600 text-white hover:bg-sky-700 transition-all cursor-pointer shadow-2xs active:scale-95 inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap ml-auto"
-                        >
-                          <span>Xử lý</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <EmptyState
-            title="Không có sự cố nào"
-            description="Không tìm thấy ticket báo lỗi phù hợp với bộ lọc hiện tại."
-          />
-        )}
+                      )}
+                    </div>
+                    <span className="font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">{iss.title}</span>
+                  </div>
+                )
+              },
+            },
+            {
+              key: 'priority',
+              title: 'Mức Độ',
+              render: (iss) => {
+                const prioBadge = priorityBadges[iss.priority] || priorityBadges.medium
+                return (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border whitespace-nowrap ${prioBadge.style}`}>
+                    {prioBadge.dot && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />}
+                    {prioBadge.label}
+                  </span>
+                )
+              },
+            },
+            {
+              key: 'status',
+              title: 'Trạng Thái Xử Lý',
+              render: (iss) => {
+                const stBadge = statusBadges[iss.status] || statusBadges.pending
+                return (
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap">
+                    <span className={`w-2 h-2 rounded-full ${stBadge.dotColor}`} />
+                    <span className={stBadge.textColor}>{stBadge.label}</span>
+                  </div>
+                )
+              },
+            },
+            {
+              key: 'actions',
+              title: 'Thao Tác',
+              align: 'right',
+              render: (iss) => (
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(iss)}
+                  className="h-8 px-3.5 rounded-xl text-[12px] font-bold bg-sky-600 text-white hover:bg-sky-700 transition-all cursor-pointer shadow-2xs active:scale-95 inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap ml-auto"
+                >
+                  <span>Xử lý</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ),
+            },
+          ]}
+          data={filteredIssues}
+          pageSize={6}
+          minWidth="1100px"
+          emptyState={
+            <EmptyState
+              title="Không có sự cố nào"
+              description="Không tìm thấy ticket báo lỗi phù hợp với bộ lọc hiện tại."
+            />
+          }
+        />
       </div>
 
       {/* Ticket Details Inspector Modal (Fixed Header & Clean Scroll Body) */}

@@ -4,6 +4,7 @@ export type TShipmentStatus =
     | 'waiting_pickup'
     | 'picked_up'
     | 'expired'
+    | 'moved_to_storage'
     | 'failed'
 
 export type TOtpStatus = 'active' | 'used' | 'expired'
@@ -24,6 +25,7 @@ export type TShipment = {
     createdAt: string
     updatedAt: string
     shipperName: string
+    storageLocationNote?: string
     note?: string
 }
 

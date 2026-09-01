@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Lock, Radio, DoorOpen, Terminal, Play, RefreshCw } from 'lucide-react'
+import { useToast } from '../../../context/ToastContext'
 
 // ─── Types ───────────────────────────────────────────────────
 type SensorStatus = 'ok' | 'error' | 'idle' | 'testing'
@@ -45,6 +46,7 @@ export function LockerHardwarePage() {
   const navigate = useNavigate()
   const { lockerId } = useParams()
   const stationLabel = lockerId ?? 'ST-001'
+  const toast = useToast()
 
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: 0, ts: now(), level: 'info', msg: 'Bảng test phần cứng đã sẵn sàng. Chọn một ngăn và chạy lệnh kiểm thử.' },
@@ -68,9 +70,11 @@ export function LockerHardwarePage() {
       const result = await apiTestSolenoid(selectedSlot)
       setSolenoid({ status: 'ok', value: 'ACK 200 OK', lastTested: now() })
       pushLog('success', `[SOLENOID] ✓ ${result}`)
+      toast.success(`[SOLENOID] Mở khóa rơ-le ngăn ${selectedSlot} thành công!`)
     } catch {
       setSolenoid({ status: 'error', value: 'NACK ERROR', lastTested: now() })
       pushLog('error', '[SOLENOID] ✗ Không nhận được phản hồi từ bo mạch relay.')
+      toast.error(`[SOLENOID] ✗ Thất bại mở khóa ngăn ${selectedSlot}`)
     }
   }
 
@@ -82,9 +86,11 @@ export function LockerHardwarePage() {
       const hasObject = result.includes('HIGH')
       setIr({ status: 'ok', value: hasObject ? 'HIGH (Có vật thể)' : 'LOW (Trống)', lastTested: now() })
       pushLog('success', `[IR SENSOR] ✓ ${result}`)
+      toast.info(`[IR SENSOR] Ngăn ${selectedSlot}: ${hasObject ? 'Phát hiện bưu kiện' : 'Ngăn tủ trống'}`)
     } catch {
       setIr({ status: 'error', value: 'READ ERROR', lastTested: now() })
       pushLog('error', '[IR SENSOR] ✗ Lỗi đọc cảm biến.')
+      toast.error(`[IR SENSOR] ✗ Lỗi đọc cảm biến ngăn ${selectedSlot}`)
     }
   }
 
@@ -96,9 +102,11 @@ export function LockerHardwarePage() {
       const isClosed = result.includes('CLOSED')
       setDoor({ status: 'ok', value: isClosed ? 'CLOSED (Đóng)' : 'OPEN (Mở)', lastTested: now() })
       pushLog('success', `[DOOR SWITCH] ✓ ${result}`)
+      toast.success(`[DOOR SWITCH] Ngăn ${selectedSlot}: ${isClosed ? 'Cửa đang đóng ✓' : 'Cửa đang mở ⚠'}`)
     } catch {
       setDoor({ status: 'error', value: 'READ ERROR', lastTested: now() })
       pushLog('error', '[DOOR SWITCH] ✗ Lỗi đọc công tắc cửa.')
+      toast.error(`[DOOR SWITCH] ✗ Lỗi đọc công tắc cửa ngăn ${selectedSlot}`)
     }
   }
 
@@ -108,6 +116,7 @@ export function LockerHardwarePage() {
     await testIR()
     await testDoor()
     pushLog('success', '══ Hoàn tất toàn bộ kiểm thử. ══')
+    toast.success(`Hoàn tất toàn bộ kiểm thử cảm biến ngăn ${selectedSlot}!`)
   }
 
   function clearLogs() {

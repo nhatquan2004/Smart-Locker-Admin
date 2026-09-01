@@ -3,11 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ShipmentStatusBadge } from '../../../components/Shipments/ShipmentStatusBadge'
 import type { TShipment } from "../../../types/shipment.type"
 import { useTranslation } from '../../../context/LanguageContext'
+import { useToast } from '../../../context/ToastContext'
 
 export function ShipmentDetailPage() {
   const navigate = useNavigate()
   const { shipmentId } = useParams()
   const { t } = useTranslation()
+  const toast = useToast()
   const [copiedOtp, setCopiedOtp] = useState(false)
 
   const shipments = useMemo<TShipment[]>(() => {
@@ -56,6 +58,7 @@ export function ShipmentDetailPage() {
     if (shipment.otpCode) {
       navigator.clipboard.writeText(shipment.otpCode)
       setCopiedOtp(true)
+      toast.success(`Đã sao chép mã OTP ${shipment.otpCode} vào bộ nhớ tạm!`)
       setTimeout(() => setCopiedOtp(false), 2000)
     }
   }

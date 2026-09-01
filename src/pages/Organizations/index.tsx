@@ -8,15 +8,24 @@ import { createLockerStation } from '../../service/lockerStation.service'
 import type { TCreateOrgPayload, TOrganization, TOrgType } from '../../types/organization.type'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useTranslation } from '../../context/LanguageContext'
+import { useToast } from '../../context/ToastContext'
+import { AlertTriangle, Trash2, X } from 'lucide-react'
 
 export function OrganizationsPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { t } = useTranslation()
+  const toast = useToast()
+
   const [organizations, setOrganizations] = useState<TOrganization[]>([])
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
+  // 2-Step Delete Modal State
+  const [deleteTargetOrg, setDeleteTargetOrg] = useState<TOrganization | null>(null)
+  const [confirmOrgName, setConfirmOrgName] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const typeBadges: Record<TOrgType, { label: string; style: string }> = {
     enterprise: { label: t('org.typeOffice'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
@@ -25,7 +34,7 @@ export function OrganizationsPage() {
     commercial: { label: t('org.typeApartment'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
   }
 
-  // Form states for creating new org with S/M/L compartment layout breakdown
+  // Form states for creating new org
   const [formName, setFormName] = useState('')
   const [formCode, setFormCode] = useState('')
   const [formType, setFormType] = useState<TOrgType>('enterprise')
@@ -72,7 +81,6 @@ export function OrganizationsPage() {
     createOrganization(payload).then((newOrg) => {
       setOrganizations((prev) => [newOrg, ...prev])
 
-      // Auto-create hardware Locker Station with exact S/M/L compartments!
       createLockerStation({
         name: `Trạm Tủ - ${newOrg.name}`,
         code: `ST-${newOrg.code}`,
@@ -84,7 +92,6 @@ export function OrganizationsPage() {
         sizeL: formSizeL,
       })
 
-      // Auto-create Org Admin user account for this new organization!
       createUser({
         fullName: adminName,
         phone: '090' + Math.floor(1000000 + Math.random() * 9000000),
@@ -97,7 +104,8 @@ export function OrganizationsPage() {
 
       setIsSubmitting(false)
       setIsCreateModalOpen(false)
-      // Reset form
+      toast.success(`Đã thêm tổ chức "${newOrg.name}" thành công!`)
+
       setFormName('')
       setFormCode('')
       setFormAddress('')
@@ -109,15 +117,30 @@ export function OrganizationsPage() {
     })
   }
 
-  function handleDelete(id: string) {
-    if (!confirm(t('common.confirm') + '?')) return
-    deleteOrganization(id).then(() => {
-      setOrganizations((prev) => prev.filter((o) => o.id !== id))
+  function handleOpenDeleteModal(org: TOrganization) {
+    setDeleteTargetOrg(org)
+    setConfirmOrgName('')
+  }
+
+  function handleConfirmDelete() {
+    if (!deleteTargetOrg || confirmOrgName !== deleteTargetOrg.name) return
+    const targetName = deleteTargetOrg.name
+    setIsDeleting(true)
+
+    deleteOrganization(deleteTargetOrg.id).then(() => {
+      setOrganizations((prev) => prev.filter((o) => o.id !== deleteTargetOrg.id))
+      toast.success(`Đã xóa vĩnh viễn tổ chức "${targetName}" thành công!`)
+      setIsDeleting(false)
+      setDeleteTargetOrg(null)
+      setConfirmOrgName('')
+    }).catch(() => {
+      toast.error(`Lỗi: Không thể xóa tổ chức "${targetName}".`)
+      setIsDeleting(false)
     })
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1250px]">
+    <div className="flex flex-col gap-6 max-w-[1250px] relative">
 
       {/* Hero */}
       <section data-reveal className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-2xs">
@@ -175,7 +198,7 @@ export function OrganizationsPage() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Card Grid Layout */}
       {filteredOrgs.length > 0 ? (
         <section data-stagger className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredOrgs.map((org) => {
@@ -213,11 +236,11 @@ export function OrganizationsPage() {
                 </div>
 
                 {/* Admin Info */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[12px]">
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-[12px]">
                   <div className="min-w-0">
-                    <span className="text-slate-500 text-[11px] font-medium">Admin đại diện:</span>
-                    <p className="font-bold text-slate-900 truncate">{org.adminName}</p>
-                    <p className="text-[11px] font-mono text-slate-600 truncate">{org.adminEmail}</p>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Admin đại diện:</span>
+                    <p className="font-bold text-slate-900 dark:text-white truncate">{org.adminName}</p>
+                    <p className="text-[11px] font-mono text-slate-600 dark:text-slate-400 truncate">{org.adminEmail}</p>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
@@ -235,13 +258,10 @@ export function OrganizationsPage() {
                     {user?.role === 'super_admin' && (
                       <button
                         type="button"
-                        onClick={() => handleDelete(org.id)}
-                        className="h-9 px-3 rounded-xl text-[12px] font-bold bg-red-50 text-red-700 border border-red-200 hover:bg-red-600 hover:text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1"
+                        onClick={() => handleOpenDeleteModal(org)}
+                        className="h-9 px-3 rounded-xl text-[12px] font-bold bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-600 hover:text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1"
                       >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                        </svg>
+                        <Trash2 className="w-3.5 h-3.5" />
                         Xóa
                       </button>
                     )}
@@ -253,186 +273,243 @@ export function OrganizationsPage() {
         </section>
       ) : (
         <EmptyState
-          title="Không tìm thấy đơn vị quản lý phù hợp"
-          description="Thử thay đổi bộ lọc hoặc tạo mới đơn vị quản lý doanh nghiệp / nhà trọ."
+          title="Chưa có tổ chức nào"
+          description="Chưa tìm thấy thông tin đơn vị hoặc khu nhà trọ nào phù hợp với bộ lọc."
+          action={
+            user?.role === 'super_admin' ? (
+              <AppButton onClick={() => setIsCreateModalOpen(true)}>
+                {t('org.addOrg')}
+              </AppButton>
+            ) : undefined
+          }
         />
       )}
 
-      {/* Modal: Create Organization */}
+      {/* Create Org Modal */}
       {isCreateModalOpen && (
-        <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in"
-          onClick={() => setIsCreateModalOpen(false)}
-        >
-          <div
-            className="modal-card-custom w-full max-w-lg p-6 rounded-3xl shadow-2xl border flex flex-col gap-5 my-8 overflow-y-auto max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col my-8">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-                  SUPER ADMIN ACTION
-                </span>
-                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">Thêm Đơn Vị Quản Lý Mới</h3>
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white">Khởi Tạo Đơn Vị / Khu Trọ Mới</h3>
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Tự động cấu hình tài khoản Admin & trạm tủ Locker phần cứng tương ứng.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center modal-subtitle-custom hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrg} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Tên Đơn vị / Doanh nghiệp / Khu trọ <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Doanh nghiệp TechCorp, Khu Nhà Trọ Hoàng Nam..."
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleCreateOrg} className="p-5 flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Mã Đơn vị (Code) <span className="text-red-500">*</span></label>
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Tên Đơn Vị / Khu Trọ <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
-                    placeholder="VD: TECHCORP"
-                    value={formCode}
-                    onChange={(e) => setFormCode(e.target.value)}
-                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
+                    placeholder="VD: Khu Nhà Trọ Hoàng Nam"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 font-bold"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Loại hình quy mô</label>
-                  <select
-                    value={formType}
-                    onChange={(e) => setFormType(e.target.value as TOrgType)}
-                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
-                  >
-                    <option value="enterprise" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Doanh nghiệp văn phòng</option>
-                    <option value="apartment" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu nhà trọ / Chung cư</option>
-                    <option value="dormitory" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký túc xá trường học</option>
-                    <option value="commercial" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Trung tâm thương mại</option>
-                  </select>
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Mã Viết Tắt (Code) <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: HN01"
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value.toUpperCase())}
+                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
                 </div>
               </div>
 
-              {/* Compartment Size Breakdown Configuration Card */}
-              <div className="p-3.5 rounded-2xl bg-sky-50/60 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/80 flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[14px]">📦</span>
-                    <span className="text-[12px] font-bold text-sky-900 dark:text-sky-200 truncate">
-                      Cấu Hình Ngăn Tủ Smart Locker
-                    </span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-sky-600 text-white shadow-2xs shrink-0">
-                    Tổng: {formSizeS + formSizeM + formSizeL} Ngăn Tủ
-                  </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Loại Hình Đơn Vị</label>
+                  <select
+                    value={formType}
+                    onChange={(e) => setFormType(e.target.value as TOrgType)}
+                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                  >
+                    <option value="enterprise">Doanh nghiệp văn phòng</option>
+                    <option value="apartment">Khu nhà trọ / Chung cư</option>
+                    <option value="dormitory">Ký túc xá trường học</option>
+                    <option value="commercial">Trung tâm thương mại</option>
+                  </select>
                 </div>
 
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Địa Chỉ Chi Tiết</label>
+                  <input
+                    type="text"
+                    placeholder="VD: 123 Đường Cầu Giấy, Hà Nội"
+                    value={formAddress}
+                    onChange={(e) => setFormAddress(e.target.value)}
+                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+              </div>
+
+              {/* Admin info */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
+                <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase">Tài Khoản Admin Đại Diện</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    placeholder="Họ tên Admin đại diện"
+                    value={formAdminName}
+                    onChange={(e) => setFormAdminName(e.target.value)}
+                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email đăng nhập của Admin"
+                    value={formAdminEmail}
+                    onChange={(e) => setFormAdminEmail(e.target.value)}
+                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                </div>
+              </div>
+
+              {/* Compartments sizing breakdown */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
+                <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center justify-between">
+                  <span>Phân Bổ Kích Thước Ngăn Tủ IoT</span>
+                  <span className="text-sky-600 dark:text-sky-400 font-extrabold">Tổng: {formSizeS + formSizeM + formSizeL} ngăn</span>
+                </h4>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col gap-1">
-                    <label className="modal-label-custom text-[11px] font-mono font-semibold">
-                      Size S (Nhỏ)
-                    </label>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">Size S (Ngăn nhỏ)</span>
                     <input
                       type="number"
                       min={0}
                       value={formSizeS}
                       onChange={(e) => setFormSizeS(Math.max(0, Number(e.target.value)))}
-                      className="modal-input-custom h-9 px-3 rounded-xl text-[12px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold text-center bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                     />
                   </div>
-
                   <div className="flex flex-col gap-1">
-                    <label className="modal-label-custom text-[11px] font-mono font-semibold">
-                      Size M (Vừa)
-                    </label>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">Size M (Ngăn vừa)</span>
                     <input
                       type="number"
                       min={0}
                       value={formSizeM}
                       onChange={(e) => setFormSizeM(Math.max(0, Number(e.target.value)))}
-                      className="modal-input-custom h-9 px-3 rounded-xl text-[12px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold text-center bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                     />
                   </div>
-
                   <div className="flex flex-col gap-1">
-                    <label className="modal-label-custom text-[11px] font-mono font-semibold">
-                      Size L (Lớn)
-                    </label>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">Size L (Ngăn lớn)</span>
                     <input
                       type="number"
                       min={0}
                       value={formSizeL}
                       onChange={(e) => setFormSizeL(Math.max(0, Number(e.target.value)))}
-                      className="modal-input-custom h-9 px-3 rounded-xl text-[12px] font-mono font-bold text-center border focus:outline-none focus:border-sky-500"
+                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold text-center bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Địa chỉ chi tiết</label>
-                <input
-                  type="text"
-                  placeholder="Số nhà, Tên đường, Quận/Huyện, Tỉnh/Thành..."
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 items-start">
-                <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold truncate">
-                    Họ tên Admin đại diện
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="VD: Nguyễn Văn Minh"
-                    value={formAdminName}
-                    onChange={(e) => setFormAdminName(e.target.value)}
-                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold truncate">
-                    Email Admin đăng nhập
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="admin@doanhnghiep.com"
-                    value={formAdminEmail}
-                    onChange={(e) => setFormAdminEmail(e.target.value)}
-                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="modal-cancel-custom h-9 px-4 rounded-xl text-[12px] font-medium transition-colors cursor-pointer"
+                  className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
-                <AppButton type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Đang tạo...' : 'Tạo Đơn Vị & Cấp Tài Khoản'}
+                <AppButton type="submit" disabled={isSubmitting || !formName || !formCode}>
+                  {isSubmitting ? t('common.saving') : 'Khởi Tạo Đơn Vị'}
                 </AppButton>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2-Step Confirmation Delete Modal */}
+      {deleteTargetOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col p-6 gap-4">
+            
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/80 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
+                    Xác Nhận Xóa Tổ Chức (2 Bước)
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Mã tổ chức: <strong className="text-slate-800 dark:text-slate-200 font-bold">{deleteTargetOrg.code}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteTargetOrg(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Warning Callout */}
+            <div className="p-3.5 rounded-xl bg-red-50/70 dark:bg-red-950/40 border border-red-200 dark:border-red-800/80 text-[12.5px] text-red-800 dark:text-red-300 leading-relaxed">
+              🚨 <strong>CẢNH BÁO NGUY HẠI:</strong> Thao tác xóa tổ chức <strong>"{deleteTargetOrg.name}"</strong> sẽ hủy toàn bộ các trạm tủ Locker phần cứng, danh sách cư dân và lịch sử đơn hàng liên quan đến đơn vị này. Hành động này <strong>KHÔNG THỂ HOÀN TÁC</strong>!
+            </div>
+
+            {/* 2-Step Exact Match Input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">
+                Để xác nhận xóa, hãy nhập chính xác tên tổ chức:
+              </label>
+              <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold text-[12px] select-all border border-slate-200 dark:border-slate-700">
+                {deleteTargetOrg.name}
+              </div>
+              <input
+                type="text"
+                value={confirmOrgName}
+                onChange={(e) => setConfirmOrgName(e.target.value)}
+                placeholder={`Gõ lại chính xác "${deleteTargetOrg.name}"`}
+                className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-bold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors mt-1"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetOrg(null)}
+                className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={confirmOrgName !== deleteTargetOrg.name || isDeleting}
+                onClick={handleConfirmDelete}
+                className={`h-10 px-4 rounded-xl text-[12.5px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${
+                  confirmOrgName !== deleteTargetOrg.name || isDeleting
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-75'
+                    : 'bg-red-600 hover:bg-red-700 text-white cursor-pointer active:scale-95'
+                }`}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeleting ? 'Đang xóa...' : 'Xóa Vĩnh Viễn'}</span>
+              </button>
+            </div>
+
           </div>
         </div>
       )}

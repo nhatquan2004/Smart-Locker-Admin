@@ -19,11 +19,14 @@ import { OrganizationsPage } from '../pages/Organizations'
 import { OrganizationDetailPage } from '../pages/Organizations/OrganizationDetail'
 import { IssuesPage } from '../pages/Issues'
 import { LoginPage } from '../pages/Auth/LoginPage'
+import { ForbiddenPage } from '../pages/Auth/ForbiddenPage'
 import { ProtectedRoute } from './ProtectedRoute'
+import { RoleGuard } from './RoleGuard'
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <Navigate to="/login" replace /> },
+  { path: '/403', element: <ForbiddenPage /> },
   {
     path: '/',
     element: <ProtectedRoute />,
@@ -33,8 +36,6 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: 'dashboard', element: <DashboardPage /> },
-          { path: 'organizations', element: <OrganizationsPage /> },
-          { path: 'organizations/:orgId', element: <OrganizationDetailPage /> },
           { path: 'residents', element: <ResidentsPage /> },
           { path: 'activities', element: <ActivitiesPage /> },
           { path: 'lockers', element: <LockersPage /> },
@@ -49,11 +50,21 @@ const router = createBrowserRouter([
           { path: 'users/:userId', element: <UserDetailPage /> },
           { path: 'users/:userId/manage', element: <UserManagePage /> },
           { path: 'users/:userId/history', element: <UserHistoryPage /> },
-          { path: 'settings', element: <SettingsPage /> },
+
+          // Restricted Super Admin Only Routes
+          {
+            element: <RoleGuard allowedRoles={['super_admin']} />,
+            children: [
+              { path: 'organizations', element: <OrganizationsPage /> },
+              { path: 'organizations/:orgId', element: <OrganizationDetailPage /> },
+              { path: 'settings', element: <SettingsPage /> },
+            ],
+          },
         ],
       },
     ],
   },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
 ])
 
 export function AppRouter() {

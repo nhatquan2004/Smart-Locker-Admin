@@ -32,8 +32,7 @@ export function LockersPage() {
       const keyword = filter.search.trim().toLowerCase()
       const matchSearch =
         !keyword ||
-        `${s.name} ${s.code} ${s.location} ${s.orgName}`.toLowerCase().includes(keyword)
-
+        `${s.code} ${s.name} ${s.location} ${s.orgName}`.toLowerCase().includes(keyword)
       const matchCompany = filter.companyId === 'all' || s.orgId === filter.companyId
       const matchStatus = filter.status === 'all' || s.status === filter.status
 
@@ -43,77 +42,71 @@ export function LockersPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-[1250px]">
-
-      {/* Hero Header */}
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200 dark:border-slate-800">
-        <div className="relative z-10 flex-1 min-w-0">
-          <h1 className="text-[20px] sm:text-[22px] font-bold text-slate-900 dark:text-white leading-tight truncate">{t('lockers.title')}</h1>
-          <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
-            Theo dõi trạng thái thời gian thực các trạm tủ, ngăn tủ trống, đang sử dụng hoặc sự cố phần cứng.
-          </p>
+      
+      {/* Header */}
+      <section data-reveal className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-2xs">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-[20px]">
+            📦
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">{t('lockers.title')}</h1>
+            </div>
+            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1 max-w-xl leading-relaxed">{t('lockers.desc')}</p>
+          </div>
         </div>
 
-        <div className="relative z-10 flex items-center gap-3 shrink-0">
-          <div className="px-4 py-2 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center min-w-[110px] shadow-2xs">
-            <span className="text-[11px] text-slate-500 font-medium">Tổng số trạm tủ</span>
-            <span className="text-[22px] font-bold font-mono text-sky-600 dark:text-sky-400 leading-none mt-0.5">{filteredStations.length}</span>
-          </div>
+        <div className="stat-pill px-4 py-2 rounded-2xl border text-center shrink-0">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">Tổng số trạm tủ</span>
+          <strong className="text-[18px] font-bold text-slate-900 dark:text-white font-mono">{stations.length}</strong>
         </div>
       </section>
 
       {/* Filter Bar */}
-      <div data-reveal className="setting-card-custom p-4 rounded-2xl flex flex-col gap-4 shadow-2xs border">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div data-reveal className="setting-card-custom p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xs border">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" />
+          <input
+            type="text"
+            placeholder={t('lockers.searchPlaceholder')}
+            value={filter.search}
+            onChange={(e) => setFilter((prev) => ({ ...prev, search: e.target.value }))}
+            className="setting-input-custom w-full h-10 pl-9 pr-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
+          />
+        </div>
 
-          {/* Search Field */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium setting-title-custom">Tìm kiếm trạm tủ</label>
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-slate-500" />
-              <input
-                type="text"
-                placeholder={t('lockers.searchPlaceholder')}
-                value={filter.search}
-                onChange={(e) => setFilter((prev: TLockerFilter) => ({ ...prev, search: e.target.value }))}
-                className="setting-input-custom w-full h-10 pl-9 pr-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
-              />
-            </div>
-          </div>
-
-          {/* Org Filter */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium setting-title-custom">Khu trọ / Doanh nghiệp</label>
+        <div className="flex items-center gap-3 w-full md:w-auto shrink-0">
+          <div className="flex flex-col gap-1 w-full md:w-48">
             <select
               value={filter.companyId}
-              onChange={(e) => setFilter((prev: TLockerFilter) => ({ ...prev, companyId: e.target.value }))}
-              className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
+              onChange={(e) => setFilter((prev) => ({ ...prev, companyId: e.target.value }))}
+              className="h-10 px-3.5 rounded-xl text-[13px] font-medium bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('role.all')}</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả đơn vị / khu trọ</option>
               <option value="org-001" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">TechCorp Office Building</option>
               <option value="org-002" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu Nhà Trọ Hoàng Nam</option>
-              <option value="org-003" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký Túc Xá ĐH Bách Khoa</option>
+              <option value="org-003" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký Túc Xá Đại Học Bách Khoa</option>
             </select>
           </div>
 
-          {/* Status Filter */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium setting-title-custom">Trạng thái vận hành</label>
+          <div className="flex flex-col gap-1 w-full md:w-44">
             <select
               value={filter.status}
-              onChange={(e) => setFilter((prev: TLockerFilter) => ({ ...prev, status: e.target.value }))}
-              className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
+              onChange={(e) => setFilter((prev) => ({ ...prev, status: e.target.value }))}
+              className="h-10 px-3.5 rounded-xl text-[13px] font-medium bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lockers.allStatuses')}</option>
-              <option value="online" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Online 100%</option>
-              <option value="warning" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Warning / Weak Signal</option>
-              <option value="offline" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Offline</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả trạng thái</option>
+              <option value="online" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Hoạt động</option>
+              <option value="warning" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Cảnh báo</option>
+              <option value="offline" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ngoại tuyến</option>
             </select>
           </div>
 
         </div>
       </div>
 
-      {/* Stations List Grid */}
+      {/* Stations List Card Grid */}
       {filteredStations.length > 0 ? (
         <section data-stagger className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
           {filteredStations.map((s) => {

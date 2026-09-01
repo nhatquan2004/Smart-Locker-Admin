@@ -3,15 +3,22 @@ import { useAuthStore } from '../store/useAuthStore'
 import type { TUserRole } from '../types/user.type'
 import { isRouteAllowed } from './routePermissions'
 
-export function ProtectedRoute() {
-  const { isAuthenticated, user } = useAuthStore()
+type TRoleGuardProps = {
+  allowedRoles?: TUserRole[]
+}
+
+export function RoleGuard({ allowedRoles }: TRoleGuardProps) {
+  const { user } = useAuthStore()
   const location = useLocation()
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+  // 1. If explicit allowedRoles prop passed
+  if (allowedRoles && user) {
+    if (!allowedRoles.includes(user.role as TUserRole)) {
+      return <Navigate to="/403" replace />
+    }
   }
 
-  // Role permission check for current route URL
+  // 2. Fallback check using routePermissionsConfig map
   if (user && !isRouteAllowed(location.pathname, user.role as TUserRole)) {
     return <Navigate to="/403" replace />
   }
