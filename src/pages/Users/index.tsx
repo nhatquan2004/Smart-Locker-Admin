@@ -10,16 +10,16 @@ import type { TOrganization } from '../../types/organization.type'
 import { useTranslation } from '../../context/LanguageContext'
 
 const roleBadges: Record<TUserRole, { labelKey: string; style: string }> = {
-  super_admin: { labelKey: 'role.super_admin', style: 'bg-purple-100 text-purple-800 border-purple-200 font-bold' },
-  org_admin: { labelKey: 'role.org_admin', style: 'bg-amber-100 text-amber-800 border-amber-200 font-bold' },
-  user: { labelKey: 'role.user', style: 'bg-sky-100 text-sky-800 border-sky-200 font-bold' },
-  shipper: { labelKey: 'role.shipper', style: 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold' },
+  super_admin: { labelKey: 'role.super_admin', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  org_admin: { labelKey: 'role.org_admin', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  user: { labelKey: 'role.user', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+  shipper: { labelKey: 'role.shipper', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
 }
 
 const statusBadges = {
-  active: { labelKey: 'users.active', style: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-  inactive: { labelKey: 'users.inactive', style: 'bg-slate-100 text-slate-600 border-slate-300' },
-  blocked: { labelKey: 'users.blocked', style: 'bg-red-100 text-red-700 border-red-300' },
+  active: { labelKey: 'users.active', style: 'text-emerald-600 dark:text-emerald-400' },
+  inactive: { labelKey: 'users.inactive', style: 'text-slate-500' },
+  blocked: { labelKey: 'users.blocked', style: 'text-red-600' },
 }
 
 export function UsersPage() {
@@ -148,10 +148,10 @@ export function UsersPage() {
 
   return (
     <div className="flex flex-col gap-5 max-w-[1250px]">
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+      <section data-reveal className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-sky-700">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-700 dark:text-slate-300">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 00-3-3.87" />
@@ -160,12 +160,12 @@ export function UsersPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-[18px] font-bold text-slate-900 leading-tight">{pageTitle}</h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
-                {filteredUsers.length} {t('users.totalAccounts')}
+              <h1 className="text-[18px] font-bold text-slate-900 dark:text-white leading-tight">{pageTitle}</h1>
+              <span className="text-[12px] font-medium text-slate-500 dark:text-slate-400 font-mono">
+                ({filteredUsers.length} {t('users.totalAccounts')})
               </span>
             </div>
-            <p className="text-[12px] text-slate-500 mt-0.5">{t('users.desc')}</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{t('users.desc')}</p>
           </div>
         </div>
 
@@ -219,19 +219,19 @@ export function UsersPage() {
 
         <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto shrink-0">
           {stats.map((s) => (
-            <span key={s.id} className="stat-pill px-3 py-1.5 rounded-xl border text-[11px] font-mono whitespace-nowrap">
+            <span key={s.id} className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[11.5px] font-mono whitespace-nowrap">
               {s.label}: <strong className="font-bold">{s.value}</strong>
             </span>
           ))}
         </div>
       </div>
 
-      <div data-reveal className="rounded-2xl glass-card overflow-hidden shadow-xs border border-slate-200">
+      <div data-reveal className="rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-2xs border border-slate-200/80 dark:border-slate-800/80">
         {paginatedUsers.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-100/70 text-[11px] font-semibold text-slate-600 whitespace-nowrap">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-[11.5px] font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                   <th className="py-3.5 px-5">{t('users.colName')}</th>
                   <th className="py-3.5 px-5">{t('users.colContact')}</th>
                   <th className="py-3.5 px-5">{t('users.colRole')}</th>
@@ -241,47 +241,51 @@ export function UsersPage() {
                   <th className="py-3.5 px-5 text-right">{t('users.colActions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-[13px] bg-white whitespace-nowrap">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[13px] bg-white dark:bg-slate-900 whitespace-nowrap">
                 {paginatedUsers.map((u) => {
                   const roleBadge = roleBadges[u.role] ?? roleBadges.user
                   const statusBadge = statusBadges[u.status] ?? statusBadges.active
                   return (
-                    <tr key={u.id} className="hover:bg-sky-50/40 transition-colors">
+                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="py-3.5 px-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-sky-100 border border-sky-200 text-sky-800 font-bold font-mono text-[12px] flex items-center justify-center shrink-0">
+                          <div className="w-8.5 h-8.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold font-mono text-[12px] flex items-center justify-center shrink-0">
                             {getInitials(u.fullName)}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-slate-900 truncate">{u.fullName}</p>
-                            <span className="text-[11px] font-mono text-slate-500">{u.userCode}</span>
+                            <p className="font-bold text-slate-900 dark:text-white truncate">{u.fullName}</p>
+                            <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">{u.userCode}</span>
                           </div>
                         </div>
                       </td>
                       <td className="py-3.5 px-5">
                         <div className="flex flex-col text-[12px]">
-                          <span className="font-mono text-slate-800 font-medium">{u.phone}</span>
-                          <span className="text-[11px] text-slate-500 truncate max-w-[180px]">{u.email}</span>
+                          <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">{u.phone}</span>
+                          <span className="text-[11px] text-slate-400 truncate max-w-[180px]">{u.email}</span>
                         </div>
                       </td>
                       <td className="py-3.5 px-5">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-semibold border whitespace-nowrap ${roleBadge.style}`}>
+                        <span className={`inline-flex px-2 py-0.5 rounded text-[11px] font-medium border whitespace-nowrap ${roleBadge.style}`}>
                           {t(roleBadge.labelKey as any)}
                         </span>
                       </td>
                       <td className="py-3.5 px-5">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border whitespace-nowrap ${statusBadge.style}`}>
-                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                          {t(statusBadge.labelKey as any)}
-                        </span>
+                        <div className="flex items-center gap-1.5 text-[12px] font-semibold">
+                          <span className={`w-2 h-2 rounded-full ${
+                            u.status === 'active' ? 'bg-emerald-500 animate-pulse' : u.status === 'inactive' ? 'bg-slate-400' : 'bg-red-500'
+                          }`} />
+                          <span className={statusBadge.style}>
+                            {t(statusBadge.labelKey as any)}
+                          </span>
+                        </div>
                       </td>
                       <td className="py-3.5 px-5">
-                        <span className="font-semibold text-slate-800 text-[12px] truncate block max-w-[200px]">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 text-[12px] truncate block max-w-[200px]">
                           {u.companyName || 'Global'}
                         </span>
                       </td>
                       <td className="py-3.5 px-5">
-                        <span className="text-[12px] text-slate-600 font-medium truncate block max-w-[200px]">
+                        <span className="text-[12px] text-slate-500 dark:text-slate-400 font-medium truncate block max-w-[200px]">
                           {u.unitNumber || '---'}
                         </span>
                       </td>
@@ -289,7 +293,7 @@ export function UsersPage() {
                         <button
                           type="button"
                           onClick={() => navigate(`/users/${u.id}`)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-600 hover:text-white transition-all text-[11px] font-semibold cursor-pointer shadow-2xs active:scale-95"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-[11.5px] font-semibold cursor-pointer shadow-2xs active:scale-95"
                         >
                           {t('users.btnDetail')}
                         </button>

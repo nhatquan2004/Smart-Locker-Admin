@@ -184,16 +184,16 @@ export function ShipmentsPage() {
 
                       {/* Stepper Progress */}
                       <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-mono whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded ${s.shipmentStatus !== 'pending' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-slate-100 text-slate-600'}`}>
+                        <div className="flex items-center gap-1.5 text-[11.5px] font-mono whitespace-nowrap">
+                          <span className={`px-2 py-0.5 rounded text-[11px] ${s.shipmentStatus !== 'pending' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border border-slate-200 dark:border-slate-700' : 'text-slate-400'}`}>
                             1. Đã gửi
                           </span>
-                          <span>→</span>
-                          <span className={`px-2 py-0.5 rounded ${s.otpStatus === 'active' ? 'bg-sky-100 text-sky-800 font-bold border border-sky-300' : 'bg-slate-100 text-slate-600'}`}>
+                          <span className="text-slate-300 dark:text-slate-600">→</span>
+                          <span className={`px-2 py-0.5 rounded text-[11px] ${s.otpStatus === 'active' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border border-slate-200 dark:border-slate-700' : 'text-slate-400'}`}>
                             2. OTP Active
                           </span>
-                          <span>→</span>
-                          <span className={`px-2 py-0.5 rounded ${s.shipmentStatus === 'picked_up' ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-100 text-slate-600'}`}>
+                          <span className="text-slate-300 dark:text-slate-600">→</span>
+                          <span className={`px-2 py-0.5 rounded text-[11px] ${s.shipmentStatus === 'picked_up' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold' : 'text-slate-400'}`}>
                             3. Đã nhận
                           </span>
                         </div>
@@ -202,12 +202,17 @@ export function ShipmentsPage() {
                       {/* OTP Status */}
                       <td className="py-3.5 px-5">
                         <div className="flex flex-col gap-1">
-                          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold w-max ${badge.style}`}>
-                            {badge.label}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-[12px] font-semibold">
+                            <span className={`w-2 h-2 rounded-full ${
+                              s.shipmentStatus === 'picked_up' ? 'bg-emerald-500' : s.shipmentStatus === 'waiting_pickup' ? 'bg-sky-500 animate-pulse' : s.shipmentStatus === 'expired' ? 'bg-red-500' : 'bg-slate-400'
+                            }`} />
+                            <span className={s.shipmentStatus === 'picked_up' ? 'text-emerald-600 dark:text-emerald-400' : s.shipmentStatus === 'waiting_pickup' ? 'text-sky-600 dark:text-sky-400' : s.shipmentStatus === 'expired' ? 'text-red-600' : 'text-slate-600 dark:text-slate-400'}>
+                              {badge.label}
+                            </span>
+                          </div>
                           {s.otpCode && (
-                            <span className="font-mono text-[11px] font-bold text-slate-700">
-                              Mã OTP: <strong className="text-sky-700">{s.otpCode}</strong>
+                            <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                              Mã OTP: <strong className="text-slate-900 dark:text-white font-bold">{s.otpCode}</strong>
                             </span>
                           )}
                         </div>

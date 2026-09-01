@@ -1,64 +1,64 @@
-import type { TDashboardOverview} from "../types/dashboard.type.ts";
+import type { TDashboardOverview } from "../types/dashboard.type.ts";
 
 const dashboardMock: TDashboardOverview = {
     stats: [
         {
             id: 'total-lockers',
-            label: 'Tổng số tủ',
+            label: 'Tổng số ngăn tủ',
             value: '48',
-            change: '+12%',
+            change: '4 Cụm tủ',
             trend: 'up',
-            description: '4 cụm tủ đang được quản lý tập trung.',
+            description: '24 Ngăn S • 16 Ngăn M • 8 Ngăn L',
             accent: 'blue',
         },
         {
             id: 'available-lockers',
-            label: 'Tủ đang trống',
+            label: 'Ngăn tủ đang trống',
             value: '19',
-            change: '+5%',
+            change: '39.5% Dung lượng',
             trend: 'up',
-            description: 'Sẵn sàng nhận đơn mới ngay lúc này.',
+            description: 'Sẵn sàng tiếp nhận bưu kiện mới',
             accent: 'green',
         },
         {
             id: 'active-shipments',
-            label: 'Đơn đang xử lý',
+            label: 'Bưu kiện đang lưu tủ',
             value: '27',
-            change: '+8 đơn',
+            change: '22 Chờ nhận',
             trend: 'neutral',
-            description: 'Bao gồm gửi hàng, chờ OTP và chờ nhận.',
+            description: '5 Đơn quá hạn 24h cần nhắc OTP',
             accent: 'orange',
         },
         {
             id: 'success-rate',
-            label: 'Tỷ lệ giao thành công',
+            label: 'Tỷ lệ giao nhận thành công',
             value: '98.4%',
-            change: '+1.6%',
+            change: '7 Ngày qua',
             trend: 'up',
-            description: 'Ổn định trong 7 ngày gần nhất.',
+            description: '1,240 Lượt mở tủ thành công',
             accent: 'purple',
         },
     ],
     statuses: [
         {
             id: 'iot-gateway',
-            label: 'IoT Gateway',
-            value: 'Ổn định',
-            detail: 'ESP32 và relay đang đồng bộ bình thường.',
+            label: 'Bo mạch điều khiển MCU & Gateway',
+            value: 'Hoạt động tốt',
+            detail: 'ESP32-S3 và mạch rơ-le RS485 đồng bộ tín hiệu 100%.',
             tone: 'healthy',
         },
         {
             id: 'sensor-sync',
-            label: 'Đồng bộ cảm biến',
-            value: '46/48 online',
-            detail: '2 ngăn đang cần kiểm tra reed switch.',
+            label: 'Mảng cảm biến IR & Công tắc cửa',
+            value: '46/48 Cảm biến OK',
+            detail: '2 ngăn (A02, C01) phát hiện công tắc cửa khép chưa kín.',
             tone: 'warning',
         },
         {
             id: 'otp-service',
-            label: 'OTP & xác thực',
-            value: 'Realtime',
-            detail: 'Không có request thất bại trong 24h qua.',
+            label: 'Dịch vụ OTP & Realtime Engine',
+            value: 'Realtime WebSocket',
+            detail: 'Tốc độ phát sinh mã OTP < 120ms, 0 lỗi giao tiếp.',
             tone: 'info',
         },
     ],
@@ -74,7 +74,7 @@ const dashboardMock: TDashboardOverview = {
         {
             id: 'ac-02',
             title: 'Shipper tạo đơn gửi mới tại cụm B',
-            description: 'Hệ thống đã gán ngăn tủ medium và lưu ảnh kiện hàng.',
+            description: 'Hệ thống đã gán ngăn tủ Medium và lưu ảnh kiện hàng.',
             time: '8 phút trước',
             actor: 'Shipper • Cụm B',
             tone: 'blue',
@@ -82,7 +82,7 @@ const dashboardMock: TDashboardOverview = {
         {
             id: 'ac-03',
             title: 'Cảnh báo cảm biến cửa ngăn C03',
-            description: 'Tủ đóng chưa kín, cần kiểm tra lại phần cứng hoặc relay.',
+            description: 'Tủ đóng chưa kín, cần kiểm tra lại công tắc từ Reed Switch.',
             time: '15 phút trước',
             actor: 'Thiết bị • Cụm C',
             tone: 'orange',
@@ -98,22 +98,25 @@ const dashboardMock: TDashboardOverview = {
     ],
     quickActions: [
         {
-            id: 'qa-01',
-            label: 'Kiểm tra trạng thái locker',
-            helper: 'Xem nhanh cụm tủ nào đang offline hoặc đầy.',
+            id: 'quick-lockers',
+            label: 'Sơ đồ cụm tủ',
+            helper: 'Xem vị trí & điều khiển từ xa',
         },
         {
-            id: 'qa-02',
-            label: 'Theo dõi đơn giao hôm nay',
-            helper: 'Tập trung các đơn đang pending hoặc lỗi OTP.',
+            id: 'quick-shipments',
+            label: 'Tra cứu bưu kiện',
+            helper: 'Cấp lại OTP & kiểm tra lịch sử',
         },
         {
-            id: 'qa-03',
+            id: 'quick-users',
             label: 'Quản lý người dùng',
-            helper: 'Tìm nhanh shipper, customer hoặc admin account.',
+            helper: 'Phân quyền Admin & Cư dân',
         },
     ],
-}
+};
+
 export async function getDashboardOverview(): Promise<TDashboardOverview> {
-    return Promise.resolve(dashboardMock)
+    return new Promise((resolve) => {
+        setTimeout(() => resolve(dashboardMock), 150);
+    });
 }

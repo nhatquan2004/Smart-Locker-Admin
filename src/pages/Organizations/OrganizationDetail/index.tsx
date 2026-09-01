@@ -316,25 +316,26 @@ export function OrganizationDetailPage() {
                 <div key={st.id} className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-mono font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/60 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
+                      <span className="px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-block">
                         {st.code}
                       </span>
                       <h4 className="font-bold text-slate-900 dark:text-white text-[14px] mt-1">{st.name}</h4>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      ● ONLINE
-                    </span>
+                    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Online</span>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center font-mono text-[11px] font-bold">
-                    <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                      S: {formSizeS}
+                  <div className="grid grid-cols-3 gap-2 text-center font-mono text-[11px] font-medium">
+                    <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 font-semibold">
+                      S: {st.compartments.filter(c => c.size === 'small').length}
                     </div>
-                    <div className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
-                      M: {formSizeM}
+                    <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 font-semibold">
+                      M: {st.compartments.filter(c => c.size === 'medium').length}
                     </div>
-                    <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                      L: {formSizeL}
+                    <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 font-semibold">
+                      L: {st.compartments.filter(c => c.size === 'large').length}
                     </div>
                   </div>
 

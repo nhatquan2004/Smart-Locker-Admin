@@ -45,21 +45,18 @@ export function LockersPage() {
     <div className="flex flex-col gap-6 max-w-[1250px]">
 
       {/* Hero Header */}
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200 dark:border-slate-800">
+      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200 dark:border-slate-800">
         <div className="relative z-10 flex-1 min-w-0">
-          <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-            Smart Locker Station Directory
-          </span>
-          <h1 className="text-[22px] font-bold text-slate-900 dark:text-white leading-tight mt-1.5 truncate">{t('lockers.title')}</h1>
-          <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">
-            Theo dõi trạng thái thời gian thực các ngăn tủ trống, đang sử dụng, quá hạn hoặc lỗi phần cứng.
+          <h1 className="text-[20px] sm:text-[22px] font-bold text-slate-900 dark:text-white leading-tight truncate">{t('lockers.title')}</h1>
+          <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-xl">
+            Theo dõi trạng thái thời gian thực các trạm tủ, ngăn tủ trống, đang sử dụng hoặc sự cố phần cứng.
           </p>
         </div>
 
         <div className="relative z-10 flex items-center gap-3 shrink-0">
-          <div className="stat-pill px-4 py-2 rounded-2xl border flex flex-col items-center justify-center min-w-[100px]">
-            <span className="text-[10px] font-mono text-slate-500 uppercase font-semibold">TỔNG SỐ</span>
-            <span className="text-[20px] font-bold font-mono text-sky-600 dark:text-sky-400 leading-none mt-0.5">{filteredStations.length}</span>
+          <div className="px-4 py-2 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center min-w-[110px] shadow-2xs">
+            <span className="text-[11px] text-slate-500 font-medium">Tổng số trạm tủ</span>
+            <span className="text-[22px] font-bold font-mono text-sky-600 dark:text-sky-400 leading-none mt-0.5">{filteredStations.length}</span>
           </div>
         </div>
       </section>
@@ -67,10 +64,10 @@ export function LockersPage() {
       {/* Filter Bar */}
       <div data-reveal className="setting-card-custom p-4 rounded-2xl flex flex-col gap-4 shadow-2xs border">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          
+
           {/* Search Field */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">TÌM KIẾM...</label>
+            <label className="text-[12px] font-medium setting-title-custom">Tìm kiếm trạm tủ</label>
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400 dark:text-slate-500" />
               <input
@@ -85,7 +82,7 @@ export function LockersPage() {
 
           {/* Org Filter */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('users.colOrg')}</label>
+            <label className="text-[12px] font-medium setting-title-custom">Khu trọ / Doanh nghiệp</label>
             <select
               value={filter.companyId}
               onChange={(e) => setFilter((prev: TLockerFilter) => ({ ...prev, companyId: e.target.value }))}
@@ -100,7 +97,7 @@ export function LockersPage() {
 
           {/* Status Filter */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('common.status')}</label>
+            <label className="text-[12px] font-medium setting-title-custom">Trạng thái vận hành</label>
             <select
               value={filter.status}
               onChange={(e) => setFilter((prev: TLockerFilter) => ({ ...prev, status: e.target.value }))}
@@ -118,7 +115,7 @@ export function LockersPage() {
 
       {/* Stations List Grid */}
       {filteredStations.length > 0 ? (
-        <section data-stagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section data-stagger className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
           {filteredStations.map((s) => {
             const smallCount = s.compartments.filter((c) => c.size === 'small').length
             const mediumCount = s.compartments.filter((c) => c.size === 'medium').length
@@ -128,33 +125,32 @@ export function LockersPage() {
             const availPercent = Math.round((availCount / totalCount) * 100) || 0
 
             return (
-              <article key={s.id} className="setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200">
+              <article key={s.id} className="setting-card-custom flex flex-col gap-4 p-5 sm:p-6 rounded-2xl border shadow-xs hover:-translate-y-1 hover:shadow-md transition-all duration-200 min-w-0">
                 {/* Station Code + Status Badge */}
-                <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <div>
-                    <span className="stat-pill text-[10px] font-semibold px-2 py-0.5 rounded border font-mono">
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 inline-block">
                       {s.code}
                     </span>
-                    <h3 className="setting-title-custom text-[16px] font-bold mt-1 truncate">{s.name}</h3>
-                    <p className="setting-desc-custom text-[12px] font-medium truncate mt-0.5 flex items-center gap-1">
+                    <h3 className="setting-title-custom text-[15px] sm:text-[16px] font-bold mt-1.5 truncate" title={s.name}>{s.name}</h3>
+                    <p className="setting-desc-custom text-[12px] font-medium truncate mt-0.5 flex items-center gap-1" title={s.location}>
                       <MapPin className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-                      {s.location}
+                      <span className="truncate">{s.location}</span>
                     </p>
                   </div>
 
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${s.status === 'online'
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                      : s.status === 'warning'
-                        ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
-                        : 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800'
-                    }`}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                    {s.status.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold shrink-0">
+                    <span className={`w-2 h-2 rounded-full ${
+                      s.status === 'online' ? 'bg-emerald-500 animate-pulse' : s.status === 'warning' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
+                    }`} />
+                    <span className={s.status === 'online' ? 'text-emerald-600 dark:text-emerald-400' : s.status === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}>
+                      {s.status === 'online' ? 'Hoạt động' : s.status === 'warning' ? 'Cảnh báo' : 'Ngoại tuyến'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Organization Ownership */}
-                <div className="p-3 rounded-xl setting-input-custom text-[12px] flex justify-between items-center border">
+                <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 text-[12.5px] flex justify-between items-center border border-slate-200/80 dark:border-slate-700/80">
                   <span className="setting-desc-custom font-medium">{t('users.colOrg')}:</span>
                   <span className="font-bold setting-title-custom truncate max-w-[170px]">{s.orgName}</span>
                 </div>
@@ -167,7 +163,7 @@ export function LockersPage() {
                   </div>
 
                   {/* Size Pills */}
-                  <div className="grid grid-cols-3 gap-1.5 text-center text-[11px] font-mono">
+                  <div className="grid grid-cols-3 gap-1.5 text-center text-[11.5px] font-mono">
                     <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 font-bold">
                       S: {smallCount}
                     </div>
@@ -181,7 +177,7 @@ export function LockersPage() {
                 </div>
 
                 {/* Master controller IoT status */}
-                <div className="flex items-center justify-between text-[11px] font-mono setting-desc-custom pt-1 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-[11.5px] font-mono text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <span>MCU Temp: {s.masterController.temperatureCelsius}°C</span>
                   <span>IP: {s.masterController.ipAddress}</span>
                 </div>

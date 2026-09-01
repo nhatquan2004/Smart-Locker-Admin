@@ -27,25 +27,25 @@ import {
 } from 'lucide-react'
 
 const categoryBadges: Record<TIssueCategory, { label: string; icon: React.ReactNode; style: string }> = {
-  locker:  { label: 'Lỗi Locker & Khóa', icon: <Lock className="w-3.5 h-3.5" />, style: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-medium' },
-  otp:     { label: 'Lỗi Mã OTP', icon: <Key className="w-3.5 h-3.5" />, style: 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 font-medium' },
-  parcel:  { label: 'Lỗi Đơn Hàng', icon: <PackageCheck className="w-3.5 h-3.5" />, style: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800 font-medium' },
-  app:     { label: 'Lỗi Ứng Dụng', icon: <Zap className="w-3.5 h-3.5" />, style: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 font-medium' },
+  locker:  { label: 'Lỗi Locker & Khóa', icon: <Lock className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+  otp:     { label: 'Lỗi Mã OTP', icon: <Key className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+  parcel:  { label: 'Lỗi Đơn Hàng', icon: <PackageCheck className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+  app:     { label: 'Lỗi Ứng Dụng', icon: <Zap className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
 }
 
 const priorityBadges: Record<TIssuePriority, { label: string; style: string; dot?: boolean }> = {
-  urgent: { label: 'KHẨN CẤP', style: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800 font-mono font-bold', dot: true },
-  high:   { label: 'MỨC ĐỘ CAO', style: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 font-mono font-bold' },
-  medium: { label: 'TRUNG BÌNH', style: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800 font-mono font-semibold' },
-  low:    { label: 'THẤP', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-mono font-semibold' },
+  urgent: { label: 'KHẨN CẤP', style: 'bg-slate-100 text-red-600 border-slate-200 dark:bg-slate-800 dark:text-red-400 dark:border-slate-700 font-mono font-bold', dot: true },
+  high:   { label: 'MỨC ĐỘ CAO', style: 'bg-slate-100 text-amber-600 border-slate-200 dark:bg-slate-800 dark:text-amber-400 dark:border-slate-700 font-mono font-semibold' },
+  medium: { label: 'TRUNG BÌNH', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-mono font-semibold' },
+  low:    { label: 'THẤP', style: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 font-mono font-semibold' },
 }
 
-const statusBadges: Record<TIssueStatus, { label: string; style: string; icon: React.ReactNode }> = {
-  pending:     { label: 'Mới tiếp nhận', style: 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 font-bold', icon: <Clock className="w-3 h-3 text-amber-600 shrink-0" /> },
-  in_progress: { label: 'Đang xử lý', style: 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800 font-bold', icon: <Wrench className="w-3 h-3 text-sky-600 shrink-0" /> },
-  escalated:   { label: 'Leo thang Super Admin', style: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 font-bold', icon: <Rocket className="w-3 h-3 text-purple-600 shrink-0" /> },
-  resolved:    { label: 'Đã giải quyết', style: 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-bold', icon: <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" /> },
-  closed:      { label: 'Đã đóng ticket', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-bold', icon: <Lock className="w-3 h-3 text-slate-500 shrink-0" /> },
+const statusBadges: Record<TIssueStatus, { label: string; dotColor: string; textColor: string }> = {
+  pending:     { label: 'Mới tiếp nhận', dotColor: 'bg-amber-500 animate-pulse', textColor: 'text-amber-600 dark:text-amber-400' },
+  in_progress: { label: 'Đang xử lý', dotColor: 'bg-sky-500 animate-pulse', textColor: 'text-sky-600 dark:text-sky-400' },
+  escalated:   { label: 'Leo thang Super Admin', dotColor: 'bg-purple-500 animate-pulse', textColor: 'text-purple-600 dark:text-purple-400' },
+  resolved:    { label: 'Đã giải quyết', dotColor: 'bg-emerald-500', textColor: 'text-emerald-600 dark:text-emerald-400' },
+  closed:      { label: 'Đã đóng ticket', dotColor: 'bg-slate-400', textColor: 'text-slate-500' },
 }
 
 export function IssuesPage() {
@@ -255,15 +255,15 @@ export function IssuesPage() {
       <div data-reveal className="setting-card-custom rounded-2xl overflow-hidden shadow-xs border">
         {filteredIssues.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1050px]">
+            <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  <th className="py-3.5 px-5">Mã Ticket & Thời Gian</th>
-                  <th className="py-3.5 px-5">Người Báo Lỗi</th>
-                  <th className="py-3.5 px-5">Khu Trọ & Locker</th>
-                  <th className="py-3.5 px-5">Nội Dung & Ảnh Bằng Chứng</th>
-                  <th className="py-3.5 px-5">Mức Độ</th>
-                  <th className="py-3.5 px-5">Trạng Thái Xử Lý</th>
+                  <th className="py-3.5 px-5 whitespace-nowrap">Mã Ticket & Thời Gian</th>
+                  <th className="py-3.5 px-5 whitespace-nowrap">Người Báo Lỗi</th>
+                  <th className="py-3.5 px-5 whitespace-nowrap">Khu Trọ & Locker</th>
+                  <th className="py-3.5 px-5 whitespace-nowrap">Nội Dung & Bằng Chứng</th>
+                  <th className="py-3.5 px-5 whitespace-nowrap">Mức Độ</th>
+                  <th className="py-3.5 px-5 whitespace-nowrap">Trạng Thái Xử Lý</th>
                   <th className="py-3.5 px-5 text-right whitespace-nowrap">Thao Tác</th>
                 </tr>
               </thead>
@@ -278,7 +278,7 @@ export function IssuesPage() {
                     <tr key={iss.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       
                       {/* Ticket Code */}
-                      <td className="py-3.5 px-5">
+                      <td className="py-3.5 px-5 whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-mono font-bold text-sky-600 dark:text-sky-400 text-[13px]">
                             {iss.ticketCode}
@@ -287,7 +287,7 @@ export function IssuesPage() {
                             {iss.createdAt}
                           </span>
                           {iss.escalatedToSuperAdmin && (
-                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 w-max mt-0.5">
+                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 w-max mt-0.5 whitespace-nowrap">
                               <Rocket className="w-2.5 h-2.5" /> ESCALATED SUPER ADMIN
                             </span>
                           )}
@@ -297,7 +297,7 @@ export function IssuesPage() {
                       {/* Reporter */}
                       <td className="py-3.5 px-5">
                         <div className="flex flex-col gap-1">
-                          <span className="font-bold text-slate-900 dark:text-white">{iss.reporterName}</span>
+                          <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">{iss.reporterName}</span>
                           <div className="flex items-center gap-1.5 text-[11px] flex-wrap">
                             {iss.reporterRole === 'shipper' ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 whitespace-nowrap">
@@ -318,10 +318,10 @@ export function IssuesPage() {
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-1.5 text-[12px] font-mono font-bold text-slate-800 dark:text-slate-200">
                             <Building2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-                            <span className="truncate max-w-[150px]">{iss.orgName}</span>
+                            <span className="truncate max-w-[170px]">{iss.orgName}</span>
                           </div>
                           {iss.lockerCode && (
-                            <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 w-max">
+                            <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 w-max whitespace-nowrap">
                               Ngăn Tủ {iss.lockerCode}
                             </span>
                           )}
@@ -329,15 +329,15 @@ export function IssuesPage() {
                       </td>
 
                       {/* Title, Category & Photo Evidence Chip */}
-                      <td className="py-3.5 px-5 max-w-[280px]">
-                        <div className="flex flex-col gap-1">
+                      <td className="py-3.5 px-5 min-w-[260px] max-w-[340px]">
+                        <div className="flex flex-col gap-1.5">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border ${catBadge.style}`}>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border whitespace-nowrap shrink-0 ${catBadge.style}`}>
                               {catBadge.icon}
                               {catBadge.label}
                             </span>
                             {hasPhoto && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 whitespace-nowrap shrink-0">
                                 <ImageIcon className="w-3 h-3" /> {iss.attachments?.length} Ảnh đính kèm
                               </span>
                             )}
@@ -348,7 +348,7 @@ export function IssuesPage() {
 
                       {/* Priority */}
                       <td className="py-3.5 px-5">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] border whitespace-nowrap ${prioBadge.style}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border whitespace-nowrap ${prioBadge.style}`}>
                           {prioBadge.dot && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />}
                           {prioBadge.label}
                         </span>
@@ -356,10 +356,10 @@ export function IssuesPage() {
 
                       {/* Status */}
                       <td className="py-3.5 px-5">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] border whitespace-nowrap ${stBadge.style}`}>
-                          {stBadge.icon}
-                          {stBadge.label}
-                        </span>
+                        <div className="flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap">
+                          <span className={`w-2 h-2 rounded-full ${stBadge.dotColor}`} />
+                          <span className={stBadge.textColor}>{stBadge.label}</span>
+                        </div>
                       </td>
 
                       {/* Actions - No Line Wrap Fix */}

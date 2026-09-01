@@ -19,10 +19,10 @@ export function OrganizationsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const typeBadges: Record<TOrgType, { label: string; style: string }> = {
-    enterprise: { label: t('org.typeOffice'), style: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-    apartment: { label: t('org.typeHostel'), style: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    dormitory: { label: t('org.typeUniversity'), style: 'bg-sky-100 text-sky-800 border-sky-200' },
-    commercial: { label: t('org.typeApartment'), style: 'bg-amber-100 text-amber-800 border-amber-200' },
+    enterprise: { label: t('org.typeOffice'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+    apartment: { label: t('org.typeHostel'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+    dormitory: { label: t('org.typeUniversity'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+    commercial: { label: t('org.typeApartment'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
   }
 
   // Form states for creating new org with S/M/L compartment layout breakdown
@@ -120,13 +120,12 @@ export function OrganizationsPage() {
     <div className="flex flex-col gap-6 max-w-[1250px]">
 
       {/* Hero */}
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs">
+      <section data-reveal className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-2xs">
         <div className="relative z-10 flex-1 min-w-0">
-          <p className="eyebrow mb-1">Multi-Tenant Management Architecture</p>
-          <h1 className="text-[22px] font-bold text-slate-900 leading-tight">
+          <h1 className="text-[20px] sm:text-[22px] font-bold text-slate-900 dark:text-white leading-tight">
             {t('org.title')}
           </h1>
-          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed max-w-lg">
+          <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg">
             {t('org.desc')}
           </p>
         </div>
@@ -142,28 +141,28 @@ export function OrganizationsPage() {
       </section>
 
       {/* Filter Toolbar */}
-      <div data-reveal className="p-5 rounded-2xl glass-card flex flex-col gap-4 shadow-2xs">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div data-reveal className="p-4 rounded-2xl bg-white dark:bg-slate-900 flex flex-col gap-4 border border-slate-200/80 dark:border-slate-800/80 shadow-2xs">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
           {/* Search */}
-          <div className="md:col-span-2 flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">{t('common.search')}</label>
+          <div className="md:col-span-2 flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-slate-700 dark:text-slate-300">{t('common.search')}</label>
             <input
               type="text"
               placeholder={t('org.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500"
+              className="h-9.5 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400"
             />
           </div>
 
           {/* Type Filter */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-mono text-slate-600 uppercase font-semibold">{t('org.colType')}</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-[12px] font-medium text-slate-700 dark:text-slate-300">{t('org.colType')}</label>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 cursor-pointer"
+              className="h-9.5 px-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-slate-400 cursor-pointer"
             >
               <option value="all">{t('role.all')}</option>
               <option value="enterprise">{t('org.typeOffice')}</option>
@@ -178,38 +177,38 @@ export function OrganizationsPage() {
 
       {/* Grid */}
       {filteredOrgs.length > 0 ? (
-        <section data-stagger className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section data-stagger className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredOrgs.map((org) => {
             const badge = typeBadges[org.type] ?? typeBadges.enterprise
             return (
               <article
                 key={org.id}
-                className="flex flex-col gap-4 p-6 rounded-2xl glass-card border border-slate-200 shadow-xs hover:border-sky-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 relative"
+                className="flex flex-col gap-4 p-5 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xs hover:shadow-md transition-all duration-150 relative"
               >
                 {/* Top header */}
-                <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="min-w-0">
-                    <span className="text-[10px] font-mono text-sky-800 font-bold bg-sky-100 px-2 py-0.5 rounded border border-sky-200">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 inline-block">
                       {org.code}
                     </span>
-                    <h3 className="text-[17px] font-bold text-slate-900 mt-1 truncate">{org.name}</h3>
+                    <h3 className="text-[16px] font-bold text-slate-900 dark:text-white mt-1.5 truncate">{org.name}</h3>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border shrink-0 ${badge.style}`}>
+                  <span className={`px-2.5 py-1 rounded-md text-[11px] font-medium border shrink-0 ${badge.style}`}>
                     {badge.label}
                   </span>
                 </div>
 
-                <p className="text-[12px] text-slate-600 line-clamp-2 leading-relaxed font-medium">📍 {org.address}</p>
+                <p className="text-[12.5px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium">📍 {org.address}</p>
 
-                {/* Metrics Box (High contrast Light Mode design) */}
-                <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[12px]">
+                {/* Metrics Box */}
+                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 text-[12px]">
                   <div>
-                    <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">Số lượng tủ gán</span>
-                    <p className="text-[16px] font-bold text-sky-700 font-mono mt-0.5">{org.totalLockers} tủ</p>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Số lượng tủ gán</span>
+                    <p className="text-[15px] font-bold text-slate-900 dark:text-white font-mono mt-0.5">{org.totalLockers} tủ</p>
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono text-slate-500 uppercase font-bold">Thành viên / Cư dân</span>
-                    <p className="text-[16px] font-bold text-emerald-700 font-mono mt-0.5">{org.totalMembers} người</p>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Thành viên / Cư dân</span>
+                    <p className="text-[15px] font-bold text-slate-900 dark:text-white font-mono mt-0.5">{org.totalMembers} người</p>
                   </div>
                 </div>
 
