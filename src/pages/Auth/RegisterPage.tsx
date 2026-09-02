@@ -40,7 +40,7 @@ export function RegisterPage() {
         orgType: orgType,
       }
 
-      login(newOrgUser)
+      login(newOrgUser, 'mock-token', 'mock-refresh-token')
       navigate('/dashboard')
     }, 700)
   }

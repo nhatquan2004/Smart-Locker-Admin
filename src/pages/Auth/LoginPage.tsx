@@ -1,9 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
-import type { TAdminUser } from '../../types/auth.type'
+import type { TAdminUser, TRole } from '../../types/auth.type'
 import lockerLogo from '../../assets/locker.png'
-import { Lock, Mail, ArrowRight } from 'lucide-react'
+import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react'
+
+// Map backend Role enum → frontend TRole
+function mapBackendRole(role: string): TRole {
+  switch (role) {
+    case 'SYSTEM_ADMIN': return 'super_admin'
+    case 'BUILDING_ADMIN': return 'org_admin'
+    case 'SHIPPER': return 'shipper'
+    case 'RESIDENT': return 'resident_employee'
+    default: return 'org_admin'
+  }
+}
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -14,95 +27,53 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'superadmin@smartlocker.vn'
-  const SUPER_ADMIN_PASS = import.meta.env.VITE_SUPER_ADMIN_PASSWORD || 'SuperAdmin@2026'
-
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
     if (!email.trim() || !password.trim()) {
-      setError('Vui lòng nhập đầy đủ Email / Tên đăng nhập và Mật khẩu.')
+      setError('Vui lòng nhập đầy đủ Email và Mật khẩu.')
       return
     }
 
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
 
-      const inputVal = email.toLowerCase().trim()
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      })
 
-      // 1. Super Admin
-      if (inputVal === SUPER_ADMIN_EMAIL.toLowerCase() || inputVal === 'superadmin') {
-        const superAdminUser: TAdminUser = {
-          id: 'sa-01',
-          email: SUPER_ADMIN_EMAIL,
-          fullName: 'Hoàng Quân (Super Admin)',
-          role: 'super_admin',
-          orgId: 'all',
-          orgName: 'Toàn Hệ Thống (Global)',
-        }
-        login(superAdminUser)
-        navigate('/dashboard')
+      const data = await res.json()
+
+      if (!res.ok) {
+        const msg = data?.message || 'Đăng nhập thất bại. Kiểm tra lại thông tin.'
+        setError(Array.isArray(msg) ? msg.join(', ') : msg)
         return
       }
 
-      // 2. Admin Quản Lý Shipper (Shipper Station Admin)
-      if (inputVal.includes('shipper') || inputVal.includes('manager')) {
-        const shipperAdminUser: TAdminUser = {
-          id: 'sa-mgr-01',
-          email: 'shipper.manager@smartlocker.vn',
-          fullName: 'Vũ Quốc Huy (Quản Lý Trạm Shipper)',
-          role: 'shipper_admin',
-          orgId: 'org-001',
-          orgName: 'Trạm Giao Nhận Shipper Central Hub',
-        }
-        login(shipperAdminUser)
-        navigate('/dashboard')
-        return
+      // Map backend response → frontend TAdminUser
+      const backendUser = data.user
+      const adminUser: TAdminUser = {
+        id: backendUser.id,
+        email: backendUser.email,
+        fullName: backendUser.name,
+        role: mapBackendRole(backendUser.role),
+        orgId: backendUser.buildingId || 'all',
+        orgName: backendUser.carrierName || undefined,
       }
 
-      // 3. Admin Khu Trọ / Tòa Nhà (Building Admin)
-      if (inputVal.includes('hoangnam') || inputVal.includes('tro')) {
-        const hostelUser: TAdminUser = {
-          id: 'oa-02',
-          email: 'hoangnam.hostel@gmail.com',
-          fullName: 'Nguyễn Hoàng Nam (Chủ Khu Trọ)',
-          role: 'org_admin',
-          orgId: 'org-002',
-          orgName: 'Khu Nhà Trọ Hoàng Nam',
-          orgType: 'apartment',
-        }
-        login(hostelUser)
-        navigate('/dashboard')
-        return
-      }
-
-      // Default Org Admin Login
-      const defaultUser: TAdminUser = {
-        id: 'oa-01',
-        email: email,
-        fullName: email.includes('@') ? email.split('@')[0] : email,
-        role: 'org_admin',
-        orgId: 'org-001',
-        orgName: 'TechCorp Office Building',
-        orgType: 'enterprise',
-      }
-      login(defaultUser)
+      login(adminUser, data.accessToken, data.refreshToken)
       navigate('/dashboard')
-    }, 500)
-  }
-
-  function fillDemo(role: 'super' | 'shipper_admin' | 'hostel') {
-    if (role === 'super') {
-      setEmail(SUPER_ADMIN_EMAIL)
-      setPassword(SUPER_ADMIN_PASS)
-    } else if (role === 'shipper_admin') {
-      setEmail('shipper.manager@smartlocker.vn')
-      setPassword('ShipperAdmin@2026')
-    } else {
-      setEmail('hoangnam.hostel@gmail.com')
-      setPassword('Hostel@2026')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Không thể kết nối tới server. Kiểm tra backend đang chạy chưa?')
+      } else {
+        setError('Không thể kết nối tới server. Kiểm tra backend đang chạy chưa?')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -122,28 +93,30 @@ export function LoginPage() {
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-slate-900 dark:text-white tracking-tight">Smart Locker Admin</h1>
-            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">Đăng nhập cổng quản trị Super Admin & Quản lý Trạm</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">Đăng nhập cổng quản trị hệ thống</p>
           </div>
         </div>
 
         {error && (
-          <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-800 dark:text-red-300 text-[12px] font-bold border border-red-200 dark:border-red-800">
-            {error}
+          <div className="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/60 text-red-800 dark:text-red-300 text-[12.5px] font-semibold border border-red-200 dark:border-red-800 flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Standard Single Login Form */}
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Email / Tên đăng nhập</label>
+            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Email</label>
             <div className="relative">
               <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 dark:text-slate-500" />
               <input
-                type="text"
-                placeholder="Nhập email hoặc tên đăng nhập..."
+                type="email"
+                placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 className="w-full h-11 pl-10 pr-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -158,6 +131,7 @@ export function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 className="w-full h-11 pl-10 pr-3.5 rounded-xl text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-sky-500"
               />
             </div>
@@ -166,7 +140,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 rounded-xl text-[13px] font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all cursor-pointer shadow-md shadow-sky-600/20 active:scale-98 flex items-center justify-center gap-2 mt-2"
+            className="w-full h-11 rounded-xl text-[13px] font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all cursor-pointer shadow-md shadow-sky-600/20 active:scale-98 flex items-center justify-center gap-2 mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -179,32 +153,14 @@ export function LoginPage() {
           </button>
         </form>
 
-        {/* Demo Quick Chips Toolbar */}
-        <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px]">
-          <span className="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Tài khoản thử nghiệm nhanh (Demo):</span>
-          <div className="grid grid-cols-3 gap-1.5 mt-0.5">
-            <button
-              type="button"
-              onClick={() => fillDemo('super')}
-              className="py-1.5 px-2 rounded-lg bg-sky-600 text-white font-bold hover:bg-sky-700 transition-all text-[11px] truncate cursor-pointer"
-            >
-              Super Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('shipper_admin')}
-              className="py-1.5 px-2 rounded-lg bg-amber-500 text-white font-bold hover:bg-amber-600 transition-all text-[11px] truncate cursor-pointer"
-            >
-              QL Shipper
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('hostel')}
-              className="py-1.5 px-2 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all text-[11px] truncate cursor-pointer"
-            >
-              Admin Trọ
-            </button>
-          </div>
+        {/* Server info hint */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
+            Kết nối đến: <span className="font-mono font-semibold text-sky-600 dark:text-sky-400">{BASE_URL}</span>
+          </p>
+          <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-0.5">
+            Đảm bảo Backend server đang chạy trước khi đăng nhập.
+          </p>
         </div>
 
       </div>

@@ -5,46 +5,43 @@ import type { TAdminUser } from '../types/auth.type'
 type TAuthState = {
   user: TAdminUser | null
   token: string | null
+  refreshToken: string | null
   isAuthenticated: boolean
-  selectedOrgId: string // 'all' or specific org ID for filtering
-  login: (user: TAdminUser, token?: string) => void
+  selectedOrgId: string
+  login: (user: TAdminUser, token: string, refreshToken: string) => void
+  updateTokens: (token: string, refreshToken: string) => void
   logout: () => void
   setSelectedOrgId: (orgId: string) => void
-}
-
-const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'superadmin@smartlocker.vn'
-const SUPER_ADMIN_NAME = import.meta.env.VITE_SUPER_ADMIN_NAME || 'Hoàng Quân (Super Admin)'
-
-const defaultSuperAdmin: TAdminUser = {
-  id: 'sa-01',
-  email: SUPER_ADMIN_EMAIL,
-  fullName: SUPER_ADMIN_NAME,
-  role: 'super_admin',
-  orgId: 'all',
-  orgName: 'Toàn Hệ Thống (Global)',
 }
 
 export const useAuthStore = create<TAuthState>()(
   persist(
     (set) => ({
-      user: defaultSuperAdmin,
-      token: 'mock-jwt-token-super-admin',
-      isAuthenticated: true,
+      user: null,
+      token: null,
+      refreshToken: null,
+      isAuthenticated: false,
       selectedOrgId: 'all',
 
-      login: (user, token = 'mock-jwt-token') => {
+      login: (user, token, refreshToken) => {
         set({
           user,
           token,
+          refreshToken,
           isAuthenticated: true,
           selectedOrgId: user.orgId || 'all',
         })
+      },
+
+      updateTokens: (token, refreshToken) => {
+        set({ token, refreshToken })
       },
 
       logout: () => {
         set({
           user: null,
           token: null,
+          refreshToken: null,
           isAuthenticated: false,
           selectedOrgId: 'all',
         })
