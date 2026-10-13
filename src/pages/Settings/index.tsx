@@ -61,6 +61,15 @@ const sectionTitleMap: Record<string, TranslationKey> = {
   'system-preferences': 'settings.tabPreferences',
 };
 
+const sectionDescMap: Record<string, TranslationKey> = {
+  'otp-settings': 'settings.secDesc.otp',
+  'locker-settings': 'settings.secDesc.locker',
+  'locker-configuration': 'settings.secDesc.locker',
+  'hardware-settings': 'settings.secDesc.hardware',
+  'notification-settings': 'settings.secDesc.notification',
+  'system-preferences': 'settings.secDesc.preferences',
+};
+
 const rowLabelMap: Record<string, TranslationKey> = {
   'otp-expiry': 'settings.otpExpiryLabel',
   'otp-retry': 'settings.otpRetryLabel',
@@ -311,11 +320,11 @@ export function SettingsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <span className="text-[10px] font-mono text-sky-800 dark:text-sky-300 font-bold bg-sky-100 dark:bg-sky-950/60 px-2.5 py-1 rounded-full border border-sky-200 dark:border-sky-800 uppercase">
-              {activeSection.badge}
+              {t('settings.sectionBadge')}
             </span>
             <h2 className="text-[18px] font-bold text-slate-900 dark:text-white mt-2">{activeSectionTitle}</h2>
             <p className="text-[12px] text-slate-600 dark:text-slate-400 mt-0.5">
-              {rowDescMap[activeSection.id] ? t(rowDescMap[activeSection.id]) : activeSection.description}
+              {sectionDescMap[activeSection.id] ? t(sectionDescMap[activeSection.id]) : activeSection.description}
             </p>
           </div>
 

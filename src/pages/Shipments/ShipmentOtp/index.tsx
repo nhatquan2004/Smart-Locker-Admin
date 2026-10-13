@@ -1,13 +1,22 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ShipmentStatusBadge } from '../../../components/Shipments/ShipmentStatusBadge'
-import type { TShipment } from '../../../types/shipment.type'
+import type { TOtpStatus, TShipment } from '../../../types/shipment.type'
+import type { TranslationKey } from '../../../i18n/translations'
 import { useToast } from '../../../context/ToastContext'
+import { useTranslation } from '../../../context/LanguageContext'
+
+const otpLabelKeys: Record<TOtpStatus, TranslationKey> = {
+    active: 'sh.otp.active',
+    used: 'sh.otp.used',
+    expired: 'sh.otp.expired',
+}
 
 export function ShipmentOtpPage() {
     const navigate = useNavigate()
     const { shipmentId } = useParams()
     const toast = useToast()
+    const { t } = useTranslation()
     const [isRevoked, setIsRevoked] = useState(false)
 
     const shipments = useMemo<TShipment[]>(() => {
@@ -40,13 +49,13 @@ export function ShipmentOtpPage() {
     if (!shipment) {
         return (
             <div className="p-8 text-center text-[--color-muted]">
-                <p>Không tìm thấy thông tin đơn hàng</p>
+                <p>{t('sho.notFound')}</p>
                 <button
                     type="button"
                     onClick={() => navigate('/shipments')}
                     className="mt-4 px-4 py-2 rounded-lg bg-[--color-surface-2] text-[13px] text-[--color-text] hover:bg-[--color-surface-3]"
                 >
-                    ← Quay lại danh sách Shipments
+                    ← {t('sho.backList')}
                 </button>
             </div>
         )
@@ -66,15 +75,15 @@ export function ShipmentOtpPage() {
                         onClick={() => navigate(-1)}
                         className="inline-flex items-center gap-2 text-[12px] font-medium text-[--color-accent] hover:text-[--color-accent-2] mb-4 transition-colors"
                     >
-                        ← Quay lại Shipment Detail
+                        ← {t('sho.backDetail')}
                     </button>
 
-                    <p className="eyebrow mb-2">OTP verification</p>
+                    <p className="eyebrow mb-2">{t('sho.eyebrow')}</p>
                     <h1 className="text-[22px] font-bold text-[--color-heading] leading-tight truncate">
-                        Kiểm tra OTP đơn {shipment.shipmentCode}
+                        {t('sho.title', { code: shipment.shipmentCode })}
                     </h1>
                     <p className="mt-2 text-[13px] text-[--color-secondary] leading-relaxed max-w-lg">
-                        Quản lý mã OTP nhận hàng, kiểm tra hiệu lực, thời gian hết hạn và lịch sử kích hoạt lại OTP.
+                        {t('sho.desc')}
                     </p>
                 </div>
 
@@ -88,7 +97,7 @@ export function ShipmentOtpPage() {
 
                 {/* Main OTP Code Card */}
                 <article className="flex flex-col gap-4 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface] items-center text-center">
-                    <p className="eyebrow">Active OTP Code</p>
+                    <p className="eyebrow">{t('sho.activeCode')}</p>
                     <div className="flex items-center justify-center gap-2 my-2">
                         {shipment.otpCode.split('').map((char, index) => (
                             <span
@@ -100,28 +109,28 @@ export function ShipmentOtpPage() {
                         ))}
                     </div>
                     <p className="text-[12px] text-[--color-muted]">
-                        Mã OTP này dùng để xác thực mở tủ <strong className="text-[--color-text]">{shipment.lockerCode}</strong>.
+                        {t('sho.usedFor')} <strong className="text-[--color-text]">{shipment.lockerCode}</strong>.
                     </p>
                 </article>
 
                 {/* OTP Meta Card */}
                 <article className="flex flex-col gap-4 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
-                    <h2 className="text-[15px] font-bold text-[--color-heading]">Thông tin chi tiết OTP</h2>
+                    <h2 className="text-[15px] font-bold text-[--color-heading]">{t('sho.metaTitle')}</h2>
                     <div className="flex flex-col divide-y divide-[--color-border]">
                         <div className="flex items-center justify-between py-2.5">
-                            <span className="text-[12px] text-[--color-muted]">Trạng thái OTP</span>
-                            <span className="text-[12px] font-mono uppercase text-[--color-accent] font-medium">{shipment.otpStatus}</span>
+                            <span className="text-[12px] text-[--color-muted]">{t('sho.otpStatus')}</span>
+                            <span className="text-[12px] font-mono uppercase text-[--color-accent] font-medium">{t(otpLabelKeys[shipment.otpStatus])}</span>
                         </div>
                         <div className="flex items-center justify-between py-2.5">
-                            <span className="text-[12px] text-[--color-muted]">Người nhận</span>
+                            <span className="text-[12px] text-[--color-muted]">{t('sho.recipient')}</span>
                             <span className="text-[12px] text-[--color-text]">{shipment.recipientName} ({shipment.recipientPhone})</span>
                         </div>
                         <div className="flex items-center justify-between py-2.5">
-                            <span className="text-[12px] text-[--color-muted]">Locker Code</span>
+                            <span className="text-[12px] text-[--color-muted]">{t('sho.lockerCode')}</span>
                             <span className="text-[12px] font-mono text-[--color-accent]">{shipment.lockerCode}</span>
                         </div>
                         <div className="flex items-center justify-between py-2.5">
-                            <span className="text-[12px] text-[--color-muted]">Tạo lúc</span>
+                            <span className="text-[12px] text-[--color-muted]">{t('sho.createdAt')}</span>
                             <span className="text-[12px] font-mono text-[--color-secondary]">{shipment.createdAt}</span>
                         </div>
                     </div>
@@ -129,26 +138,26 @@ export function ShipmentOtpPage() {
 
                 {/* Actions */}
                 <article className="md:col-span-2 flex flex-col gap-4 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
-                    <h2 className="text-[15px] font-bold text-[--color-heading]">Thao tác OTP</h2>
+                    <h2 className="text-[15px] font-bold text-[--color-heading]">{t('sho.actionsTitle')}</h2>
                     <div className="flex flex-wrap gap-3">
                         <button
                             type="button"
                             onClick={() => {
-                                toast.success(`Đã gửi lại mã OTP ${shipment.otpCode} qua tin nhắn SMS tới ${shipment.recipientPhone}!`)
+                                toast.success(t('sho.resentToast', { code: shipment.otpCode, phone: shipment.recipientPhone }))
                             }}
                             className="h-9 px-5 rounded-lg text-[13px] font-semibold bg-[--color-accent] text-[--color-bg] hover:bg-[--color-accent-2] transition-all shadow-sm cursor-pointer"
                         >
-                            Gửi lại OTP SMS
+                            {t('sho.resend')}
                         </button>
                         <button
                             type="button"
                             onClick={() => {
                                 setIsRevoked(true)
-                                toast.info(`Đã thu hồi / hủy hiệu lực mã OTP ${shipment.otpCode} của đơn ${shipment.shipmentCode}!`)
+                                toast.info(t('sho.revokedToast', { code: shipment.otpCode, order: shipment.shipmentCode }))
                             }}
                             className="h-9 px-5 rounded-lg text-[13px] font-medium bg-[--color-surface-2] text-[--color-text] border border-[--color-border] hover:border-[--color-border-2] hover:bg-[--color-surface-3] transition-all cursor-pointer"
                         >
-                            {isRevoked ? 'Đã Hủy Hiệu Lực' : 'Hủy hiệu lực OTP'}
+                            {isRevoked ? t('sho.revoked') : t('sho.revoke')}
                         </button>
                     </div>
                 </article>

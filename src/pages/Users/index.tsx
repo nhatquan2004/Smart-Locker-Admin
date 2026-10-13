@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { AppButton } from '../../components/common'
 import { AppTable } from '../../components/common/AppTable'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
-import { getUserStats } from '../../service/user.service'
+import { getUsers, getUserStats } from '../../service/user.service'
 import { getOrganizations } from '../../service/organization.service'
 import type { TCreateUserPayload, TUserFilter, TUserRole, TUserStatItem } from '../../types/user.type'
 import type { TOrganization } from '../../types/organization.type'
@@ -29,7 +29,7 @@ import { useUserStore } from '../../store/useUserStore'
 
 export function UsersPage() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const toast = useToast()
   const { user: loggedUser } = useAuthStore()
 
@@ -37,6 +37,7 @@ export function UsersPage() {
   const createUserStore = useUserStore((state) => state.createUser)
   const [stats, setStats] = useState<TUserStatItem[]>([])
   const [orgsList, setOrgsList] = useState<TOrganization[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [filter, setFilter] = useState<TUserFilter>({
     search: '',
     companyId: 'all',
@@ -68,9 +69,21 @@ export function UsersPage() {
   }, [masterUsers, isSuperAdmin, userOrgId])
 
   useEffect(() => {
-    getUserStats().then(setStats)
-    getOrganizations().then(setOrgsList)
-  }, [masterUsers])
+    setIsLoadingUsers(true)
+    getUsers()
+      .then(() => {
+        getUserStats().then(setStats)
+      })
+      .finally(() => setIsLoadingUsers(false))
+
+    getOrganizations().then((orgs) => {
+      setOrgsList(orgs)
+      if (orgs.length > 0) {
+        setFormOrgId((prev) => (prev === 'org-001' || !prev ? orgs[0].id : prev))
+      }
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language])
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -92,14 +105,14 @@ export function UsersPage() {
   function handleCreateUser(e: React.FormEvent) {
     e.preventDefault()
     if (!formName.trim() || !formPhone.trim()) {
-      toast.error('Vui lòng nhập đầy đủ Họ tên và Số điện thoại!')
+      toast.error(t('usr.fillRequired'))
       return
     }
 
     setIsSubmitting(true)
     const selectedOrg = orgsList.find((o) => o.id === formOrgId)
-    const targetOrgId = isSuperAdmin ? formOrgId : (userOrgId || 'org-001')
-    const targetOrgName = isSuperAdmin 
+    const targetOrgId = isSuperAdmin ? formOrgId : (userOrgId || orgsList[0]?.id || '6543210fedcba98765432101')
+    const targetOrgName = isSuperAdmin
       ? (selectedOrg?.name || 'TechCorp Office Building')
       : (loggedUser?.orgName || 'TechCorp Office Building')
 
@@ -110,18 +123,23 @@ export function UsersPage() {
       role: formRole,
       orgId: targetOrgId,
       companyName: targetOrgName,
-      unitNumber: formUnit.trim() || (formRole === 'org_admin' ? 'Quản lý tòa nhà' : 'Phòng 101'),
+      unitNumber: formUnit.trim() || (formRole === 'org_admin' ? t('usr.defaultUnitAdmin') : t('usr.defaultUnitUser')),
     }
 
-    createUserStore(payload).then((newUser) => {
-      setIsSubmitting(false)
-      setIsCreateModalOpen(false)
-      toast.success(`Đã tạo tài khoản "${newUser.fullName}" (${newUser.phone}) thành công!`)
-      setFormName('')
-      setFormPhone('')
-      setFormEmail('')
-      setFormUnit('')
-    })
+    createUserStore(payload)
+      .then((newUser) => {
+        setIsSubmitting(false)
+        setIsCreateModalOpen(false)
+        toast.success(t('usr.createdToast', { name: newUser.fullName, phone: newUser.phone }))
+        setFormName('')
+        setFormPhone('')
+        setFormEmail('')
+        setFormUnit('')
+      })
+      .catch((err: any) => {
+        setIsSubmitting(false)
+        toast.error(err?.message || t('usr.createFailed'))
+      })
   }
 
   const getInitials = (name: string) => {
@@ -132,7 +150,7 @@ export function UsersPage() {
 
   return (
     <div className="flex flex-col gap-5 max-w-[1250px]">
-      
+
       {/* Top Banner Header */}
       <section data-reveal className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-2xs">
         <div className="flex items-center gap-3">
@@ -157,7 +175,7 @@ export function UsersPage() {
 
         <div className="shrink-0">
           <AppButton onClick={() => setIsCreateModalOpen(true)}>
-            {isSuperAdmin ? '+ Thêm Tài Khoản Quản Lý' : t('users.addUser')}
+            {isSuperAdmin ? t('usr.addAdmin') : t('users.addUser')}
           </AppButton>
         </div>
       </section>
@@ -208,7 +226,7 @@ export function UsersPage() {
               onChange={(e) => setFilter((prev) => ({ ...prev, companyId: e.target.value }))}
               className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer w-full md:w-56 shrink-0"
             >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả Doanh Nghiệp / Khu Trọ</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.allOrgs')}</option>
               {orgsList.map((org) => (
                 <option key={org.id} value={org.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                   {org.name} ({org.code})
@@ -280,9 +298,8 @@ export function UsersPage() {
                 const statusBadge = statusBadges[u.status] ?? statusBadges.active
                 return (
                   <div className="flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap">
-                    <span className={`w-2 h-2 rounded-full ${
-                      u.status === 'active' ? 'bg-emerald-500 animate-pulse' : u.status === 'inactive' ? 'bg-slate-400' : 'bg-red-500'
-                    }`} />
+                    <span className={`w-2 h-2 rounded-full ${u.status === 'active' ? 'bg-emerald-500 animate-pulse' : u.status === 'inactive' ? 'bg-slate-400' : 'bg-red-500'
+                      }`} />
                     <span className={statusBadge.style}>
                       {t(statusBadge.labelKey as any)}
                     </span>
@@ -321,15 +338,15 @@ export function UsersPage() {
                     onClick={() => navigate(`/users/${u.id}`)}
                     className="h-8 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all text-[11.5px] font-bold cursor-pointer active:scale-95 whitespace-nowrap inline-flex items-center justify-center gap-1"
                   >
-                    <span>Chi tiết</span>
+                    <span>{t('common.details')}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate(`/users/${u.id}/manage`)}
                     className="h-8 px-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white transition-all text-[11.5px] font-bold cursor-pointer active:scale-95 whitespace-nowrap inline-flex items-center justify-center gap-1"
-                    title="Cấu hình vai trò, khóa & xóa tài khoản"
+                    title={t('usr.manageTooltip')}
                   >
-                    <span>Quản lý</span>
+                    <span>{t('usr.btnManage')}</span>
                   </button>
                 </div>
               ),
@@ -339,10 +356,17 @@ export function UsersPage() {
           pageSize={6}
           minWidth="1100px"
           emptyState={
-            <EmptyState
-              title={t('common.noData')}
-              description="Thử thay đổi bộ lọc từ khóa hoặc vai trò người dùng."
-            />
+            isLoadingUsers ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <span className="w-8 h-8 border-[3px] border-sky-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-[13px] text-slate-500 dark:text-slate-400">{t('usr.loadingServer')}</p>
+              </div>
+            ) : (
+              <EmptyState
+                title={t('common.noData')}
+                description={t('usr.emptyDesc')}
+              />
+            )
           }
         />
       </div>
@@ -360,9 +384,9 @@ export function UsersPage() {
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
                 <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-                  NEW ACCOUNT CREATION
+                  {t('usr.modalBadge')}
                 </span>
-                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">Tạo Tài Khoản Người Dùng Mới</h3>
+                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">{t('usr.modalTitle')}</h3>
               </div>
               <button
                 type="button"
@@ -375,11 +399,11 @@ export function UsersPage() {
 
             <form onSubmit={handleCreateUser} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Họ và tên <span className="text-red-500">*</span></label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldName')} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Nguyễn Văn An"
+                  placeholder={t('usr.namePh')}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -388,11 +412,11 @@ export function UsersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Số điện thoại <span className="text-red-500">*</span></label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldPhone')} <span className="text-red-500">*</span></label>
                   <input
                     type="tel"
                     required
-                    placeholder="VD: 0901234567"
+                    placeholder={t('usr.phonePh')}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
@@ -400,27 +424,27 @@ export function UsersPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Vai trò hệ thống</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldRole')}</label>
                   <select
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value as TUserRole)}
                     className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
-                    <option value="user" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">User / Cư dân</option>
-                    <option value="shipper" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Shipper giao hàng</option>
-                    <option value="org_admin" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Org Admin (Quản trị đơn vị)</option>
+                    <option value="user" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optUser')}</option>
+                    <option value="shipper" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optShipper')}</option>
+                    <option value="org_admin" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optOrgAdmin')}</option>
                     {isSuperAdmin && (
-                      <option value="super_admin" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Super Admin (Tối cao)</option>
+                      <option value="super_admin" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optSuperAdmin')}</option>
                     )}
                   </select>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Email liên hệ</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldEmail')}</label>
                 <input
                   type="email"
-                  placeholder="VD: nguyenvanan@gmail.com"
+                  placeholder={t('usr.emailPh')}
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
@@ -429,7 +453,7 @@ export function UsersPage() {
 
               {isSuperAdmin && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Thuộc Doanh Nghiệp / Khu Trọ</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldOrg')}</label>
                   <select
                     value={formOrgId}
                     onChange={(e) => setFormOrgId(e.target.value)}
@@ -445,10 +469,10 @@ export function UsersPage() {
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Phòng ban / Số phòng trọ</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldUnit')}</label>
                 <input
                   type="text"
-                  placeholder="VD: Phòng Marketing - Tầng 4, Phòng 101..."
+                  placeholder={t('usr.unitPh')}
                   value={formUnit}
                   onChange={(e) => setFormUnit(e.target.value)}
                   className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -461,14 +485,14 @@ export function UsersPage() {
                   onClick={() => setIsCreateModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-5 py-2 rounded-xl text-[12.5px] font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-md shadow-sky-600/20 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Đang tạo...' : 'Tạo Tài Khoản'}
+                  {isSubmitting ? t('usr.creating') : t('usr.createBtn')}
                 </button>
               </div>
             </form>

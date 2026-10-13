@@ -58,7 +58,7 @@ export function ShipmentDetailPage() {
     if (shipment.otpCode) {
       navigator.clipboard.writeText(shipment.otpCode)
       setCopiedOtp(true)
-      toast.success(`Đã sao chép mã OTP ${shipment.otpCode} vào bộ nhớ tạm!`)
+      toast.success(t('shd.copiedToast', { code: shipment.otpCode }))
       setTimeout(() => setCopiedOtp(false), 2000)
     }
   }
@@ -83,7 +83,7 @@ export function ShipmentDetailPage() {
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Realtime IoT Monitoring
+              {t('shd.realtime')}
             </span>
           </div>
           <p className="mt-1 text-[13px] text-slate-600 leading-relaxed max-w-lg">
@@ -103,7 +103,7 @@ export function ShipmentDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className={`p-4 rounded-xl border flex flex-col gap-1 ${shipment.shipmentStatus !== 'pending' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
             <span className="text-[11px] font-mono font-bold uppercase">{t('shipments.step1')}</span>
-            <p className="text-[14px] font-bold">Shipper Deposit</p>
+            <p className="text-[14px] font-bold">{t('shd.deposit')}</p>
             <span className="text-[11px] font-mono text-slate-500">{shipment.createdAt}</span>
           </div>
 
@@ -133,12 +133,12 @@ export function ShipmentDetailPage() {
               <span className="font-bold text-slate-900">{shipment.recipientName}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">SĐT:</span>
+              <span className="text-slate-500 font-medium">{t('shd.phone')}</span>
               <span className="font-mono font-semibold text-slate-800">{shipment.recipientPhone}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
               <span className="text-slate-500 font-medium">{t('shipments.sender')}:</span>
-              <span className="font-medium text-slate-800">{shipment.shipperName || 'Shipper'}</span>
+              <span className="font-medium text-slate-800">{shipment.shipperName || t('shd.defaultShipper')}</span>
             </div>
           </div>
         </article>
@@ -148,12 +148,12 @@ export function ShipmentDetailPage() {
           <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">{t('shipments.otpModalTitle')}</h2>
           <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">Locker:</span>
-              <span className="font-mono font-bold text-sky-700 text-[14px]">Locker {shipment.lockerCode}</span>
+              <span className="text-slate-500 font-medium">{t('shd.lockerLabel')}</span>
+              <span className="font-mono font-bold text-sky-700 text-[14px]">{t('shd.lockerValue', { code: shipment.lockerCode })}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">Cluster:</span>
-              <span className="font-bold text-slate-800">Cluster {shipment.cluster}</span>
+              <span className="text-slate-500 font-medium">{t('shd.clusterLabel')}</span>
+              <span className="font-bold text-slate-800">{t('shd.clusterValue', { cluster: shipment.cluster })}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
               <span className="text-slate-500 font-medium">OTP:</span>
@@ -167,7 +167,7 @@ export function ShipmentDetailPage() {
                     onClick={handleCopyOtp}
                     className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer"
                   >
-                    {copiedOtp ? '✓' : 'Copy'}
+                    {copiedOtp ? '✓' : t('shd.copy')}
                   </button>
                 )}
               </div>

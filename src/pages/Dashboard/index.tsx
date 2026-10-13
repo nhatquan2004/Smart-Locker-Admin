@@ -21,13 +21,13 @@ import { useTranslation } from '../../context/LanguageContext'
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const [overview, setOverview] = useState<TDashboardOverview | null>(null)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     getDashboardOverview().then(setOverview)
-  }, [])
+  }, [language])
 
   if (!overview) {
     return (
@@ -101,7 +101,7 @@ export function DashboardPage() {
               <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">{t('dashboard.title')}</h1>
               <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Hệ thống 100% Hoạt động
+                {t('dash.systemOk')}
               </span>
             </div>
             <p className="text-[12.5px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('dashboard.desc')}</p>
@@ -111,7 +111,7 @@ export function DashboardPage() {
         <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
           <AppButton onClick={() => navigate('/lockers')} className="flex-1 sm:flex-initial !py-2.5 !px-4 !text-[12px] flex items-center justify-center gap-1.5">
             <Boxes className="w-4 h-4" />
-            Quản Lý Cụm Tủ
+            {t('dash.manageClusters')}
           </AppButton>
           <button
             type="button"
@@ -119,7 +119,7 @@ export function DashboardPage() {
             className="btn-sec-custom flex-1 sm:flex-initial h-10 px-4 rounded-xl text-[12px] font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center gap-1.5"
           >
             <PackageCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-            Tra Cứu Bưu Kiện
+            {t('dash.lookupParcels')}
           </button>
         </div>
       </section>
@@ -135,9 +135,9 @@ export function DashboardPage() {
       <section data-reveal className="setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div>
-            <h2 className="setting-title-custom text-[16px] font-bold">Trạng thái các cụm tủ đang vận hành</h2>
+            <h2 className="setting-title-custom text-[16px] font-bold">{t('dash.clustersTitle')}</h2>
             <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">
-              Theo dõi dung lượng lưu trữ khả dụng và kết quả kết nối phần cứng của 4 cụm tủ toàn hệ thống
+              {t('dash.clustersDesc', { count: mockStationSummaries.length })}
             </p>
           </div>
           <button
@@ -145,7 +145,7 @@ export function DashboardPage() {
             onClick={() => navigate('/lockers')}
             className="flex items-center gap-1 text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer whitespace-nowrap"
           >
-            Xem tất cả trạm <ChevronRight className="w-3.5 h-3.5" />
+            {t('dash.viewAllStations')} <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -172,7 +172,7 @@ export function DashboardPage() {
                       st.status === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-pulse'
                     }`} />
                     <span className={st.status === 'online' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                      {st.status === 'online' ? 'Online' : 'Cảnh báo'}
+                      {st.status === 'online' ? t('dash.stationOnline') : t('dash.stationWarning')}
                     </span>
                   </div>
                 </div>
@@ -185,8 +185,8 @@ export function DashboardPage() {
                 {/* Capacity Progress Bar */}
                 <div className="flex flex-col gap-1 mt-1">
                   <div className="flex justify-between text-[11px] font-mono">
-                    <span className="setting-desc-custom font-medium">Trống: <strong className="text-emerald-600 dark:text-emerald-400">{st.avail}/{st.total}</strong></span>
-                    <span className="setting-desc-custom font-bold">{usedPercent}% Sử dụng</span>
+                    <span className="setting-desc-custom font-medium">{t('dash.available')}: <strong className="text-emerald-600 dark:text-emerald-400">{st.avail}/{st.total}</strong></span>
+                    <span className="setting-desc-custom font-bold">{t('dash.usedPercent', { percent: usedPercent })}</span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
@@ -213,12 +213,12 @@ export function DashboardPage() {
           <div className="setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
-                <h2 className="setting-title-custom text-[16px] font-bold">Giám sát hạ tầng phần cứng & IoT</h2>
-                <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">Trạng thái kết nối tín hiệu bo mạch RS485 và cảm biến vật lý</p>
+                <h2 className="setting-title-custom text-[16px] font-bold">{t('dash.infraTitle')}</h2>
+                <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">{t('dash.infraDesc')}</p>
               </div>
               <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>100% Khả dụng</span>
+                <span>{t('dash.available100')}</span>
               </div>
             </div>
 
@@ -232,8 +232,8 @@ export function DashboardPage() {
           {/* Quick Actions */}
           <div className="setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs">
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h2 className="setting-title-custom text-[16px] font-bold">Lối tắt thao tác nhanh</h2>
-              <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">Truy cập nhanh vào các tính năng điều khiển trung tâm</p>
+              <h2 className="setting-title-custom text-[16px] font-bold">{t('dash.quickTitle')}</h2>
+              <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">{t('dash.quickDesc')}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -282,8 +282,8 @@ export function DashboardPage() {
         <div className="xl:col-span-5 setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
-              <h2 className="setting-title-custom text-[16px] font-bold">Nhật ký hoạt động mới nhất</h2>
-              <p className="setting-desc-custom text-[11.5px] mt-0.5 font-medium">Ghi lại toàn bộ luồng gửi/nhận và thao tác trên hệ thống</p>
+              <h2 className="setting-title-custom text-[16px] font-bold">{t('dash.feedTitle')}</h2>
+              <p className="setting-desc-custom text-[11.5px] mt-0.5 font-medium">{t('dash.feedDesc')}</p>
             </div>
             <button
               type="button"
@@ -312,7 +312,7 @@ export function DashboardPage() {
               ? filteredActivities.map((item: TActivityItem) => <ActivityItem key={item.id} item={item} />)
               : (
                 <div className="p-8 text-center text-slate-400 text-[13px]">
-                  Không tìm thấy nhật ký hoạt động phù hợp.
+                  {t('dash.feedEmpty')}
                 </div>
               )}
           </div>

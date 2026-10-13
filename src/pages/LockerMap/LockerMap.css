@@ -1,0 +1,128 @@
+/* Style riêng cho trang Bản đồ trạm tủ — không ảnh hưởng các trang khác */
+
+.lm-map .leaflet-container {
+  font-family: inherit;
+  background: #e8edf2;
+}
+.dark .lm-map .leaflet-container {
+  background: #0b1220;
+}
+.lm-map.is-picking .leaflet-container {
+  cursor: crosshair;
+}
+
+/* OSM không có tile tối: đảo màu lớp nền ở dark mode (marker và popup không bị ảnh hưởng) */
+.dark .lm-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9) saturate(0.7);
+}
+
+/* ── Marker ── */
+.lm-pin {
+  position: relative;
+  width: 36px;
+  height: 44px;
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.3));
+}
+.lm-pin__tail {
+  position: absolute;
+  left: 13px;
+  top: 25px;
+  width: 10px;
+  height: 10px;
+  background: var(--pin);
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg);
+}
+.lm-pin__body {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: var(--pin);
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.lm-pin.is-selected .lm-pin__body {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--pin) 28%, transparent);
+}
+.lm-pin__alert {
+  position: absolute;
+  top: -2px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #e11d48;
+}
+
+/* ── Popup ── */
+.lm-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.2);
+}
+.lm-popup .leaflet-popup-content {
+  margin: 0;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.lm-popup .leaflet-popup-tip {
+  background: #fff;
+}
+.lm-popup a.leaflet-popup-close-button {
+  top: 10px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font: 400 18px/22px sans-serif;
+  color: #94a3b8;
+}
+.lm-popup a.leaflet-popup-close-button:hover {
+  color: #475569;
+}
+.dark .lm-popup .leaflet-popup-content-wrapper,
+.dark .lm-popup .leaflet-popup-tip {
+  background: #0f172a;
+}
+
+/* ── Điều khiển Leaflet ── */
+.lm-map .leaflet-bar {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+}
+.lm-map .leaflet-bar a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  color: #334155;
+  border-bottom-color: #e2e8f0;
+}
+.dark .lm-map .leaflet-bar a {
+  background: #0f172a;
+  color: #cbd5e1;
+  border-bottom-color: #1e293b;
+}
+.dark .lm-map .leaflet-bar a:hover {
+  background: #1e293b;
+}
+.dark .lm-map .leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.75);
+  color: #94a3b8;
+}
+.dark .lm-map .leaflet-control-attribution a {
+  color: #cbd5e1;
+}

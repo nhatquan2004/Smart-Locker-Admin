@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from '../../../context/LanguageContext'
 import { LockerStatusBadge } from '../../../components/Lockers/LockerStatusBadge.tsx'
 import type { TLocker } from '../../../types/locker.type'
 
 export function LockerRemoteControlPage() {
     const navigate = useNavigate()
     const { lockerId } = useParams()
+    const { t } = useTranslation()
 
     const [isOpening, setIsOpening] = useState(false)
     const [isRefreshing, setIsRefreshing] = useState(false)
@@ -68,13 +70,13 @@ export function LockerRemoteControlPage() {
     if (!locker) {
         return (
             <div className="p-8 text-center text-[--color-muted]">
-                <p>Không tìm thấy thông tin locker</p>
+                <p>{t('rc.notFound')}</p>
                 <button
                     type="button"
                     onClick={() => navigate('/lockers')}
                     className="mt-4 px-4 py-2 rounded-lg bg-[--color-surface-2] text-[13px] text-[--color-text] hover:bg-[--color-surface-3]"
                 >
-                    ← Quay lại danh sách Lockers
+                    ← {t('rc.backToList')}
                 </button>
             </div>
         )
@@ -94,15 +96,15 @@ export function LockerRemoteControlPage() {
                         onClick={() => navigate(-1)}
                         className="inline-flex items-center gap-2 text-[12px] font-medium text-[--color-accent] hover:text-[--color-accent-2] mb-4 transition-colors"
                     >
-                        ← Quay lại Locker Detail
+                        ← {t('rc.backToDetail')}
                     </button>
 
-                    <p className="eyebrow mb-2">Remote control</p>
+                    <p className="eyebrow mb-2">{t('rc.eyebrow')}</p>
                     <h1 className="text-[22px] font-bold text-[--color-heading] leading-tight truncate">
-                        Điều khiển từ xa {locker.name} ({locker.code})
+                        {t('rc.title', { name: locker.name, code: locker.code })}
                     </h1>
                     <p className="mt-2 text-[13px] text-[--color-secondary] leading-relaxed max-w-lg">
-                        Gửi lệnh mở khóa tủ từ xa cho admin, theo dõi trạng thái phản hồi từ thiết bị và đồng bộ trực tiếp.
+                        {t('rc.desc')}
                     </p>
                 </div>
 
@@ -117,8 +119,8 @@ export function LockerRemoteControlPage() {
                 {/* Control Panel */}
                 <article className="flex flex-col gap-5 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
                     <div>
-                        <p className="eyebrow mb-1">Direct Command</p>
-                        <h2 className="text-[16px] font-bold text-[--color-heading]">Lệnh điều khiển nhanh</h2>
+                        <p className="eyebrow mb-1">{t('rc.directCommand')}</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">{t('rc.quickCommands')}</h2>
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -133,7 +135,7 @@ export function LockerRemoteControlPage() {
                                     : "bg-[--color-accent] text-[--color-bg] hover:bg-[--color-accent-2] active:scale-[0.98]",
                             ].join(" ")}
                         >
-                            {isOpening ? 'Đang mở khóa...' : 'Mở khóa từ xa'}
+                            {isOpening ? t('rc.opening') : t('rc.unlock')}
                         </button>
 
                         <div className="flex gap-3">
@@ -143,7 +145,7 @@ export function LockerRemoteControlPage() {
                                 disabled={isRefreshing}
                                 className="flex-1 h-9 px-4 rounded-lg text-[12px] font-medium bg-[--color-surface-2] text-[--color-text] border border-[--color-border] hover:border-[--color-border-2] transition-colors"
                             >
-                                {isRefreshing ? 'Đang đồng bộ...' : 'Refresh trạng thái'}
+                                {isRefreshing ? t('rc.syncing') : t('rc.refreshStatus')}
                             </button>
 
                             <button
@@ -151,7 +153,7 @@ export function LockerRemoteControlPage() {
                                 onClick={() => navigate(`/lockers/${locker.id}/hardware`)}
                                 className="flex-1 h-9 px-4 rounded-lg text-[12px] font-medium bg-[--color-surface-2] text-[--color-secondary] border border-[--color-border] hover:border-[--color-border-2] hover:text-[--color-text] transition-colors"
                             >
-                                Hardware Detail
+                                {t('rc.hardwareDetail')}
                             </button>
                         </div>
                     </div>
@@ -160,38 +162,38 @@ export function LockerRemoteControlPage() {
                 {/* Status Monitor */}
                 <article className="flex flex-col gap-5 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
                     <div>
-                        <p className="eyebrow mb-1">Operational Status</p>
-                        <h2 className="text-[16px] font-bold text-[--color-heading]">Trạng thái vận hành</h2>
+                        <p className="eyebrow mb-1">{t('rc.opStatus')}</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">{t('rc.opStatusTitle')}</h2>
                     </div>
 
                     <div className="flex flex-col divide-y divide-[--color-border]">
                         <div className="flex items-center justify-between py-3">
-                            <span className="text-[13px] text-[--color-muted]">Door status</span>
+                            <span className="text-[13px] text-[--color-muted]">{t('rc.doorStatus')}</span>
                             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-surface-2] text-[--color-secondary] border border-[--color-border]">
-                                Closed
+                                {t('rc.closed')}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between py-3">
-                            <span className="text-[13px] text-[--color-muted]">Lock state</span>
+                            <span className="text-[13px] text-[--color-muted]">{t('rc.lockState')}</span>
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-success-bg] text-[--color-success] border border-[--color-success]/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[--color-success] pulse-dot" />
-                                Ready
+                                {t('rc.ready')}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between py-3">
-                            <span className="text-[13px] text-[--color-muted]">Device connection</span>
+                            <span className="text-[13px] text-[--color-muted]">{t('rc.deviceConnection')}</span>
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-success-bg] text-[--color-success] border border-[--color-success]/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[--color-success] pulse-dot" />
-                                Online
+                                {t('lk.statusOnline')}
                             </span>
                         </div>
 
                         <div className="flex items-center justify-between py-3">
-                            <span className="text-[13px] text-[--color-muted]">Last heartbeat</span>
+                            <span className="text-[13px] text-[--color-muted]">{t('rc.lastHeartbeat')}</span>
                             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[--color-accent-bg] text-[--color-accent] border border-[--color-accent-border]">
-                                {heartbeatSeconds}s trước
+                                {t('rc.secondsAgo', { count: heartbeatSeconds })}
                             </span>
                         </div>
                     </div>
@@ -200,26 +202,26 @@ export function LockerRemoteControlPage() {
                 {/* Control Notes */}
                 <article className="lg:col-span-2 flex flex-col gap-4 p-6 rounded-2xl border border-[--color-border] bg-[--color-surface]">
                     <div>
-                        <p className="eyebrow mb-1">Control note</p>
-                        <h2 className="text-[16px] font-bold text-[--color-heading]">Lưu ý điều khiển từ xa</h2>
+                        <p className="eyebrow mb-1">{t('rc.noteEyebrow')}</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">{t('rc.noteTitle')}</h2>
                     </div>
 
                     <p className="text-[13px] text-[--color-secondary] leading-relaxed">
-                        Hành động thực tế phù hợp là <strong>mở khóa để người dùng mở cửa</strong>. Việc đóng cửa là thao tác cơ học của người dùng, hệ thống sẽ tự động cập nhật lại trạng thái qua cảm biến cửa (Reed switch / IR sensor).
+                        {t('rc.note1')} <strong>{t('rc.noteBold')}</strong>{t('rc.note2')}
                     </p>
 
                     <ul className="flex flex-col gap-2 p-4 rounded-xl bg-[--color-surface-2] border border-[--color-border] text-[12px] text-[--color-muted]">
                         <li className="flex items-start gap-2">
                             <span className="text-[--color-accent] font-bold">•</span>
-                            Chỉ mở khóa khi thiết bị đang Online và không ở trạng thái bảo trì.
+                            {t('rc.bullet1')}
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-[--color-accent] font-bold">•</span>
-                            Ghi log Admin Action mỗi lần gửi lệnh mở khóa từ xa.
+                            {t('rc.bullet2')}
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-[--color-accent] font-bold">•</span>
-                            Cảm biến cửa ghi nhận kết quả và phát sự kiện realtime.
+                            {t('rc.bullet3')}
                         </li>
                     </ul>
                 </article>

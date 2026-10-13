@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useTranslation } from '../../context/LanguageContext'
 import type { TAdminUser } from '../../types/auth.type'
 import type { TOrgType } from '../../types/organization.type'
 import lockerLogo from '../../assets/locker.png'
@@ -8,6 +9,7 @@ import lockerLogo from '../../assets/locker.png'
 export function RegisterPage() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
+  const { t } = useTranslation()
 
   const [orgName, setOrgName] = useState('')
   const [orgType, setOrgType] = useState<TOrgType>('enterprise')
@@ -22,7 +24,7 @@ export function RegisterPage() {
     setError('')
 
     if (!orgName.trim() || !adminName.trim() || !email.trim() || !password.trim()) {
-      setError('Vui lòng điền đầy đủ các thông tin bắt buộc.')
+      setError(t('auth.reg.fillRequired'))
       return
     }
 
@@ -60,8 +62,8 @@ export function RegisterPage() {
             <img src={lockerLogo} alt="Smart Locker" className="w-full h-full object-cover rounded-xl" />
           </div>
           <div>
-            <h1 className="text-[22px] font-bold text-white tracking-tight">Đăng Ký Đơn Vị Quản Lý</h1>
-            <p className="text-[12px] text-slate-400 mt-1">Đăng ký tài khoản Admin cho Doanh nghiệp, Khu nhà trọ hoặc KTX</p>
+            <h1 className="text-[22px] font-bold text-white tracking-tight">{t('auth.reg.title')}</h1>
+            <p className="text-[12px] text-slate-400 mt-1">{t('auth.reg.subtitle')}</p>
           </div>
         </div>
 
@@ -77,7 +79,7 @@ export function RegisterPage() {
           {/* Org Type Selector */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[12px] font-medium text-slate-300">
-              Mô hình quản lý
+              {t('auth.reg.model')}
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -90,7 +92,7 @@ export function RegisterPage() {
                     : "bg-slate-800/80 text-slate-400 border-white/10 hover:text-white",
                 ].join(" ")}
               >
-                Doanh nghiệp
+                {t('auth.reg.typeEnterprise')}
               </button>
               <button
                 type="button"
@@ -102,7 +104,7 @@ export function RegisterPage() {
                     : "bg-slate-800/80 text-slate-400 border-white/10 hover:text-white",
                 ].join(" ")}
               >
-                Khu nhà trọ
+                {t('auth.reg.typeApartment')}
               </button>
               <button
                 type="button"
@@ -114,20 +116,20 @@ export function RegisterPage() {
                     : "bg-slate-800/80 text-slate-400 border-white/10 hover:text-white",
                 ].join(" ")}
               >
-                Ký túc xá
+                {t('auth.reg.typeDormitory')}
               </button>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[12px] font-medium text-slate-300">
-              Tên Doanh nghiệp / Khu trọ / KTX
+              {t('auth.reg.orgName')}
             </label>
             <input
               type="text"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              placeholder="VD: TechCorp Office, Nhà Trọ Hoàng Nam, KTX Bách Khoa..."
+              placeholder={t('auth.reg.orgNamePlaceholder')}
               className="h-11 px-4 rounded-xl text-[13px] bg-slate-800/90 text-white border border-white/15 focus:outline-none focus:border-sky-400 transition-all placeholder:text-slate-500"
             />
           </div>
@@ -135,20 +137,20 @@ export function RegisterPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-medium text-slate-300">
-                Họ tên Admin quản lý
+                {t('auth.reg.adminName')}
               </label>
               <input
                 type="text"
                 value={adminName}
                 onChange={(e) => setAdminName(e.target.value)}
-                placeholder="VD: Nguyễn Văn Minh"
+                placeholder={t('auth.reg.adminNamePlaceholder')}
                 className="h-11 px-4 rounded-xl text-[13px] bg-slate-800/90 text-white border border-white/15 focus:outline-none focus:border-sky-400 transition-all placeholder:text-slate-500"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-medium text-slate-300">
-                Email đăng nhập
+                {t('auth.reg.email')}
               </label>
               <input
                 type="email"
@@ -162,7 +164,7 @@ export function RegisterPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[12px] font-medium text-slate-300">
-              Mật khẩu
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -178,15 +180,15 @@ export function RegisterPage() {
             disabled={loading}
             className="h-11 mt-3 rounded-xl text-[13px] font-bold bg-sky-400 text-slate-950 hover:bg-sky-300 transition-all shadow-lg shadow-sky-500/25 active:scale-[0.98] shimmer-btn flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
           >
-            {loading ? 'Đang khởi tạo...' : 'Hoàn Tất Đăng Ký'}
+            {loading ? t('auth.reg.submitting') : t('auth.reg.submit')}
           </button>
         </form>
 
         {/* Footer info */}
         <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[12px] text-slate-400">
-          <span>Đã có tài khoản quản trị?</span>
+          <span>{t('auth.reg.haveAccount')}</span>
           <Link to="/login" className="text-sky-400 font-semibold hover:underline">
-            Đăng nhập ngay
+            {t('auth.reg.signInNow')}
           </Link>
         </div>
       </div>

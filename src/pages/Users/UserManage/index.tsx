@@ -5,6 +5,7 @@ import { UserStatusBadge } from '../../../components/Users/UserStatusBadge'
 import type { TUser, TUserRole, TUserStatus } from '../../../types/user.type'
 import { deleteUser, getUserById, updateUser } from '../../../service/user.service'
 import { useToast } from '../../../context/ToastContext'
+import { useTranslation } from '../../../context/LanguageContext'
 import { AlertTriangle, X } from 'lucide-react'
 
 export function UserManagePage() {
@@ -13,6 +14,7 @@ export function UserManagePage() {
   const toast = useToast()
 
   const [user, setUser] = useState<TUser | null>(null)
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [role, setRole] = useState<TUserRole>('user')
   const [status, setStatus] = useState<TUserStatus>('active')
@@ -44,11 +46,11 @@ export function UserManagePage() {
       setIsSaving(false)
       setUser((prev) => (prev ? { ...prev, role, status, note } : null))
       if (status === 'blocked') {
-        toast.success(`Đã khóa tài khoản "${user.fullName}"! Dữ liệu đã đồng bộ sang trang Cư Dân.`)
+        toast.success(t('um.lockedToast', { name: user.fullName }))
       } else if (status === 'active' && prevStatus === 'blocked') {
-        toast.success(`Đã mở khóa tài khoản "${user.fullName}" thành công! Dữ liệu đã đồng bộ.`)
+        toast.success(t('um.unlockedToast', { name: user.fullName }))
       } else {
-        toast.success(`Đã cập nhật tài khoản "${user.fullName}" thành công! Dữ liệu đã đồng bộ sang trang Cư Dân.`)
+        toast.success(t('um.updatedToast', { name: user.fullName }))
       }
     })
   }
@@ -64,7 +66,7 @@ export function UserManagePage() {
     deleteUser(user.id).then(() => {
       setIsDeleting(false)
       setShowDeleteModal(false)
-      toast.success(`Đã xóa vĩnh viễn tài khoản "${user.fullName}" thành công!`)
+      toast.success(t('um.deletedToast', { name: user.fullName }))
       navigate('/users')
     })
   }
@@ -72,7 +74,7 @@ export function UserManagePage() {
   if (loading) {
     return (
       <div className="p-8 text-center text-slate-500">
-        <p>Đang tải thông tin tài khoản...</p>
+        <p>{t('um.loading')}</p>
       </div>
     )
   }
@@ -80,13 +82,13 @@ export function UserManagePage() {
   if (!user) {
     return (
       <div className="p-8 text-center text-slate-500">
-        <p>Không tìm thấy thông tin người dùng</p>
+        <p>{t('um.notFound')}</p>
         <button
           type="button"
           onClick={() => navigate('/users')}
           className="mt-4 px-4 py-2 rounded-xl bg-slate-100 text-[13px] text-slate-800 hover:bg-slate-200"
         >
-          ← Quay lại danh sách Users
+          ← {t('um.backToUsers')}
         </button>
       </div>
     )
@@ -105,8 +107,8 @@ export function UserManagePage() {
                   <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">Xác nhận xóa tài khoản</h3>
-                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Hành động này không thể hoàn tác</p>
+                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-white">{t('um.deleteTitle')}</h3>
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{t('um.irreversible')}</p>
                 </div>
               </div>
               <button
@@ -118,10 +120,10 @@ export function UserManagePage() {
               </button>
             </div>
             <p className="text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed">
-              Bạn có chắc muốn xóa vĩnh viễn tài khoản{' '}
+              {t('um.deleteQ')}{' '}
               <strong className="text-slate-900 dark:text-white">{user.fullName}</strong>{' '}
               (<span className="font-mono text-sky-600 dark:text-sky-400">{user.phone}</span>)?{' '}
-              Thao tác này sẽ xóa đồng bộ cả ở danh sách Cư Dân.
+              {t('um.deleteSync')}
             </p>
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
@@ -130,7 +132,7 @@ export function UserManagePage() {
                 disabled={isDeleting}
                 className="h-9 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                Hủy
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -138,7 +140,7 @@ export function UserManagePage() {
                 disabled={isDeleting}
                 className="h-9 px-4 rounded-xl text-[12.5px] font-bold bg-red-600 hover:bg-red-700 text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
               >
-                {isDeleting ? 'Đang xóa...' : '🗑 Xác nhận Xóa'}
+                {isDeleting ? t('org.deleting') : t('um.confirmDelete')}
               </button>
             </div>
           </div>
@@ -152,15 +154,15 @@ export function UserManagePage() {
             onClick={() => navigate('/users')}
             className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline mb-3 transition-colors cursor-pointer"
           >
-            ← Quay lại danh sách Người dùng
+            ← {t('um.backToUserList')}
           </button>
           <div className="flex items-center gap-3">
             <h1 className="text-[22px] font-bold text-slate-900 dark:text-white leading-tight truncate">
-              Quản lý vai trò & Quyền: {user.fullName}
+              {t('um.title', { name: user.fullName })}
             </h1>
           </div>
           <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">
-            Mã định danh: <strong className="font-mono text-sky-600 dark:text-sky-400">{user.userCode}</strong> · SĐT: <strong className="font-mono">{user.phone}</strong>
+            {t('um.idLabel')} <strong className="font-mono text-sky-600 dark:text-sky-400">{user.userCode}</strong> · {t('um.phoneLabel')} <strong className="font-mono">{user.phone}</strong>
           </p>
         </div>
 
@@ -173,49 +175,49 @@ export function UserManagePage() {
       {/* Main Settings Card */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col gap-6">
         <div>
-          <h2 className="text-[16px] font-bold text-slate-900 dark:text-white">Cấu Hình Tài Khoản & Vai Trò Hệ Thống</h2>
-          <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Mọi thay đổi sẽ tự động đồng bộ sang danh sách Cư dân (/residents) theo số điện thoại.</p>
+          <h2 className="text-[16px] font-bold text-slate-900 dark:text-white">{t('um.configTitle')}</h2>
+          <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{t('um.syncNote')}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Role selection */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Phân loại Vai Trò (Role)</label>
+            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldRole')}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as TUserRole)}
               className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="user">User / Cư Dân (Nhận kiện hàng)</option>
-              <option value="shipper">Shipper (Đối tác giao nhận)</option>
-              <option value="org_admin">Org Admin (Quản trị đơn vị)</option>
-              <option value="super_admin">Super Admin (Quản trị tối cao)</option>
+              <option value="user">{t('um.optUser')}</option>
+              <option value="shipper">{t('um.optShipper')}</option>
+              <option value="org_admin">{t('um.optOrgAdmin')}</option>
+              <option value="super_admin">{t('um.optSuperAdmin')}</option>
             </select>
           </div>
 
           {/* Status selection */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Trạng Thái Hoạt Động</label>
+            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldStatus')}</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as TUserStatus)}
               className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="active">Đang hoạt động (Active)</option>
-              <option value="inactive">Tạm ngưng (Inactive)</option>
-              <option value="blocked">Khóa tài khoản (Blocked)</option>
+              <option value="active">{t('um.optActive')}</option>
+              <option value="inactive">{t('um.optInactive')}</option>
+              <option value="blocked">{t('um.optBlocked')}</option>
             </select>
           </div>
         </div>
 
         {/* Note textarea */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Ghi Chú Quản Trị</label>
+          <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldNote')}</label>
           <textarea
             rows={3}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Ghi chú nghiệp vụ (VD: Cư dân nhận hàng thường xuyên, ưu tiên tủ size M...)"
+            placeholder={t('um.notePh')}
             className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
           />
         </div>
@@ -227,7 +229,7 @@ export function UserManagePage() {
             onClick={handleDeleteUser}
             className="h-10 px-4 rounded-xl text-[12.5px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/80 hover:bg-red-600 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
           >
-            🗑 Xóa Tài Khoản
+            {t('um.deleteAccount')}
           </button>
 
           <div className="flex items-center gap-3">
@@ -236,7 +238,7 @@ export function UserManagePage() {
               onClick={() => navigate('/users')}
               className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              Hủy
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -244,7 +246,7 @@ export function UserManagePage() {
               onClick={handleSave}
               className="h-10 px-5 rounded-xl text-[12.5px] font-bold bg-sky-600 hover:bg-sky-700 text-white transition-all cursor-pointer shadow-md shadow-sky-600/20 active:scale-95 flex items-center gap-1.5"
             >
-              {isSaving ? 'Đang lưu...' : 'Lưu Thay Đổi & Đồng Bộ'}
+              {isSaving ? t('common.saving') : t('um.saveSync')}
             </button>
           </div>
         </div>

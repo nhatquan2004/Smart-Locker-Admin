@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from '../../../context/LanguageContext'
 import { UserRoleBadge } from '../../../components/Users/UserRoleBadge'
 import { UserStatusBadge } from "../../../components/Users/UserStatusBadge.tsx";
 import type { TUser } from "../../../types/user.type.ts";
@@ -15,6 +16,7 @@ type TUserHistoryItem = {
 export function UserHistoryPage() {
     const navigate = useNavigate()
     const { userId } = useParams()
+    const { t } = useTranslation()
 
     const users = useMemo<TUser[]>(() => {
         return [
@@ -49,13 +51,13 @@ export function UserHistoryPage() {
     if (!user) {
         return (
             <div className="p-8 text-center text-[--color-muted]">
-                <p>Không tìm thấy thông tin người dùng</p>
+                <p>{t('um.notFound')}</p>
                 <button
                     type="button"
                     onClick={() => navigate('/users')}
                     className="mt-4 px-4 py-2 rounded-lg bg-[--color-surface-2] text-[13px] text-[--color-text] hover:bg-[--color-surface-3]"
                 >
-                    ← Quay lại danh sách Users
+                    ← {t('um.backToUsers')}
                 </button>
             </div>
         )
@@ -75,15 +77,15 @@ export function UserHistoryPage() {
                         onClick={() => navigate(-1)}
                         className="inline-flex items-center gap-2 text-[12px] font-medium text-[--color-accent] hover:text-[--color-accent-2] mb-4 transition-colors"
                     >
-                        ← Quay lại User Detail
+                        ← {t('uh.backToDetail')}
                     </button>
 
-                    <p className="eyebrow mb-2">User history</p>
+                    <p className="eyebrow mb-2">{t('uh.eyebrow')}</p>
                     <h1 className="text-[22px] font-bold text-[--color-heading] leading-tight truncate">
-                        Lịch sử của {user.fullName} ({user.userCode})
+                        {t('uh.title', { name: user.fullName, code: user.userCode })}
                     </h1>
                     <p className="mt-2 text-[13px] text-[--color-secondary] leading-relaxed max-w-lg">
-                        Xem dòng thời gian thao tác đơn hàng, OTP, mở tủ và nhật ký quản trị liên quan.
+                        {t('uh.desc')}
                     </p>
                 </div>
 
@@ -97,11 +99,11 @@ export function UserHistoryPage() {
             <section data-stagger className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="eyebrow mb-1">Activity Log</p>
-                        <h2 className="text-[16px] font-bold text-[--color-heading]">Dòng thời gian hoạt động</h2>
+                        <p className="eyebrow mb-1">{t('uh.logEyebrow')}</p>
+                        <h2 className="text-[16px] font-bold text-[--color-heading]">{t('uh.timeline')}</h2>
                     </div>
                     <span className="px-3 py-1 rounded-full text-[12px] font-mono bg-[--color-surface-2] border border-[--color-border] text-[--color-secondary]">
-                        {historyItems.length} sự kiện
+                        {t('uh.eventCount', { count: historyItems.length })}
                     </span>
                 </div>
 

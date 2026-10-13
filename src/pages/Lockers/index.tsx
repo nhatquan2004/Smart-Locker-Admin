@@ -58,7 +58,7 @@ export function LockersPage() {
         </div>
 
         <div className="stat-pill px-4 py-2 rounded-2xl border text-center shrink-0">
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">Tổng số trạm tủ</span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">{t('lk.totalStations')}</span>
           <strong className="text-[18px] font-bold text-slate-900 dark:text-white font-mono">{stations.length}</strong>
         </div>
       </section>
@@ -83,7 +83,7 @@ export function LockersPage() {
               onChange={(e) => setFilter((prev) => ({ ...prev, companyId: e.target.value }))}
               className="h-10 px-3.5 rounded-xl text-[13px] font-medium bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả đơn vị / khu trọ</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lk.allOrgs')}</option>
               <option value="org-001" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">TechCorp Office Building</option>
               <option value="org-002" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu Nhà Trọ Hoàng Nam</option>
               <option value="org-003" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký Túc Xá Đại Học Bách Khoa</option>
@@ -96,10 +96,10 @@ export function LockersPage() {
               onChange={(e) => setFilter((prev) => ({ ...prev, status: e.target.value }))}
               className="h-10 px-3.5 rounded-xl text-[13px] font-medium bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả trạng thái</option>
-              <option value="online" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Hoạt động</option>
-              <option value="warning" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Cảnh báo</option>
-              <option value="offline" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ngoại tuyến</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lk.allStatuses')}</option>
+              <option value="online" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lk.statusOnline')}</option>
+              <option value="warning" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lk.statusWarning')}</option>
+              <option value="offline" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lk.statusOffline')}</option>
             </select>
           </div>
 
@@ -137,7 +137,7 @@ export function LockersPage() {
                       s.status === 'online' ? 'bg-emerald-500 animate-pulse' : s.status === 'warning' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'
                     }`} />
                     <span className={s.status === 'online' ? 'text-emerald-600 dark:text-emerald-400' : s.status === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}>
-                      {s.status === 'online' ? 'Hoạt động' : s.status === 'warning' ? 'Cảnh báo' : 'Ngoại tuyến'}
+                      {s.status === 'online' ? t('lk.statusOnline') : s.status === 'warning' ? t('lk.statusWarning') : t('lk.statusOffline')}
                     </span>
                   </div>
                 </div>
@@ -151,8 +151,8 @@ export function LockersPage() {
                 {/* Compartment breakdown */}
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between items-center text-[12px]">
-                    <span className="setting-desc-custom font-medium">Tổng số ngăn tủ:</span>
-                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{availCount}/{totalCount} Trống ({availPercent}%)</span>
+                    <span className="setting-desc-custom font-medium">{t('lk.totalCompartments')}</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{t('lk.availSummary', { avail: availCount, total: totalCount, percent: availPercent })}</span>
                   </div>
 
                   {/* Size Pills */}
@@ -191,7 +191,7 @@ export function LockersPage() {
                     className="btn-sec-custom h-10 px-3.5 rounded-xl text-[12px] font-bold border transition-all cursor-pointer shadow-2xs active:scale-95 flex items-center justify-center gap-1.5"
                   >
                     <Cpu className="w-4 h-4" />
-                    Hardware
+                    {t('lk.hardwareBtn')}
                   </button>
                 </div>
               </article>
@@ -201,7 +201,7 @@ export function LockersPage() {
       ) : (
         <EmptyState
           title={t('common.noData')}
-          description="Thử chọn lại bộ lọc Doanh nghiệp/Khu trọ hoặc từ khóa tìm kiếm."
+          description={t('lk.emptyDesc')}
         />
       )}
 

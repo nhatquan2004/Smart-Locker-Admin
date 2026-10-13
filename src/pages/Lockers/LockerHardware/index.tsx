@@ -2,6 +2,10 @@ import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Lock, Radio, DoorOpen, Terminal, Play, RefreshCw } from 'lucide-react'
 import { useToast } from '../../../context/ToastContext'
+import { useTranslation } from '../../../context/LanguageContext'
+import { formatTime } from '../../../i18n/format'
+import { tNow } from '../../../i18n/translate'
+import type { TranslationKey } from '../../../i18n/translations'
 
 // ─── Types ───────────────────────────────────────────────────
 type SensorStatus = 'ok' | 'error' | 'idle' | 'testing'
@@ -24,21 +28,21 @@ interface SensorState {
 async function apiTestSolenoid(_compartmentId: string): Promise<string> {
   // TODO: POST /api/hardware/relay/open { compartmentId, durationMs: 300 }
   await new Promise(r => setTimeout(r, 800))
-  return 'RELAY_ACK 200 OK — Solenoid mở 300ms, tự đóng lại.'
+  return tNow('hw.relayAck')
 }
 
 async function apiReadIR(_compartmentId: string): Promise<string> {
   // TODO: GET /api/hardware/sensor/ir/:compartmentId
   await new Promise(r => setTimeout(r, 500))
   const raw = Math.random() > 0.3 ? 'LOW' : 'HIGH'
-  return `IR_READ OK — Raw: ${raw} (${raw === 'LOW' ? 'Không có vật thể' : 'Phát hiện vật thể trong ngăn'})`
+  return tNow('hw.irRead', { raw, meaning: tNow(raw === 'LOW' ? 'hw.irNoObject' : 'hw.irObject') })
 }
 
 async function apiReadDoorSwitch(_compartmentId: string): Promise<string> {
   // TODO: GET /api/hardware/sensor/door/:compartmentId
   await new Promise(r => setTimeout(r, 500))
   const state = Math.random() > 0.5 ? 'CLOSED' : 'OPEN'
-  return `DOOR_SWITCH OK — State: ${state} (${state === 'CLOSED' ? 'Cửa đóng ✓' : 'Cửa đang mở ⚠'})`
+  return tNow('hw.doorRead', { state, meaning: tNow(state === 'CLOSED' ? 'hw.doorClosedMark' : 'hw.doorOpenMark') })
 }
 
 // ─── Component ───────────────────────────────────────────────
@@ -47,9 +51,10 @@ export function LockerHardwarePage() {
   const { lockerId } = useParams()
   const stationLabel = lockerId ?? 'ST-001'
   const toast = useToast()
+  const { t } = useTranslation()
 
   const [logs, setLogs] = useState<LogEntry[]>([
-    { id: 0, ts: now(), level: 'info', msg: 'Bảng test phần cứng đã sẵn sàng. Chọn một ngăn và chạy lệnh kiểm thử.' },
+    { id: 0, ts: now(), level: 'info', msg: t('hw.ready') },
   ])
   const [selectedSlot, setSelectedSlot] = useState('A01')
 
@@ -65,62 +70,62 @@ export function LockerHardwarePage() {
 
   async function testSolenoid() {
     setSolenoid(p => ({ ...p, status: 'testing' }))
-    pushLog('info', `[SOLENOID] Kích hoạt ngăn ${selectedSlot} — gửi lệnh OPEN relay...`)
+    pushLog('info', t('hw.solenoidStart', { slot: selectedSlot }))
     try {
       const result = await apiTestSolenoid(selectedSlot)
       setSolenoid({ status: 'ok', value: 'ACK 200 OK', lastTested: now() })
       pushLog('success', `[SOLENOID] ✓ ${result}`)
-      toast.success(`[SOLENOID] Mở khóa rơ-le ngăn ${selectedSlot} thành công!`)
+      toast.success(t('hw.solenoidOkToast', { slot: selectedSlot }))
     } catch {
       setSolenoid({ status: 'error', value: 'NACK ERROR', lastTested: now() })
-      pushLog('error', '[SOLENOID] ✗ Không nhận được phản hồi từ bo mạch relay.')
-      toast.error(`[SOLENOID] ✗ Thất bại mở khóa ngăn ${selectedSlot}`)
+      pushLog('error', t('hw.solenoidNoReply'))
+      toast.error(t('hw.solenoidFailToast', { slot: selectedSlot }))
     }
   }
 
   async function testIR() {
     setIr(p => ({ ...p, status: 'testing' }))
-    pushLog('info', `[IR SENSOR] Đọc giá trị cảm biến hồng ngoại ngăn ${selectedSlot}...`)
+    pushLog('info', t('hw.irStart', { slot: selectedSlot }))
     try {
       const result = await apiReadIR(selectedSlot)
       const hasObject = result.includes('HIGH')
-      setIr({ status: 'ok', value: hasObject ? 'HIGH (Có vật thể)' : 'LOW (Trống)', lastTested: now() })
+      setIr({ status: 'ok', value: hasObject ? t('hw.irValueObject') : t('hw.irValueEmpty'), lastTested: now() })
       pushLog('success', `[IR SENSOR] ✓ ${result}`)
-      toast.info(`[IR SENSOR] Ngăn ${selectedSlot}: ${hasObject ? 'Phát hiện bưu kiện' : 'Ngăn tủ trống'}`)
+      toast.info(t('hw.irToast', { slot: selectedSlot, result: hasObject ? t('hw.irParcelFound') : t('hw.irEmpty') }))
     } catch {
       setIr({ status: 'error', value: 'READ ERROR', lastTested: now() })
-      pushLog('error', '[IR SENSOR] ✗ Lỗi đọc cảm biến.')
-      toast.error(`[IR SENSOR] ✗ Lỗi đọc cảm biến ngăn ${selectedSlot}`)
+      pushLog('error', t('hw.irReadError'))
+      toast.error(t('hw.irReadErrorToast', { slot: selectedSlot }))
     }
   }
 
   async function testDoor() {
     setDoor(p => ({ ...p, status: 'testing' }))
-    pushLog('info', `[DOOR SWITCH] Đọc trạng thái công tắc từ cửa ngăn ${selectedSlot}...`)
+    pushLog('info', t('hw.doorStart', { slot: selectedSlot }))
     try {
       const result = await apiReadDoorSwitch(selectedSlot)
       const isClosed = result.includes('CLOSED')
-      setDoor({ status: 'ok', value: isClosed ? 'CLOSED (Đóng)' : 'OPEN (Mở)', lastTested: now() })
+      setDoor({ status: 'ok', value: isClosed ? t('hw.doorValueClosed') : t('hw.doorValueOpen'), lastTested: now() })
       pushLog('success', `[DOOR SWITCH] ✓ ${result}`)
-      toast.success(`[DOOR SWITCH] Ngăn ${selectedSlot}: ${isClosed ? 'Cửa đang đóng ✓' : 'Cửa đang mở ⚠'}`)
+      toast.success(t('hw.doorToast', { slot: selectedSlot, state: isClosed ? t('hw.doorIsClosed') : t('hw.doorIsOpen') }))
     } catch {
       setDoor({ status: 'error', value: 'READ ERROR', lastTested: now() })
-      pushLog('error', '[DOOR SWITCH] ✗ Lỗi đọc công tắc cửa.')
-      toast.error(`[DOOR SWITCH] ✗ Lỗi đọc công tắc cửa ngăn ${selectedSlot}`)
+      pushLog('error', t('hw.doorReadError'))
+      toast.error(t('hw.doorReadErrorToast', { slot: selectedSlot }))
     }
   }
 
   async function runAllTests() {
-    pushLog('warn', `══ CHẠY TOÀN BỘ KIỂM THỬ — Ngăn: ${selectedSlot} ══`)
+    pushLog('warn', t('hw.runAllStart', { slot: selectedSlot }))
     await testSolenoid()
     await testIR()
     await testDoor()
-    pushLog('success', '══ Hoàn tất toàn bộ kiểm thử. ══')
-    toast.success(`Hoàn tất toàn bộ kiểm thử cảm biến ngăn ${selectedSlot}!`)
+    pushLog('success', t('hw.runAllDone'))
+    toast.success(t('hw.runAllToast', { slot: selectedSlot }))
   }
 
   function clearLogs() {
-    setLogs([{ id: Date.now(), ts: now(), level: 'info', msg: 'Console đã được xóa.' }])
+    setLogs([{ id: Date.now(), ts: now(), level: 'info', msg: t('hw.consoleCleared') }])
   }
 
   const isTesting = [solenoid, ir, door].some(s => s.status === 'testing')
@@ -135,23 +140,23 @@ export function LockerHardwarePage() {
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-sky-600 dark:text-sky-400 hover:underline mb-2 cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Quay lại Sơ Đồ Cụm Tủ
+            <ArrowLeft className="w-3.5 h-3.5" /> {t('hw.back')}
           </button>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-mono font-bold bg-slate-800 text-slate-100 dark:bg-slate-700 px-2.5 py-0.5 rounded">
-              HARDWARE TEST CONSOLE
+              {t('hw.consoleBadge')}
             </span>
             <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{stationLabel}</span>
           </div>
-          <h1 className="text-[20px] font-bold text-slate-900 dark:text-white mt-1">Kiểm Thử Phần Cứng Ngăn Tủ</h1>
+          <h1 className="text-[20px] font-bold text-slate-900 dark:text-white mt-1">{t('hw.title')}</h1>
           <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">
-            Ổ khóa Solenoid · Cảm biến hồng ngoại IR · Công tắc cửa (Reed Switch)
+            {t('hw.subtitle')}
           </p>
         </div>
 
         {/* Slot Selector */}
         <div className="shrink-0 flex flex-col gap-2">
-          <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase">Chọn ngăn test</span>
+          <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase">{t('hw.pickSlot')}</span>
           <div className="flex gap-2 flex-wrap">
             {slots.map(s => (
               <button
@@ -180,8 +185,8 @@ export function LockerHardwarePage() {
           {/* Solenoid Lock */}
           <SensorCard
             icon={<Lock className="w-5 h-5" />}
-            label="Ổ Khóa Solenoid"
-            description={`Kéo relay mở ngăn ${selectedSlot} trong 300ms rồi tự đóng lại`}
+            label={t('hw.solenoidLabel')}
+            description={t('hw.solenoidDesc', { slot: selectedSlot })}
             accentColor="blue"
             state={solenoid}
             onTest={testSolenoid}
@@ -191,8 +196,8 @@ export function LockerHardwarePage() {
           {/* IR Sensor */}
           <SensorCard
             icon={<Radio className="w-5 h-5" />}
-            label="Cảm Biến Hồng Ngoại (IR)"
-            description={`Đọc trạng thái phát hiện vật thể trong ngăn ${selectedSlot}`}
+            label={t('hw.irLabel')}
+            description={t('hw.irDesc', { slot: selectedSlot })}
             accentColor="amber"
             state={ir}
             onTest={testIR}
@@ -202,8 +207,8 @@ export function LockerHardwarePage() {
           {/* Door Switch */}
           <SensorCard
             icon={<DoorOpen className="w-5 h-5" />}
-            label="Công Tắc Từ Cửa (Reed Switch)"
-            description={`Kiểm tra cửa ngăn ${selectedSlot} đang đóng hay mở`}
+            label={t('hw.doorLabel')}
+            description={t('hw.doorDesc', { slot: selectedSlot })}
             accentColor="emerald"
             state={door}
             onTest={testDoor}
@@ -217,7 +222,7 @@ export function LockerHardwarePage() {
             className="h-11 rounded-xl font-bold text-[13px] bg-sky-600 hover:bg-sky-700 text-white border border-sky-700 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Play className="w-4 h-4" />
-            Chạy toàn bộ kiểm thử — Ngăn {selectedSlot}
+            {t('hw.runAll', { slot: selectedSlot })}
           </button>
         </div>
 
@@ -227,13 +232,13 @@ export function LockerHardwarePage() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              <span className="text-[12px] font-mono font-bold setting-title-custom">CONSOLE OUTPUT</span>
+              <span className="text-[12px] font-mono font-bold setting-title-custom">{t('hw.consoleOutput')}</span>
             </div>
             <button
               onClick={clearLogs}
               className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Clear
+              <RefreshCw className="w-3.5 h-3.5" /> {t('hw.clear')}
             </button>
           </div>
 
@@ -249,7 +254,7 @@ export function LockerHardwarePage() {
             {isTesting && (
               <div className="flex items-center gap-2 text-sky-400 mt-2">
                 <span className="inline-block w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
-                <span>Đang gửi lệnh...</span>
+                <span>{t('hw.sending')}</span>
               </div>
             )}
           </div>
@@ -284,11 +289,11 @@ const accentMap: Record<AccentColor, { icon: string; badge: string; dot: string;
   },
 }
 
-const statusLabel: Record<SensorStatus, string> = {
-  idle: 'CHƯA KIỂM THỬ',
-  testing: 'ĐANG KIỂM THỬ...',
-  ok: 'HOẠT ĐỘNG ✓',
-  error: 'LỖI ✗',
+const statusLabelKey: Record<SensorStatus, TranslationKey> = {
+  idle: 'hw.status.idle',
+  testing: 'hw.status.testing',
+  ok: 'hw.status.ok',
+  error: 'hw.status.error',
 }
 
 const statusDot: Record<SensorStatus, string> = {
@@ -316,6 +321,7 @@ interface SensorCardProps {
 }
 
 function SensorCard({ icon, label, description, accentColor, state, onTest, disabled }: SensorCardProps) {
+  const { t } = useTranslation()
   const c = accentMap[accentColor]
   return (
     <div className="setting-card-custom rounded-2xl border shadow-2xs p-5 flex items-start gap-4">
@@ -330,7 +336,7 @@ function SensorCard({ icon, label, description, accentColor, state, onTest, disa
           <span className="setting-title-custom font-bold text-[14px]">{label}</span>
           <span className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${c.badge}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${statusDot[state.status]}`} />
-            {statusLabel[state.status]}
+            {t(statusLabelKey[state.status])}
           </span>
         </div>
         <p className="setting-desc-custom text-[12px] mt-0.5 mb-2">{description}</p>
@@ -338,11 +344,11 @@ function SensorCard({ icon, label, description, accentColor, state, onTest, disa
         {/* Value row */}
         <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl px-3.5 py-2 border border-slate-100 dark:border-slate-700 mb-3">
           <div>
-            <span className="text-[10px] font-mono setting-desc-custom uppercase font-semibold block">Kết quả đọc</span>
+            <span className="text-[10px] font-mono setting-desc-custom uppercase font-semibold block">{t('hw.readResult')}</span>
             <span className={`font-mono font-bold text-[13px] ${statusText[state.status]}`}>{state.value}</span>
           </div>
           <div className="text-right">
-            <span className="text-[10px] font-mono setting-desc-custom uppercase font-semibold block">Lần cuối test</span>
+            <span className="text-[10px] font-mono setting-desc-custom uppercase font-semibold block">{t('hw.lastTested')}</span>
             <span className="font-mono text-[12px] setting-title-custom">{state.lastTested}</span>
           </div>
         </div>
@@ -357,7 +363,7 @@ function SensorCard({ icon, label, description, accentColor, state, onTest, disa
           ].join(' ')}
         >
           <Play className="w-3.5 h-3.5" />
-          {state.status === 'testing' ? 'Đang test...' : 'Kiểm thử'}
+          {state.status === 'testing' ? t('hw.testing') : t('hw.test')}
         </button>
       </div>
     </div>
@@ -366,7 +372,7 @@ function SensorCard({ icon, label, description, accentColor, state, onTest, disa
 
 // ─── Helpers ─────────────────────────────────────────────────
 function now() {
-  return new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  return formatTime(new Date(), { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
 function logColor(level: LogLevel) {

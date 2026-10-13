@@ -1,5 +1,7 @@
 import {StatusBadge} from '../shared/StatusBadge/StatusBadge'
 import type {TOtpStatus, TShipmentStatus} from '../../types/shipment.type'
+import {useTranslation} from '../../context/LanguageContext'
+import type {TranslationKey} from '../../i18n/translations'
 
 type TProps =
     | {
@@ -16,43 +18,43 @@ type TProps =
 const shipmentStatusMap: Record<
     TShipmentStatus,
     {
-        label: string
+        labelKey: TranslationKey
         tone: 'blue' | 'green' | 'orange' | 'red'
         pulse?: boolean
     }
 > = {
     pending: {
-        label: 'PENDING',
+        labelKey: 'sh.st.pending',
         tone: 'blue',
         pulse: true,
     },
     stored: {
-        label: 'STORED',
+        labelKey: 'sh.st.stored',
         tone: 'green',
         pulse: true,
     },
     waiting_pickup: {
-        label: 'WAITING PICKUP',
+        labelKey: 'sh.st.waiting_pickup',
         tone: 'orange',
         pulse: true,
     },
     picked_up: {
-        label: 'PICKED UP',
+        labelKey: 'sh.st.picked_up',
         tone: 'green',
         pulse: true,
     },
     expired: {
-        label: 'EXPIRED',
+        labelKey: 'sh.st.expired',
         tone: 'red',
         pulse: true,
     },
     moved_to_storage: {
-        label: 'MOVED TO STORAGE',
+        labelKey: 'sh.st.moved_to_storage',
         tone: 'orange',
         pulse: false,
     },
     failed: {
-        label: 'FAILED',
+        labelKey: 'sh.st.failed',
         tone: 'red',
         pulse: true,
     },
@@ -61,34 +63,35 @@ const shipmentStatusMap: Record<
 const otpStatusMap: Record<
     TOtpStatus,
     {
-        label: string
+        labelKey: TranslationKey
         tone: 'blue' | 'green' | 'gray'
         pulse?: boolean
     }
 > = {
     active: {
-        label: 'OTP ACTIVE',
+        labelKey: 'sh.otp.active',
         tone: 'blue',
         pulse: true,
     },
     used: {
-        label: 'OTP USED',
+        labelKey: 'sh.otp.used',
         tone: 'green',
         pulse: false,
     },
     expired: {
-        label: 'OTP EXPIRED',
+        labelKey: 'sh.otp.expired',
         tone: 'gray',
         pulse: false,
     },
 }
 
 export function ShipmentStatusBadge(props: TProps) {
+    const {t} = useTranslation()
     if (props.type === 'shipment') {
         const config = shipmentStatusMap[props.shipmentStatus]
-        return <StatusBadge label={config.label} tone={config.tone} pulse={config.pulse}/>
+        return <StatusBadge label={t(config.labelKey)} tone={config.tone} pulse={config.pulse}/>
     }
 
     const config = otpStatusMap[props.otpStatus]
-    return <StatusBadge label={config.label} tone={config.tone} pulse={config.pulse}/>
+    return <StatusBadge label={t(config.labelKey)} tone={config.tone} pulse={config.pulse}/>
 }

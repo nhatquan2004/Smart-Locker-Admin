@@ -1,34 +1,39 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { translations, type Language, type TranslationKey } from '../i18n/translations'
+import type { Language, TranslationKey } from '../i18n/translations'
+import { LANGUAGE_STORAGE_KEY, getLanguage, setCurrentLanguage } from '../i18n/language'
+import { translate, type TranslateParams } from '../i18n/translate'
 
 type LanguageContextType = {
   language: Language
   setLanguage: (lang: Language) => void
   toggleLanguage: () => void
-  t: (key: TranslationKey, fallback?: string) => string
+  // t('key'), t('key', { name }) để chèn biến, hoặc t('key', 'fallback')
+  t: (key: TranslationKey, paramsOrFallback?: TranslateParams | string) => string
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('app_language') as Language
-    return saved === 'vi' || saved === 'en' ? saved : 'vi'
-  })
+  const [language, setLanguageState] = useState<Language>(getLanguage)
 
   const setLanguage = (lang: Language) => {
+    setCurrentLanguage(lang)
     setLanguageState(lang)
-    localStorage.setItem('app_language', lang)
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang)
+    } catch {
+      // bỏ qua nếu trình duyệt chặn localStorage
+    }
   }
 
   const toggleLanguage = () => {
     setLanguage(language === 'vi' ? 'en' : 'vi')
   }
 
-  const t = (key: TranslationKey, fallback?: string): string => {
-    const dict = translations[language] || translations.vi
-    return (dict as Record<string, string>)[key] || fallback || key
-  }
+  const t = (key: TranslationKey, paramsOrFallback?: TranslateParams | string): string =>
+    typeof paramsOrFallback === 'string'
+      ? translate(language, key, undefined, paramsOrFallback)
+      : translate(language, key, paramsOrFallback)
 
   useEffect(() => {
     document.documentElement.lang = language

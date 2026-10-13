@@ -1,64 +1,67 @@
 import type { TDashboardOverview } from "../types/dashboard.type.ts";
+import { tNow } from "../i18n/translate";
+import { formatNumber } from "../i18n/format";
 
-const dashboardMock: TDashboardOverview = {
+// Dữ liệu mẫu được dựng lại mỗi lần gọi để nhãn luôn theo ngôn ngữ đang chọn
+const buildDashboardMock = (): TDashboardOverview => ({
     stats: [
         {
             id: 'total-lockers',
-            label: 'Tổng số ngăn tủ',
+            label: tNow('dash.stat.totalLockers'),
             value: '48',
-            change: '4 Cụm tủ',
+            change: tNow('dash.stat.totalLockersChange', { count: 4 }),
             trend: 'up',
-            description: '24 Ngăn S • 16 Ngăn M • 8 Ngăn L',
+            description: tNow('dash.stat.totalLockersDesc', { s: 24, m: 16, l: 8 }),
             accent: 'blue',
         },
         {
             id: 'available-lockers',
-            label: 'Ngăn tủ đang trống',
+            label: tNow('dash.stat.available'),
             value: '19',
-            change: '39.5% Dung lượng',
+            change: tNow('dash.stat.availableChange', { percent: '39.5' }),
             trend: 'up',
-            description: 'Sẵn sàng tiếp nhận bưu kiện mới',
+            description: tNow('dash.stat.availableDesc'),
             accent: 'green',
         },
         {
             id: 'active-shipments',
-            label: 'Bưu kiện đang lưu tủ',
+            label: tNow('dash.stat.activeParcels'),
             value: '27',
-            change: '22 Chờ nhận',
+            change: tNow('dash.stat.activeParcelsChange', { count: 22 }),
             trend: 'neutral',
-            description: '5 Đơn quá hạn 24h cần nhắc OTP',
+            description: tNow('dash.stat.activeParcelsDesc', { count: 5 }),
             accent: 'orange',
         },
         {
             id: 'success-rate',
-            label: 'Tỷ lệ giao nhận thành công',
+            label: tNow('dash.stat.successRate'),
             value: '98.4%',
-            change: '7 Ngày qua',
+            change: tNow('dash.stat.successRateChange'),
             trend: 'up',
-            description: '1,240 Lượt mở tủ thành công',
+            description: tNow('dash.stat.successRateDesc', { count: formatNumber(1240) }),
             accent: 'purple',
         },
     ],
     statuses: [
         {
             id: 'iot-gateway',
-            label: 'Bo mạch điều khiển MCU & Gateway',
-            value: 'Hoạt động tốt',
-            detail: 'ESP32-S3 và mạch rơ-le RS485 đồng bộ tín hiệu 100%.',
+            label: tNow('dash.status.gateway'),
+            value: tNow('dash.status.gatewayValue'),
+            detail: tNow('dash.status.gatewayDetail'),
             tone: 'healthy',
         },
         {
             id: 'sensor-sync',
-            label: 'Mảng cảm biến IR & Công tắc cửa',
-            value: '46/48 Cảm biến OK',
-            detail: '2 ngăn (A02, C01) phát hiện công tắc cửa khép chưa kín.',
+            label: tNow('dash.status.sensor'),
+            value: tNow('dash.status.sensorValue', { ok: 46, total: 48 }),
+            detail: tNow('dash.status.sensorDetail', { count: 2, codes: 'A02, C01' }),
             tone: 'warning',
         },
         {
             id: 'otp-service',
-            label: 'Dịch vụ OTP & Realtime Engine',
+            label: tNow('dash.status.otp'),
             value: 'Realtime WebSocket',
-            detail: 'Tốc độ phát sinh mã OTP < 120ms, 0 lỗi giao tiếp.',
+            detail: tNow('dash.status.otpDetail'),
             tone: 'info',
         },
     ],
@@ -99,24 +102,24 @@ const dashboardMock: TDashboardOverview = {
     quickActions: [
         {
             id: 'quick-lockers',
-            label: 'Sơ đồ cụm tủ',
-            helper: 'Xem vị trí & điều khiển từ xa',
+            label: tNow('dash.quick.map'),
+            helper: tNow('dash.quick.mapHelper'),
         },
         {
             id: 'quick-shipments',
-            label: 'Tra cứu bưu kiện',
-            helper: 'Cấp lại OTP & kiểm tra lịch sử',
+            label: tNow('dash.quick.parcels'),
+            helper: tNow('dash.quick.parcelsHelper'),
         },
         {
             id: 'quick-users',
-            label: 'Quản lý người dùng',
-            helper: 'Phân quyền Admin & Cư dân',
+            label: tNow('dash.quick.users'),
+            helper: tNow('dash.quick.usersHelper'),
         },
     ],
-};
+});
 
 export async function getDashboardOverview(): Promise<TDashboardOverview> {
     return new Promise((resolve) => {
-        setTimeout(() => resolve(dashboardMock), 150);
+        setTimeout(() => resolve(buildDashboardMock()), 150);
     });
 }

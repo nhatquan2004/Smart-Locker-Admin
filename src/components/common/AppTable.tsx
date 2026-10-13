@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { useTranslation } from '../../context/LanguageContext'
 
 export type TColumn<T> = {
   key: string
@@ -29,6 +30,7 @@ export function AppTable<T>({
   minWidth = '1000px',
   rowClassName,
 }: TAppTableProps<T>) {
+  const { t } = useTranslation()
   const [currentPage, setCurrentPage] = useState(1)
 
   const totalPages = Math.max(1, Math.ceil(data.length / pageSize))
@@ -96,7 +98,7 @@ export function AppTable<T>({
       {data.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-[12px] text-slate-600 dark:text-slate-400">
           <div className="font-mono text-[11.5px]">
-            Hiển thị <strong className="text-slate-900 dark:text-white font-bold">{Math.min(data.length, (safeCurrentPage - 1) * pageSize + 1)}</strong> – <strong className="text-slate-900 dark:text-white font-bold">{Math.min(data.length, safeCurrentPage * pageSize)}</strong> trong tổng số <strong className="text-sky-600 dark:text-sky-400 font-bold">{data.length}</strong> kết quả
+            {t('table.showing')} <strong className="text-slate-900 dark:text-white font-bold">{Math.min(data.length, (safeCurrentPage - 1) * pageSize + 1)}</strong> – <strong className="text-slate-900 dark:text-white font-bold">{Math.min(data.length, safeCurrentPage * pageSize)}</strong> {t('table.of')} <strong className="text-sky-600 dark:text-sky-400 font-bold">{data.length}</strong> {t('table.results')}
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -105,7 +107,7 @@ export function AppTable<T>({
               disabled={safeCurrentPage === 1}
               onClick={() => setCurrentPage(1)}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Trang đầu"
+              title={t('table.first')}
             >
               <ChevronsLeft className="w-4 h-4" />
             </button>
@@ -114,13 +116,13 @@ export function AppTable<T>({
               disabled={safeCurrentPage === 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Trang trước"
+              title={t('table.prev')}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
 
             <span className="px-3 font-mono font-bold text-slate-800 dark:text-slate-200 text-[12px]">
-              Trang {safeCurrentPage} / {totalPages}
+              {t('table.pageOf', { page: safeCurrentPage, total: totalPages })}
             </span>
 
             <button
@@ -128,7 +130,7 @@ export function AppTable<T>({
               disabled={safeCurrentPage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Trang sau"
+              title={t('table.next')}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -137,7 +139,7 @@ export function AppTable<T>({
               disabled={safeCurrentPage >= totalPages}
               onClick={() => setCurrentPage(totalPages)}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
-              title="Trang cuối"
+              title={t('table.last')}
             >
               <ChevronsRight className="w-4 h-4" />
             </button>

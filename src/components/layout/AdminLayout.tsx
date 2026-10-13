@@ -15,10 +15,15 @@ import {
   Sun,
   Moon,
   ShieldAlert,
+  Megaphone,
+  Bell,
+  MapPin,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useTranslation } from "../../context/LanguageContext";
 import lockerLogo from "../../assets/locker.png";
+import { ApprovalBell } from "./ApprovalBell";
+import { BroadcastModal } from "../notifications/BroadcastModal";
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -49,31 +54,35 @@ export function AdminLayout() {
   }
 
   const isSuperAdmin = user?.role === "super_admin";
+  const isBuildingAdmin = user?.role === "org_admin";
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
 
   const { t, language, toggleLanguage } = useTranslation();
 
   const navGroups = [
     {
-      title: "TỔNG QUAN",
+      title: t("nav.sectionOverview"),
       items: [
         { label: t("nav.dashboard"), icon: <LayoutDashboard className="w-[18px] h-[18px]" />, to: "/dashboard" },
       ],
     },
     {
-      title: "QUẢN LÝ",
+      title: t("nav.sectionManage"),
       items: [
         ...(isSuperAdmin
           ? [{ label: t("nav.organizations"), icon: <Building2 className="w-[18px] h-[18px]" />, to: "/organizations" }]
           : []),
         { label: t("nav.lockers"), icon: <Boxes className="w-[18px] h-[18px]" />, to: "/lockers" },
+        { label: t("nav.lockerMap"), icon: <MapPin className="w-[18px] h-[18px]" />, to: "/locker-map" },
         { label: t("nav.users"), icon: <Users className="w-[18px] h-[18px]" />, to: "/users" },
         { label: t("nav.shipments"), icon: <PackageCheck className="w-[18px] h-[18px]" />, to: "/shipments" },
-        { label: "Báo lỗi & Sự cố", icon: <ShieldAlert className="w-[18px] h-[18px]" />, to: "/issues" },
+        { label: t("nav.issues"), icon: <ShieldAlert className="w-[18px] h-[18px]" />, to: "/issues" },
       ],
     },
     {
-      title: "HỆ THỐNG",
+      title: t("nav.sectionSystem"),
       items: [
+        { label: t("nav.notifications"), icon: <Bell className="w-[18px] h-[18px]" />, to: "/notifications" },
         { label: t("nav.activities"), icon: <Activity className="w-[18px] h-[18px]" />, to: "/activities" },
         { label: t("nav.settings"), icon: <Settings className="w-[18px] h-[18px]" />, to: "/settings" },
       ],
@@ -106,7 +115,7 @@ export function AdminLayout() {
             type="button"
             onClick={() => setIsMobileMenuOpen((v) => !v)}
             className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
-            aria-label="Toggle menu"
+            aria-label={t("layout.toggleMenu")}
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -159,6 +168,23 @@ export function AdminLayout() {
             {isDarkMode ? <Moon className="w-3.5 h-3.5 text-amber-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
             <span className="hidden sm:inline">{isDarkMode ? "Dark" : "Light"}</span>
           </button>
+
+          {/* Broadcast Button — chỉ hiện với Building Admin */}
+          {isBuildingAdmin && (
+            <button
+              type="button"
+              id="broadcast-notification-btn"
+              onClick={() => setIsBroadcastOpen(true)}
+              className="h-8.5 px-3 rounded-lg flex items-center gap-1.5 text-[12px] font-medium border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
+              title={t("layout.broadcastTooltip")}
+            >
+              <Megaphone className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{t("layout.broadcastShort")}</span>
+            </button>
+          )}
+
+          {/* Approval Bell — hiện với cả org_admin và super_admin */}
+          <ApprovalBell />
 
           {/* Realtime Status Badge */}
           <span className="hidden md:inline-flex h-8.5 px-3 rounded-lg items-center gap-2 text-[11.5px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
@@ -252,6 +278,11 @@ export function AdminLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* ── BROADCAST MODAL ── */}
+      {isBroadcastOpen && (
+        <BroadcastModal onClose={() => setIsBroadcastOpen(false)} />
+      )}
     </div>
   );
 }

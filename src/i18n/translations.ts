@@ -1,11 +1,26 @@
-export type Language = 'vi' | 'en'
+export type { Language } from './language'
+import common from './locales/common'
+import layout from './locales/layout'
+import auth from './locales/auth'
+import dashboard from './locales/dashboard'
+import organizations from './locales/organizations'
+import lockers from './locales/lockers'
+import lockerMap from './locales/lockerMap'
+import users from './locales/users'
+import shipments from './locales/shipments'
+import issues from './locales/issues'
+import notifications from './locales/notifications'
+import activities from './locales/activities'
+import settings from './locales/settings'
 
-export const translations = {
+// Từ điển nền (điều hướng, nhãn dùng chung). Các nhóm tính năng nằm trong ./locales
+const base = {
   vi: {
     // Layout & Nav
     'nav.dashboard': 'Tổng quan',
     'nav.organizations': 'Doanh Nghiệp / Trọ',
     'nav.lockers': 'Quản lý tủ đồ',
+    'nav.lockerMap': 'Bản đồ trạm tủ',
     'nav.users': 'Tất cả người dùng',
     'nav.activities': 'Nhật ký thao tác',
     'nav.shipments': 'Bưu kiện & Đơn gửi',
@@ -236,6 +251,7 @@ export const translations = {
     'nav.dashboard': 'Dashboard',
     'nav.organizations': 'Organizations',
     'nav.lockers': 'Lockers',
+    'nav.lockerMap': 'Locker Map',
     'nav.users': 'User Directory',
     'nav.activities': 'Audit Logs',
     'nav.shipments': 'Parcel Shipments',
@@ -463,4 +479,44 @@ export const translations = {
   },
 } as const
 
+export const translations = {
+  vi: {
+    ...base.vi,
+    ...common.vi,
+    ...layout.vi,
+    ...auth.vi,
+    ...dashboard.vi,
+    ...organizations.vi,
+    ...lockers.vi,
+    ...lockerMap.vi,
+    ...users.vi,
+    ...shipments.vi,
+    ...issues.vi,
+    ...notifications.vi,
+    ...activities.vi,
+    ...settings.vi,
+  },
+  en: {
+    ...base.en,
+    ...common.en,
+    ...layout.en,
+    ...auth.en,
+    ...dashboard.en,
+    ...organizations.en,
+    ...lockers.en,
+    ...lockerMap.en,
+    ...users.en,
+    ...shipments.en,
+    ...issues.en,
+    ...notifications.en,
+    ...activities.en,
+    ...settings.en,
+  },
+}
+
 export type TranslationKey = keyof typeof translations.vi
+
+// Kiểm tra lúc biên dịch: bản tiếng Anh phải đủ mọi khóa của tiếng Việt (và ngược lại)
+export const _enParity: Record<TranslationKey, string> = translations.en
+export const _viParity: Record<keyof typeof translations.en, string> = translations.vi
+
