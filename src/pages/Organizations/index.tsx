@@ -31,7 +31,7 @@ export function OrganizationsPage() {
     enterprise: { label: t('org.typeOffice'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
     apartment: { label: t('org.typeHostel'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
     dormitory: { label: t('org.typeUniversity'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
-    commercial: { label: t('org.typeApartment'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+    commercial: { label: t('org.typeCommercial'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
   }
 
   // Form states for creating new org
@@ -72,7 +72,7 @@ export function OrganizationsPage() {
       name: formName,
       code: formCode,
       type: formType,
-      address: formAddress || 'Địa chỉ đơn vị',
+      address: formAddress || t('org.defaultAddress'),
       totalLockers: totalBoxes,
       adminName: adminName,
       adminEmail: adminEmail,
@@ -82,11 +82,11 @@ export function OrganizationsPage() {
       setOrganizations((prev) => [newOrg, ...prev])
 
       createLockerStation({
-        name: `Trạm Tủ - ${newOrg.name}`,
+        name: t('org.stationName', { name: newOrg.name }),
         code: `ST-${newOrg.code}`,
         orgId: newOrg.id,
         orgName: newOrg.name,
-        location: formAddress || 'Sảnh Lễ Tân Chính',
+        location: formAddress || t('org.defaultStationLocation'),
         sizeS: formSizeS,
         sizeM: formSizeM,
         sizeL: formSizeL,
@@ -99,12 +99,12 @@ export function OrganizationsPage() {
         role: 'org_admin',
         orgId: newOrg.id,
         companyName: newOrg.name,
-        unitNumber: 'Quản Lý Đơn Vị',
+        unitNumber: t('org.adminUnitNumber'),
       })
 
       setIsSubmitting(false)
       setIsCreateModalOpen(false)
-      toast.success(`Đã thêm tổ chức "${newOrg.name}" thành công!`)
+      toast.success(t('org.createdToast', { name: newOrg.name }))
 
       setFormName('')
       setFormCode('')
@@ -129,12 +129,12 @@ export function OrganizationsPage() {
 
     deleteOrganization(deleteTargetOrg.id).then(() => {
       setOrganizations((prev) => prev.filter((o) => o.id !== deleteTargetOrg.id))
-      toast.success(`Đã xóa vĩnh viễn tổ chức "${targetName}" thành công!`)
+      toast.success(t('org.deletedToast', { name: targetName }))
       setIsDeleting(false)
       setDeleteTargetOrg(null)
       setConfirmOrgName('')
     }).catch(() => {
-      toast.error(`Lỗi: Không thể xóa tổ chức "${targetName}".`)
+      toast.error(t('org.deleteFailed', { name: targetName }))
       setIsDeleting(false)
     })
   }
@@ -226,19 +226,19 @@ export function OrganizationsPage() {
                 {/* Metrics Box */}
                 <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 text-[12px]">
                   <div>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Số lượng tủ gán</span>
-                    <p className="text-[15px] font-bold text-slate-900 dark:text-white font-mono mt-0.5">{org.totalLockers} tủ</p>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('org.lockerCountLabel')}</span>
+                    <p className="text-[15px] font-bold text-slate-900 dark:text-white font-mono mt-0.5">{t('org.lockerCountValue', { count: org.totalLockers })}</p>
                   </div>
                   <div>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Thành viên / Cư dân</span>
-                    <p className="text-[15px] font-bold text-slate-900 dark:text-white font-mono mt-0.5">{org.totalMembers} người</p>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">{t('org.memberLabel')}</span>
+                    <p className="text-[15px] font-bold text-slate-900 dark:text-white font-mono mt-0.5">{t('org.memberCountValue', { count: org.totalMembers })}</p>
                   </div>
                 </div>
 
                 {/* Admin Info */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-[12px]">
                   <div className="min-w-0">
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium">Admin đại diện:</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium">{t('org.repAdmin')}</span>
                     <p className="font-bold text-slate-900 dark:text-white truncate">{org.adminName}</p>
                     <p className="text-[11px] font-mono text-slate-600 dark:text-slate-400 truncate">{org.adminEmail}</p>
                   </div>
@@ -253,7 +253,7 @@ export function OrganizationsPage() {
                         <circle cx="12" cy="12" r="3" />
                         <path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14" />
                       </svg>
-                      Cấu Hình & Chỉnh Sửa
+                      {t('org.configure')}
                     </button>
                     {user?.role === 'super_admin' && (
                       <button
@@ -262,7 +262,7 @@ export function OrganizationsPage() {
                         className="h-9 px-3 rounded-xl text-[12px] font-bold bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-600 hover:text-white transition-all cursor-pointer active:scale-95 flex items-center gap-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Xóa
+                        {t('common.delete')}
                       </button>
                     )}
                   </div>
@@ -273,8 +273,8 @@ export function OrganizationsPage() {
         </section>
       ) : (
         <EmptyState
-          title="Chưa có tổ chức nào"
-          description="Chưa tìm thấy thông tin đơn vị hoặc khu nhà trọ nào phù hợp với bộ lọc."
+          title={t('org.emptyTitle')}
+          description={t('org.emptyDesc')}
           action={
             user?.role === 'super_admin' ? (
               <AppButton onClick={() => setIsCreateModalOpen(true)}>
@@ -291,8 +291,8 @@ export function OrganizationsPage() {
           <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col my-8">
             <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white">Khởi Tạo Đơn Vị / Khu Trọ Mới</h3>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Tự động cấu hình tài khoản Admin & trạm tủ Locker phần cứng tương ứng.</p>
+                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white">{t('org.createTitle')}</h3>
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{t('org.createDesc')}</p>
               </div>
               <button
                 type="button"
@@ -306,11 +306,11 @@ export function OrganizationsPage() {
             <form onSubmit={handleCreateOrg} className="p-5 flex flex-col gap-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Tên Đơn Vị / Khu Trọ <span className="text-red-500">*</span></label>
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldName')} <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
-                    placeholder="VD: Khu Nhà Trọ Hoàng Nam"
+                    placeholder={t('org.namePlaceholder')}
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 font-bold"
@@ -318,11 +318,11 @@ export function OrganizationsPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Mã Viết Tắt (Code) <span className="text-red-500">*</span></label>
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldCode')} <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
-                    placeholder="VD: HN01"
+                    placeholder={t('org.codePlaceholder')}
                     value={formCode}
                     onChange={(e) => setFormCode(e.target.value.toUpperCase())}
                     className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
@@ -332,24 +332,24 @@ export function OrganizationsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Loại Hình Đơn Vị</label>
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldType')}</label>
                   <select
                     value={formType}
                     onChange={(e) => setFormType(e.target.value as TOrgType)}
                     className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
-                    <option value="enterprise">Doanh nghiệp văn phòng</option>
-                    <option value="apartment">Khu nhà trọ / Chung cư</option>
-                    <option value="dormitory">Ký túc xá trường học</option>
-                    <option value="commercial">Trung tâm thương mại</option>
+                    <option value="enterprise">{t('org.optEnterprise')}</option>
+                    <option value="apartment">{t('org.optApartment')}</option>
+                    <option value="dormitory">{t('org.optDormitory')}</option>
+                    <option value="commercial">{t('org.optCommercial')}</option>
                   </select>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Địa Chỉ Chi Tiết</label>
+                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldAddress')}</label>
                   <input
                     type="text"
-                    placeholder="VD: 123 Đường Cầu Giấy, Hà Nội"
+                    placeholder={t('org.addressPlaceholder')}
                     value={formAddress}
                     onChange={(e) => setFormAddress(e.target.value)}
                     className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
@@ -359,18 +359,18 @@ export function OrganizationsPage() {
 
               {/* Admin info */}
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
-                <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase">Tài Khoản Admin Đại Diện</h4>
+                <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase">{t('org.adminSection')}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input
                     type="text"
-                    placeholder="Họ tên Admin đại diện"
+                    placeholder={t('org.adminNamePh')}
                     value={formAdminName}
                     onChange={(e) => setFormAdminName(e.target.value)}
                     className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                   />
                   <input
                     type="email"
-                    placeholder="Email đăng nhập của Admin"
+                    placeholder={t('org.adminEmailPh')}
                     value={formAdminEmail}
                     onChange={(e) => setFormAdminEmail(e.target.value)}
                     className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
@@ -381,12 +381,12 @@ export function OrganizationsPage() {
               {/* Compartments sizing breakdown */}
               <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
                 <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center justify-between">
-                  <span>Phân Bổ Kích Thước Ngăn Tủ IoT</span>
-                  <span className="text-sky-600 dark:text-sky-400 font-extrabold">Tổng: {formSizeS + formSizeM + formSizeL} ngăn</span>
+                  <span>{t('org.sizesTitle')}</span>
+                  <span className="text-sky-600 dark:text-sky-400 font-extrabold">{t('org.sizesTotal', { count: formSizeS + formSizeM + formSizeL })}</span>
                 </h4>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">Size S (Ngăn nhỏ)</span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">{t('org.sizeS')}</span>
                     <input
                       type="number"
                       min={0}
@@ -396,7 +396,7 @@ export function OrganizationsPage() {
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">Size M (Ngăn vừa)</span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">{t('org.sizeM')}</span>
                     <input
                       type="number"
                       min={0}
@@ -406,7 +406,7 @@ export function OrganizationsPage() {
                     />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">Size L (Ngăn lớn)</span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">{t('org.sizeL')}</span>
                     <input
                       type="number"
                       min={0}
@@ -427,7 +427,7 @@ export function OrganizationsPage() {
                   {t('common.cancel')}
                 </button>
                 <AppButton type="submit" disabled={isSubmitting || !formName || !formCode}>
-                  {isSubmitting ? t('common.saving') : 'Khởi Tạo Đơn Vị'}
+                  {isSubmitting ? t('common.saving') : t('org.createBtn')}
                 </AppButton>
               </div>
             </form>
@@ -448,10 +448,10 @@ export function OrganizationsPage() {
                 </div>
                 <div>
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
-                    Xác Nhận Xóa Tổ Chức (2 Bước)
+                    {t('org.deleteTitle')}
                   </h3>
                   <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    Mã tổ chức: <strong className="text-slate-800 dark:text-slate-200 font-bold">{deleteTargetOrg.code}</strong>
+                    {t('org.orgCode')} <strong className="text-slate-800 dark:text-slate-200 font-bold">{deleteTargetOrg.code}</strong>
                   </p>
                 </div>
               </div>
@@ -466,13 +466,13 @@ export function OrganizationsPage() {
 
             {/* Warning Callout */}
             <div className="p-3.5 rounded-xl bg-red-50/70 dark:bg-red-950/40 border border-red-200 dark:border-red-800/80 text-[12.5px] text-red-800 dark:text-red-300 leading-relaxed">
-              🚨 <strong>CẢNH BÁO NGUY HẠI:</strong> Thao tác xóa tổ chức <strong>"{deleteTargetOrg.name}"</strong> sẽ hủy toàn bộ các trạm tủ Locker phần cứng, danh sách cư dân và lịch sử đơn hàng liên quan đến đơn vị này. Hành động này <strong>KHÔNG THỂ HOÀN TÁC</strong>!
+              🚨 <strong>{t('org.dangerLabel')}</strong> {t('org.dangerPre')} <strong>"{deleteTargetOrg.name}"</strong> {t('org.dangerMid')} <strong>{t('org.dangerIrreversible')}</strong>!
             </div>
 
             {/* 2-Step Exact Match Input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">
-                Để xác nhận xóa, hãy nhập chính xác tên tổ chức:
+                {t('org.confirmType')}
               </label>
               <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono font-bold text-[12px] select-all border border-slate-200 dark:border-slate-700">
                 {deleteTargetOrg.name}
@@ -481,7 +481,7 @@ export function OrganizationsPage() {
                 type="text"
                 value={confirmOrgName}
                 onChange={(e) => setConfirmOrgName(e.target.value)}
-                placeholder={`Gõ lại chính xác "${deleteTargetOrg.name}"`}
+                placeholder={t('org.confirmPlaceholder', { name: deleteTargetOrg.name })}
                 className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-bold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-red-500 transition-colors mt-1"
               />
             </div>
@@ -506,7 +506,7 @@ export function OrganizationsPage() {
                 }`}
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeleting ? 'Đang xóa...' : 'Xóa Vĩnh Viễn'}</span>
+                <span>{isDeleting ? t('org.deleting') : t('org.deleteForever')}</span>
               </button>
             </div>
 

@@ -8,6 +8,7 @@ export type TAdminUser = {
   fullName: string
   role: TRole
   orgId: string // 'all' for super_admin, or 'org-001' etc.
+  buildingId?: string
   orgName?: string
   orgType?: TOrgType
   avatar?: string

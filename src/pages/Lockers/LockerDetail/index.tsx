@@ -6,8 +6,15 @@ import { useAuthStore } from '../../../store/useAuthStore'
 import type { TCompartment, TLockerStation } from '../../../types/lockerStation.type'
 import { AppButton } from '../../../components/common'
 import { useTranslation } from '../../../context/LanguageContext'
+import type { TranslationKey } from '../../../i18n/translations'
 import { useToast } from '../../../context/ToastContext'
 import { AlertTriangle, CheckCircle2, Lock, Wrench, X } from 'lucide-react'
+
+const sizeKeys: Record<string, TranslationKey> = {
+  small: 'ld.size.small',
+  medium: 'ld.size.medium',
+  large: 'ld.size.large',
+}
 
 export function LockerDetailPage() {
   const navigate = useNavigate()
@@ -60,8 +67,8 @@ export function LockerDetailPage() {
 
     setTimeout(() => {
       setIsUnlocking(false)
-      setUnlockMessage(`✓ ${t('lockers.unlockLocker')} ${compCode} ${t('common.success')} (RS485 ACK)! [Lý do: ${reason}]`)
-      toast.success(`Đã mở tủ ${compCode} thành công! (Lý do: ${reason})`)
+      setUnlockMessage(`✓ ${t('lockers.unlockLocker')} ${compCode} ${t('common.success')} (RS485 ACK)! [${t('ld.reasonTag', { reason })}]`)
+      toast.success(t('ld.unlockedToast', { code: compCode, reason }))
       setTimeout(() => setUnlockMessage(''), 4000)
     }, 600)
   }
@@ -100,18 +107,18 @@ export function LockerDetailPage() {
       logActivity({
         actorName: loggedUser?.fullName || 'Admin',
         actorRole: 'admin',
-        title: 'Chuyển ngăn tủ sang Bảo trì',
-        description: `Ngăn ${compCode} thuộc ${station.name} đã được chuyển sang trạng thái Bảo trì. Lý do: ${reason}`,
+        title: t('ld.logMaintTitle'),
+        description: t('ld.logMaintDesc', { code: compCode, station: station.name, reason }),
         targetId: compId,
         targetType: 'locker',
-        targetLabel: `Ngăn ${compCode}`,
+        targetLabel: t('ld.logTarget', { code: compCode }),
         category: 'hardware',
         status: 'warning',
         orgId: station.orgId,
         orgName: station.orgName,
       })
 
-      toast.success(`Đã chuyển ngăn tủ ${compCode} sang trạng thái Bảo trì!`)
+      toast.success(t('ld.maintToast', { code: compCode }))
     })
   }
 
@@ -152,18 +159,18 @@ export function LockerDetailPage() {
       logActivity({
         actorName: loggedUser?.fullName || 'Admin',
         actorRole: 'admin',
-        title: 'Khôi phục ngăn tủ hoạt động',
-        description: `Ngăn ${compCode} thuộc ${station.name} đã được khôi phục về trạng thái Sẵn sàng (Available).`,
+        title: t('ld.logRestoreTitle'),
+        description: t('ld.logRestoreDesc', { code: compCode, station: station.name }),
         targetId: compId,
         targetType: 'locker',
-        targetLabel: `Ngăn ${compCode}`,
+        targetLabel: t('ld.logTarget', { code: compCode }),
         category: 'hardware',
         status: 'success',
         orgId: station.orgId,
         orgName: station.orgName,
       })
 
-      toast.success(`Đã khôi phục ngăn tủ ${compCode} trở lại trạng thái Sẵn sàng (Available)!`)
+      toast.success(t('ld.restoreToast', { code: compCode }))
     })
   }
 
@@ -219,7 +226,7 @@ export function LockerDetailPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-                  Interactive Rack View
+                  {t('ld.rackView')}
                 </span>
                 <h2 className="setting-title-custom text-[16px] font-bold mt-1.5">{t('lockers.title')}</h2>
               </div>
@@ -244,7 +251,7 @@ export function LockerDetailPage() {
             {/* Cabinet Physical Frame Box */}
             <div className="p-5 rounded-2xl bg-slate-900 dark:bg-slate-950 border-4 border-slate-800 shadow-inner flex flex-col gap-4">
               <div className="flex items-center justify-between text-white text-[11px] font-mono px-2">
-                <span className="font-bold tracking-wider text-slate-300">MASTER CONTROL PANEL</span>
+                <span className="font-bold tracking-wider text-slate-300">{t('ld.masterPanel')}</span>
                 <span className="text-emerald-400 font-bold">MCU: {station.masterController.temperatureCelsius}°C · ONLINE</span>
               </div>
 
@@ -306,12 +313,12 @@ export function LockerDetailPage() {
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div>
                   <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-                    Compartment Inspector
+                    {t('ld.inspector')}
                   </span>
                   <h3 className="setting-title-custom text-[18px] font-bold mt-1.5">{t('common.details')} {selectedCompartment.code}</h3>
                 </div>
                 <span className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 capitalize">
-                  Size: {selectedCompartment.size}
+                  {t('ld.sizeLabel', { size: t(sizeKeys[selectedCompartment.size] ?? 'ld.size.small') })}
                 </span>
               </div>
 
@@ -329,7 +336,7 @@ export function LockerDetailPage() {
                     <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">{selectedCompartment.currentShipment.storedAt}</span>
                   </div>
                   <p className="text-[15px] font-bold text-slate-900 dark:text-white">{selectedCompartment.currentShipment.recipientName}</p>
-                  <p className="text-[12px] font-mono text-slate-700 dark:text-slate-300 font-semibold">SĐT: {selectedCompartment.currentShipment.recipientPhone}</p>
+                  <p className="text-[12px] font-mono text-slate-700 dark:text-slate-300 font-semibold">{t('ld.phone', { phone: selectedCompartment.currentShipment.recipientPhone })}</p>
                   <div className="pt-2 border-t border-sky-200/60 dark:border-sky-800/60 flex items-center justify-between text-[12px]">
                     <span className="setting-desc-custom">OTP:</span>
                     <span className="font-mono font-bold text-sky-800 dark:text-sky-300 text-[14px]">{selectedCompartment.currentShipment.otpCode || '----'}</span>
@@ -385,10 +392,10 @@ export function LockerDetailPage() {
                       className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[13px] transition-all cursor-pointer shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 active:scale-95"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Đưa Ngăn {selectedCompartment.code} Về Hoạt Động</span>
+                      <span>{t('ld.restoreBtn', { code: selectedCompartment.code })}</span>
                     </button>
                     <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11.5px] font-medium text-center">
-                      ⚠️ Ngăn đang bảo trì, không thể mở khoá thông thường.
+                      {t('ld.maintenanceNotice')}
                     </div>
                   </>
                 ) : (
@@ -406,7 +413,7 @@ export function LockerDetailPage() {
                       className="h-11 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-600 hover:text-white transition-all text-[12.5px] font-bold cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-95"
                     >
                       <Wrench className="w-4 h-4" />
-                      <span>Đưa vào Bảo trì</span>
+                      <span>{t('ld.setMaintenance')}</span>
                     </button>
                   </div>
                 )}
@@ -434,10 +441,10 @@ export function LockerDetailPage() {
                 </div>
                 <div>
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
-                    Xác Nhận Mở Tủ Từ Xa
+                    {t('ld.unlockTitle')}
                   </h3>
                   <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    Ngăn tủ: <strong className="text-sky-600 dark:text-sky-400 font-bold">{selectedCompartment.code}</strong> ({station.name})
+                    {t('ld.compartmentLabel')} <strong className="text-sky-600 dark:text-sky-400 font-bold">{selectedCompartment.code}</strong> ({station.name})
                   </p>
                 </div>
               </div>
@@ -452,21 +459,21 @@ export function LockerDetailPage() {
 
             {/* Modal Body / Notice */}
             <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-[12px] text-amber-800 dark:text-amber-300 leading-relaxed">
-              ⚠️ <strong>Cảnh báo:</strong> Lệnh này sẽ phát xung relay kích mở khóa ngăn tủ vật lý ngay lập tức. Vui lòng kiểm tra kỹ và nhập lý do mở tủ để lưu nhật ký Audit Log.
+              ⚠️ <strong>{t('ld.warningLabel')}</strong> {t('ld.unlockWarning')}
             </div>
 
             {/* Required Reason Textarea */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span>Lý do mở tủ từ xa <span className="text-red-500">*</span></span>
-                <span className="text-[11px] text-slate-400 font-normal">Bắt buộc</span>
+                <span>{t('ld.unlockReason')} <span className="text-red-500">*</span></span>
+                <span className="text-[11px] text-slate-400 font-normal">{t('ld.required')}</span>
               </label>
               <textarea
                 required
                 rows={3}
                 value={unlockReason}
                 onChange={(e) => setUnlockReason(e.target.value)}
-                placeholder="Nhập lý do chi tiết (VD: Hỗ trợ cư dân quên mã OTP / Kiểm tra kĩ thuật rơ-le...)"
+                placeholder={t('ld.unlockReasonPlaceholder')}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
               />
             </div>
@@ -492,7 +499,7 @@ export function LockerDetailPage() {
                 }`}
               >
                 <Lock className="w-4 h-4" />
-                <span>{isUnlocking ? 'Đang mở...' : 'Xác Nhận Mở Tủ'}</span>
+                <span>{isUnlocking ? t('ld.opening') : t('ld.confirmUnlock')}</span>
               </button>
             </div>
 
@@ -513,10 +520,10 @@ export function LockerDetailPage() {
                 </div>
                 <div>
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
-                    Xác Nhận Đưa Ngăn Tủ Vào Bảo Trì
+                    {t('ld.maintTitle')}
                   </h3>
                   <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    Ngăn tủ: <strong className="text-sky-600 dark:text-sky-400 font-bold">{selectedCompartment.code}</strong> ({station.name})
+                    {t('ld.compartmentLabel')} <strong className="text-sky-600 dark:text-sky-400 font-bold">{selectedCompartment.code}</strong> ({station.name})
                   </p>
                 </div>
               </div>
@@ -531,21 +538,21 @@ export function LockerDetailPage() {
 
             {/* Modal Body / Notice */}
             <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-[12px] text-amber-800 dark:text-amber-300 leading-relaxed">
-              ⚠️ <strong>Cảnh báo:</strong> Ngăn tủ sau khi chuyển sang Bảo trì sẽ <strong>tự động bị khóa</strong> khỏi danh sách ngăn trống khả dụng và không thể tiếp nhận bất kỳ đơn hàng mới nào.
+              ⚠️ <strong>{t('ld.warningLabel')}</strong> {t('ld.maintWarn1')} <strong>{t('ld.maintWarnBold')}</strong> {t('ld.maintWarn2')}
             </div>
 
             {/* Required Reason Textarea */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span>Lý do bảo trì ngăn tủ <span className="text-red-500">*</span></span>
-                <span className="text-[11px] text-slate-400 font-normal">Bắt buộc</span>
+                <span>{t('ld.maintReason')} <span className="text-red-500">*</span></span>
+                <span className="text-[11px] text-slate-400 font-normal">{t('ld.required')}</span>
               </label>
               <textarea
                 required
                 rows={3}
                 value={maintenanceReason}
                 onChange={(e) => setMaintenanceReason(e.target.value)}
-                placeholder="Nhập lý do bảo trì chi tiết (VD: Cảm biến hồng ngoại hỏng, Chốt khóa bị kẹt...)"
+                placeholder={t('ld.maintReasonPlaceholder')}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
               />
             </div>
@@ -571,7 +578,7 @@ export function LockerDetailPage() {
                 }`}
               >
                 <Wrench className="w-4 h-4" />
-                <span>Xác Nhận Bảo Trì</span>
+                <span>{t('ld.confirmMaint')}</span>
               </button>
             </div>
 
@@ -592,10 +599,10 @@ export function LockerDetailPage() {
                 </div>
                 <div>
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
-                    Xác Nhận Đưa Ngăn Về Hoạt Động
+                    {t('ld.restoreTitle')}
                   </h3>
                   <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    Ngăn tủ: <strong className="text-sky-600 dark:text-sky-400 font-bold">{restoreTargetComp.code}</strong> ({station.name})
+                    {t('ld.compartmentLabel')} <strong className="text-sky-600 dark:text-sky-400 font-bold">{restoreTargetComp.code}</strong> ({station.name})
                   </p>
                 </div>
               </div>
@@ -610,7 +617,7 @@ export function LockerDetailPage() {
 
             {/* Confirmation Message */}
             <div className="p-3.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 text-[12.5px] text-emerald-800 dark:text-emerald-300 leading-relaxed">
-              ✅ Bạn có chắc muốn đưa ngăn tủ <strong>{restoreTargetComp.code}</strong> từ trạng thái Bảo trì/Cảnh báo về trạng thái <strong>Hoạt động bình thường (Sẵn sàng)</strong>? Ngăn sẽ có thể tiếp nhận đơn hàng mới sau khi xác nhận.
+              ✅ {t('ld.restoreQ1')} <strong>{restoreTargetComp.code}</strong> {t('ld.restoreQ2')} <strong>{t('ld.restoreQ3')}</strong>{t('ld.restoreQ4')}
             </div>
 
             {/* Modal Actions */}
@@ -628,7 +635,7 @@ export function LockerDetailPage() {
                 className="h-10 px-4 rounded-xl text-[12.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Xác Nhận Khôi Phục</span>
+                <span>{t('ld.confirmRestore')}</span>
               </button>
             </div>
 

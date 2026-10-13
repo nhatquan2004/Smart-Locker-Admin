@@ -6,19 +6,22 @@ import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
 import type { TCreateResidentPayload, TResident, TResidentRole } from '../../types/resident.type'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useToast } from '../../context/ToastContext'
+import { useTranslation } from '../../context/LanguageContext'
+import type { TranslationKey } from '../../i18n/translations'
 
 import { useUserStore } from '../../store/useUserStore'
 
-const roleBadges: Record<TResidentRole, { label: string; style: string }> = {
-  resident: { label: 'Cư dân trọ', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-  employee: { label: 'Nhân viên công ty', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
-  student: { label: 'Sinh viên KTX', style: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
-  shipper: { label: 'Shipper giao hàng', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
+const roleBadges: Record<TResidentRole, { labelKey: TranslationKey; style: string }> = {
+  resident: { labelKey: 'res.role.resident', style: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+  employee: { labelKey: 'res.role.employee', style: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
+  student: { labelKey: 'res.role.student', style: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+  shipper: { labelKey: 'res.role.shipper', style: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
 }
 
 export function ResidentsPage() {
   const { user, selectedOrgId } = useAuthStore()
   const toast = useToast()
+  const { t } = useTranslation()
   const masterUsers = useUserStore((state) => state.users)
   const createResidentStore = useUserStore((state) => state.createResident)
   const fetchResidentsStore = useUserStore((state) => state.fetchResidents)
@@ -58,7 +61,7 @@ export function ResidentsPage() {
   function handleCreateResident(e: React.FormEvent) {
     e.preventDefault()
     if (!formName.trim() || !formPhone.trim()) {
-      toast.error('Vui lòng nhập Họ tên và Số điện thoại thành viên!')
+      toast.error(t('res.missingFields'))
       return
     }
 
@@ -69,7 +72,7 @@ export function ResidentsPage() {
       email: formEmail.trim(),
       orgId: isSuperAdmin ? formOrgId : (user?.orgId || 'org-002'),
       orgName: isSuperAdmin ? formOrgName : (user?.orgName || 'Khu Nhà Trọ Hoàng Nam'),
-      unitNumber: formUnit.trim() || 'Phòng Trọ / Văn Phòng',
+      unitNumber: formUnit.trim() || t('res.defaultUnit'),
       role: formRole,
       note: formNote.trim(),
     }
@@ -77,7 +80,7 @@ export function ResidentsPage() {
     createResidentStore(payload).then((newRes) => {
       setIsSubmitting(false)
       setIsCreateModalOpen(false)
-      toast.success(`Đã thêm thành viên "${newRes.fullName}" (${newRes.phone}) thành công!`)
+      toast.success(t('res.createdToast', { name: newRes.fullName, phone: newRes.phone }))
       setFormName('')
       setFormPhone('')
       setFormEmail('')
@@ -92,17 +95,17 @@ export function ResidentsPage() {
       {/* Hero */}
       <section data-reveal className="relative overflow-hidden rounded-2xl glass-card hero-gradient p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="relative z-10 flex-1 min-w-0">
-          <p className="eyebrow mb-2">Member & Resident Directory</p>
+          <p className="eyebrow mb-2">{t('res.eyebrow')}</p>
           <h1 className="text-[22px] font-bold text-white leading-tight">
-            Quản lý Cư Dân, Sinh Viên & Nhân Viên
+            {t('res.title')}
           </h1>
           <p className="mt-2 text-[13px] text-slate-300 leading-relaxed max-w-lg">
-            Danh sách người dùng nhận hàng tại các Khu trọ, Ký túc xá và Tòa nhà doanh nghiệp.
+            {t('res.desc')}
           </p>
         </div>
 
         <AppButton onClick={() => setIsCreateModalOpen(true)} className="shrink-0">
-          + Thêm Cư Dân / Nhân Viên
+          {t('res.addBtn')}
         </AppButton>
       </section>
 
@@ -111,8 +114,8 @@ export function ResidentsPage() {
         <div className="flex-1 min-w-[240px]">
           <AppInput
             id="resident-search"
-            label="Tìm kiếm người dùng"
-            placeholder="Tên cư dân, số điện thoại, số phòng trọ, mã NV, tên đơn vị..."
+            label={t('res.searchLabel')}
+            placeholder={t('res.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -120,14 +123,14 @@ export function ResidentsPage() {
 
         <FilterSelect
           id="resident-role-filter"
-          label="Vai trò"
+          label={t('res.roleLabel')}
           value={roleFilter}
           options={[
-            { label: 'Tất cả vai trò', value: 'all' },
-            { label: 'Cư dân trọ', value: 'resident' },
-            { label: 'Nhân viên công ty', value: 'employee' },
-            { label: 'Sinh viên KTX', value: 'student' },
-            { label: 'Shipper giao hàng', value: 'shipper' },
+            { label: t('role.all'), value: 'all' },
+            { label: t('res.role.resident'), value: 'resident' },
+            { label: t('res.role.employee'), value: 'employee' },
+            { label: t('res.role.student'), value: 'student' },
+            { label: t('res.role.shipper'), value: 'shipper' },
           ]}
           onChange={setRoleFilter}
         />
@@ -139,10 +142,10 @@ export function ResidentsPage() {
           <div className="w-10 h-10 rounded-2xl bg-sky-600 text-white flex items-center justify-center font-bold text-[14px]">
             👥
           </div>
-          <h2 className="text-[16px] font-bold text-slate-900 dark:text-white">Danh sách Thành viên sử dụng tủ</h2>
+          <h2 className="text-[16px] font-bold text-slate-900 dark:text-white">{t('res.listTitle')}</h2>
         </div>
         <span className="stat-pill px-3 py-1 rounded-full text-[12px] font-mono border">
-          {filteredResidents.length} thành viên
+          {t('res.memberCount', { count: filteredResidents.length })}
         </span>
       </div>
 
@@ -152,7 +155,7 @@ export function ResidentsPage() {
           columns={[
             {
               key: 'code',
-              title: 'Mã & Họ Tên',
+              title: t('res.colCode'),
               render: (res) => {
                 const initials = res.fullName.trim().split(' ').slice(-2).map((n) => n[0]).join('').toUpperCase()
                 return (
@@ -170,7 +173,7 @@ export function ResidentsPage() {
             },
             {
               key: 'phone',
-              title: 'Liên Hệ',
+              title: t('res.colContact'),
               render: (res) => (
                 <div className="flex flex-col text-[12px]">
                   <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">{res.phone}</span>
@@ -180,19 +183,19 @@ export function ResidentsPage() {
             },
             {
               key: 'role',
-              title: 'Vai Trò',
+              title: t('res.colRole'),
               render: (res) => {
                 const badge = roleBadges[res.role] ?? roleBadges.resident
                 return (
                   <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border whitespace-nowrap ${badge.style}`}>
-                    {badge.label}
+                    {t(badge.labelKey)}
                   </span>
                 )
               },
             },
             {
               key: 'orgName',
-              title: 'Đơn Vị Quản Lý',
+              title: t('res.colOrg'),
               render: (res) => (
                 <span className="font-semibold text-slate-800 dark:text-slate-200 text-[12px] truncate block max-w-[180px]">
                   {res.orgName}
@@ -201,13 +204,13 @@ export function ResidentsPage() {
             },
             {
               key: 'unitNumber',
-              title: 'Phòng / Vị Trí',
+              title: t('res.colUnit'),
               render: (res) => (
                 <div className="flex flex-col text-[12px]">
                   <span className="font-mono text-sky-600 dark:text-sky-400 font-semibold">{res.unitNumber}</span>
                   {res.assignedLockerCode && (
                     <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                      Gán: Locker {res.assignedLockerCode}
+                      {t('res.assigned', { code: res.assignedLockerCode ?? '' })}
                     </span>
                   )}
                 </div>
@@ -215,7 +218,7 @@ export function ResidentsPage() {
             },
             {
               key: 'lastActive',
-              title: 'Hoạt Động Cuối',
+              title: t('res.colLastActive'),
               render: (res) => (
                 <span className="text-[12px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
                   {res.lastActive}
@@ -228,8 +231,8 @@ export function ResidentsPage() {
           minWidth="950px"
           emptyState={
             <EmptyState
-              title="Không tìm thấy thành viên / cư dân nào"
-              description="Thử tìm kiếm theo tên, số điện thoại hoặc số phòng trọ."
+              title={t('res.emptyTitle')}
+              description={t('res.emptyDesc')}
             />
           }
         />
@@ -248,9 +251,9 @@ export function ResidentsPage() {
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div>
                 <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-                  DIRECTORY ADDITION
+                  {t('res.modalBadge')}
                 </span>
-                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">Thêm Cư Dân / Nhân Viên Mới</h3>
+                <h3 className="modal-title-custom text-[17px] font-bold mt-1.5">{t('res.modalTitle')}</h3>
               </div>
               <button
                 type="button"
@@ -263,11 +266,11 @@ export function ResidentsPage() {
 
             <form onSubmit={handleCreateResident} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Họ và tên thành viên <span className="text-red-500">*</span></label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('res.fieldName')} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Nguyễn Văn An"
+                  placeholder={t('res.namePlaceholder')}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -276,11 +279,11 @@ export function ResidentsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Số điện thoại <span className="text-red-500">*</span></label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('res.fieldPhone')} <span className="text-red-500">*</span></label>
                   <input
                     type="tel"
                     required
-                    placeholder="VD: 0901234567"
+                    placeholder={t('res.phonePlaceholder')}
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 font-mono"
@@ -288,23 +291,23 @@ export function ResidentsPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Vai trò thành viên</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('res.fieldRole')}</label>
                   <select
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value as TResidentRole)}
                     className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
-                    <option value="resident" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Cư dân nhà trọ / Chung cư</option>
-                    <option value="employee" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Nhân viên công ty</option>
-                    <option value="student" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Sinh viên KTX</option>
-                    <option value="shipper" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Shipper giao hàng</option>
+                    <option value="resident" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('res.roleOptionResident')}</option>
+                    <option value="employee" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('res.role.employee')}</option>
+                    <option value="student" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('res.role.student')}</option>
+                    <option value="shipper" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('res.role.shipper')}</option>
                   </select>
                 </div>
               </div>
 
               {isSuperAdmin && (
                 <div className="flex flex-col gap-1.5">
-                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Gán cho Đơn vị / Doanh nghiệp</label>
+                  <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('res.fieldOrg')}</label>
                   <select
                     value={formOrgId}
                     onChange={(e) => {
@@ -315,7 +318,7 @@ export function ResidentsPage() {
                         'org-003': 'Ký Túc Xá Đại Học Bách Khoa',
                         'org-004': 'Trung Tâm Thương Mại Aeon',
                       }
-                      setFormOrgName(orgMap[e.target.value] || 'Đơn vị quản lý')
+                      setFormOrgName(orgMap[e.target.value] || t('res.defaultOrg'))
                     }}
                     className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
@@ -328,10 +331,10 @@ export function ResidentsPage() {
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Số phòng / Vị trí / Mã NV</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('res.fieldUnit')}</label>
                 <input
                   type="text"
-                  placeholder="VD: Phòng 101 - Tầng 1, Tầng 4 - Dept Marketing..."
+                  placeholder={t('res.unitPlaceholder')}
                   value={formUnit}
                   onChange={(e) => setFormUnit(e.target.value)}
                   className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -339,10 +342,10 @@ export function ResidentsPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">Ghi chú bổ sung</label>
+                <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('res.fieldNote')}</label>
                 <input
                   type="text"
-                  placeholder="Ghi chú về nhận hàng, thói quen gửi..."
+                  placeholder={t('res.notePlaceholder')}
                   value={formNote}
                   onChange={(e) => setFormNote(e.target.value)}
                   className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -355,10 +358,10 @@ export function ResidentsPage() {
                   onClick={() => setIsCreateModalOpen(false)}
                   className="modal-cancel-custom h-9 px-4 rounded-xl text-[12px] font-medium transition-colors cursor-pointer"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <AppButton type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Đang tạo...' : 'Tạo Thành Viên'}
+                  {isSubmitting ? t('res.creating') : t('res.createBtn')}
                 </AppButton>
               </div>
             </form>

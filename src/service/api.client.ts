@@ -9,6 +9,8 @@
  * -------------------------------------------------------------------------
  */
 
+import { tNow } from '../i18n/translate'
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 // Helpers để đọc/ghi tokens từ localStorage (ngoài Zustand để tránh circular import)
@@ -110,7 +112,7 @@ async function request<T>(
       }
     }
     forceLogout()
-    throw new Error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.')
+    throw new Error(tNow('auth.sessionExpired'))
   }
 
   const data = await res.json().catch(() => null)

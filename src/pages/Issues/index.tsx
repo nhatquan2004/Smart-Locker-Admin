@@ -7,6 +7,8 @@ import type { TOrganization } from '../../types/organization.type'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
 import { AppTable } from '../../components/common/AppTable'
 import { useToast } from '../../context/ToastContext'
+import { useTranslation } from '../../context/LanguageContext'
+import type { TranslationKey } from '../../i18n/translations'
 import {
   Search,
   Building2,
@@ -28,30 +30,37 @@ import {
   ExternalLink,
 } from 'lucide-react'
 
-const categoryBadges: Record<TIssueCategory, { label: string; icon: React.ReactNode; style: string }> = {
-  locker:  { label: 'Lỗi Locker & Khóa', icon: <Lock className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
-  otp:     { label: 'Lỗi Mã OTP', icon: <Key className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
-  parcel:  { label: 'Lỗi Đơn Hàng', icon: <PackageCheck className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
-  app:     { label: 'Lỗi Ứng Dụng', icon: <Zap className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+const categoryBadges: Record<TIssueCategory, { labelKey: TranslationKey; icon: React.ReactNode; style: string }> = {
+  locker:  { labelKey: 'is.cat.locker', icon: <Lock className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+  otp:     { labelKey: 'is.cat.otp', icon: <Key className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+  parcel:  { labelKey: 'is.cat.parcel', icon: <PackageCheck className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
+  app:     { labelKey: 'is.cat.app', icon: <Zap className="w-3.5 h-3.5" />, style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-medium' },
 }
 
-const priorityBadges: Record<TIssuePriority, { label: string; style: string; dot?: boolean }> = {
-  urgent: { label: 'KHẨN CẤP', style: 'bg-slate-100 text-red-600 border-slate-200 dark:bg-slate-800 dark:text-red-400 dark:border-slate-700 font-mono font-bold', dot: true },
-  high:   { label: 'MỨC ĐỘ CAO', style: 'bg-slate-100 text-amber-600 border-slate-200 dark:bg-slate-800 dark:text-amber-400 dark:border-slate-700 font-mono font-semibold' },
-  medium: { label: 'TRUNG BÌNH', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-mono font-semibold' },
-  low:    { label: 'THẤP', style: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 font-mono font-semibold' },
+const priorityBadges: Record<TIssuePriority, { labelKey: TranslationKey; style: string; dot?: boolean }> = {
+  urgent: { labelKey: 'is.prio.urgent', style: 'bg-slate-100 text-red-600 border-slate-200 dark:bg-slate-800 dark:text-red-400 dark:border-slate-700 font-mono font-bold', dot: true },
+  high:   { labelKey: 'is.prio.high', style: 'bg-slate-100 text-amber-600 border-slate-200 dark:bg-slate-800 dark:text-amber-400 dark:border-slate-700 font-mono font-semibold' },
+  medium: { labelKey: 'is.prio.medium', style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 font-mono font-semibold' },
+  low:    { labelKey: 'is.prio.low', style: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 font-mono font-semibold' },
 }
 
-const statusBadges: Record<TIssueStatus, { label: string; dotColor: string; textColor: string }> = {
-  pending:     { label: 'Mới tiếp nhận', dotColor: 'bg-amber-500 animate-pulse', textColor: 'text-amber-600 dark:text-amber-400' },
-  in_progress: { label: 'Đang xử lý', dotColor: 'bg-sky-500 animate-pulse', textColor: 'text-sky-600 dark:text-sky-400' },
-  escalated:   { label: 'Leo thang Super Admin', dotColor: 'bg-purple-500 animate-pulse', textColor: 'text-purple-600 dark:text-purple-400' },
-  resolved:    { label: 'Đã giải quyết', dotColor: 'bg-emerald-500', textColor: 'text-emerald-600 dark:text-emerald-400' },
-  closed:      { label: 'Đã đóng ticket', dotColor: 'bg-slate-400', textColor: 'text-slate-500' },
+const statusBadges: Record<TIssueStatus, { labelKey: TranslationKey; dotColor: string; textColor: string }> = {
+  pending:     { labelKey: 'is.st.pending', dotColor: 'bg-amber-500 animate-pulse', textColor: 'text-amber-600 dark:text-amber-400' },
+  in_progress: { labelKey: 'is.st.in_progress', dotColor: 'bg-sky-500 animate-pulse', textColor: 'text-sky-600 dark:text-sky-400' },
+  escalated:   { labelKey: 'is.st.escalated', dotColor: 'bg-purple-500 animate-pulse', textColor: 'text-purple-600 dark:text-purple-400' },
+  resolved:    { labelKey: 'is.st.resolved', dotColor: 'bg-emerald-500', textColor: 'text-emerald-600 dark:text-emerald-400' },
+  closed:      { labelKey: 'is.st.closed', dotColor: 'bg-slate-400', textColor: 'text-slate-500' },
+}
+
+const reporterRoleKeys: Record<TIssueItem['reporterRole'], TranslationKey> = {
+  customer: 'is.role.customer',
+  shipper: 'is.role.shipper',
+  org_admin: 'is.role.org_admin',
 }
 
 export function IssuesPage() {
   const toast = useToast()
+  const { t } = useTranslation()
   const { user: loggedUser } = useAuthStore()
   const [issues, setIssues] = useState<TIssueItem[]>([])
   const [orgsList, setOrgsList] = useState<TOrganization[]>([])
@@ -109,19 +118,19 @@ export function IssuesPage() {
     updateIssueStatus(issueId, newStatus, resolutionInput).then((updated) => {
       setIssues((prev) => prev.map((item) => (item.id === issueId ? { ...updated } : item)))
       setSelectedTicket({ ...updated })
-      const statusLabel = statusBadges[newStatus]?.label || newStatus
-      setActionSuccessMsg(`✓ Đã cập nhật trạng thái ticket ${updated.ticketCode} sang ${statusLabel}`)
+      const statusLabel = statusBadges[newStatus] ? t(statusBadges[newStatus].labelKey) : newStatus
+      setActionSuccessMsg(t('is.statusUpdated', { code: updated.ticketCode, status: statusLabel }))
       setResolutionInput('')
       setTimeout(() => setActionSuccessMsg(''), 3000)
 
       if (newStatus === 'resolved') {
-        toast.success(`Đã giải quyết sự cố ${updated.ticketCode} thành công!`)
+        toast.success(t('is.resolvedToast', { code: updated.ticketCode }))
       } else if (newStatus === 'closed') {
-        toast.success(`Đã đóng ticket sự cố ${updated.ticketCode}!`)
+        toast.success(t('is.closedToast', { code: updated.ticketCode }))
       } else if (newStatus === 'in_progress') {
-        toast.info(`Sự cố ${updated.ticketCode} đã chuyển sang trạng thái đang xử lý.`)
+        toast.info(t('is.inProgressToast', { code: updated.ticketCode }))
       } else {
-        toast.info(`Đã cập nhật trạng thái sự cố ${updated.ticketCode} thành "${statusLabel}".`)
+        toast.info(t('is.statusToast', { code: updated.ticketCode, status: statusLabel }))
       }
     })
   }
@@ -132,9 +141,9 @@ export function IssuesPage() {
       setSelectedTicket({ ...updated })
       setShowEscalateModal(false)
       setEscalateReasonInput('')
-      setActionSuccessMsg(`🚀 Đã LEO THANG sự cố ${updated.ticketCode} lên Super Admin thành công!`)
+      setActionSuccessMsg(t('is.escalatedMsg', { code: updated.ticketCode }))
       setTimeout(() => setActionSuccessMsg(''), 3000)
-      toast.success(`Đã leo thang sự cố ${updated.ticketCode} lên Super Admin thành công!`)
+      toast.success(t('is.escalatedToast', { code: updated.ticketCode }))
     })
   }
 
@@ -149,15 +158,15 @@ export function IssuesPage() {
           </div>
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">Quản Lý Báo Lỗi & Sự Cố System</h1>
+              <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">{t('is.title')}</h1>
               <span className="px-3 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
-                {pendingCount} Mới tiếp nhận
+                {t('is.newCount', { count: pendingCount })}
               </span>
             </div>
             <p className="text-[12px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">
               {isSuperAdmin
-                ? 'Quyền hạn Super Admin: Quản lý toàn bộ sự cố, tiếp nhận các ticket Leo Thang từ Admin Khu Trọ.'
-                : 'Quyền hạn Admin Khu Trọ: Xử lý sự cố tại cơ sở. Nếu vượt khả năng, bấm "Leo thang lên Super Admin".'}
+                ? t('is.descSuper')
+                : t('is.descAdmin')}
             </p>
           </div>
         </div>
@@ -167,13 +176,13 @@ export function IssuesPage() {
           {escalatedCount > 0 && (
             <div className="stat-pill flex items-center gap-2 px-3.5 py-2 rounded-xl border border-purple-300 bg-purple-50 text-purple-800 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 text-[11px] font-mono font-bold">
               <Rocket className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-              <span>{escalatedCount} Leo Thang lên Super Admin</span>
+              <span>{t('is.escalatedCount', { count: escalatedCount })}</span>
             </div>
           )}
           {urgentCount > 0 && (
             <div className="stat-pill flex items-center gap-2 px-3.5 py-2 rounded-xl border border-red-200 bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300 dark:border-red-800 text-[11px] font-mono font-bold">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span>{urgentCount} Khẩn cấp</span>
+              <span>{t('is.urgentCount', { count: urgentCount })}</span>
             </div>
           )}
         </div>
@@ -184,14 +193,14 @@ export function IssuesPage() {
         
         {/* Status Tab Bar */}
         <div className="flex items-center gap-2 overflow-x-auto border-b border-slate-100 dark:border-slate-800 pb-3">
-          {[
-            { id: 'all', label: 'Tất cả trạng thái' },
-            { id: 'pending', label: 'Mới tiếp nhận' },
-            { id: 'in_progress', label: 'Đang xử lý' },
-            { id: 'escalated', label: '🚀 Leo thang Super Admin' },
-            { id: 'resolved', label: 'Đã giải quyết' },
-            { id: 'closed', label: 'Đã đóng ticket' },
-          ].map((tab) => (
+          {([
+            { id: 'all', labelKey: 'is.tab.all' },
+            { id: 'pending', labelKey: 'is.st.pending' },
+            { id: 'in_progress', labelKey: 'is.st.in_progress' },
+            { id: 'escalated', labelKey: 'is.tab.escalated' },
+            { id: 'resolved', labelKey: 'is.st.resolved' },
+            { id: 'closed', labelKey: 'is.st.closed' },
+          ] as { id: string; labelKey: TranslationKey }[]).map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -202,7 +211,7 @@ export function IssuesPage() {
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>
@@ -214,7 +223,7 @@ export function IssuesPage() {
             <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
-              placeholder="Tìm theo Mã Ticket, Tên, SĐT, Locker..."
+              placeholder={t('is.searchPh')}
               value={filter.search}
               onChange={(e) => setFilter((prev) => ({ ...prev, search: e.target.value }))}
               className="setting-input-custom w-full h-10 pl-9 pr-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -228,7 +237,7 @@ export function IssuesPage() {
               onChange={(e) => setFilter((prev) => ({ ...prev, companyId: e.target.value }))}
               className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
             >
-              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả Khu Trọ / Doanh Nghiệp</option>
+              <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.allOrgs')}</option>
               {orgsList.map((org) => (
                 <option key={org.id} value={org.id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                   {org.name} ({org.code})
@@ -243,11 +252,11 @@ export function IssuesPage() {
             onChange={(e) => setFilter((prev) => ({ ...prev, priority: e.target.value as any }))}
             className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
           >
-            <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả mức độ ưu tiên</option>
-            <option value="urgent" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khẩn cấp (Urgent)</option>
-            <option value="high" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Mức độ Cao</option>
-            <option value="medium" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Trung bình</option>
-            <option value="low" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Thấp</option>
+            <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.allPrio')}</option>
+            <option value="urgent" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optUrgent')}</option>
+            <option value="high" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optHigh')}</option>
+            <option value="medium" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optMedium')}</option>
+            <option value="low" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optLow')}</option>
           </select>
 
           {/* Category Filter */}
@@ -256,11 +265,11 @@ export function IssuesPage() {
             onChange={(e) => setFilter((prev) => ({ ...prev, category: e.target.value as any }))}
             className="setting-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
           >
-            <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Tất cả loại sự cố</option>
-            <option value="locker" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Lỗi Locker & Rơ-le</option>
-            <option value="otp" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Lỗi Sai/Hết hạn OTP</option>
-            <option value="parcel" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Lỗi Kiện Hàng & Shipment</option>
-            <option value="app" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Lỗi Ứng Dụng</option>
+            <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.allCats')}</option>
+            <option value="locker" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optLocker')}</option>
+            <option value="otp" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optOtp')}</option>
+            <option value="parcel" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.optParcel')}</option>
+            <option value="app" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('is.cat.app')}</option>
           </select>
 
         </div>
@@ -272,7 +281,7 @@ export function IssuesPage() {
           columns={[
             {
               key: 'ticketCode',
-              title: 'Mã Ticket & Thời Gian',
+              title: t('is.colTicket'),
               render: (iss) => (
                 <div className="flex flex-col gap-0.5">
                   <span className="font-mono font-bold text-sky-600 dark:text-sky-400 text-[13px]">
@@ -283,7 +292,7 @@ export function IssuesPage() {
                   </span>
                   {iss.escalatedToSuperAdmin && (
                     <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800 w-max mt-0.5 whitespace-nowrap">
-                      <Rocket className="w-2.5 h-2.5" /> ESCALATED SUPER ADMIN
+                      <Rocket className="w-2.5 h-2.5" /> {t('is.escalatedBadge')}
                     </span>
                   )}
                 </div>
@@ -291,7 +300,7 @@ export function IssuesPage() {
             },
             {
               key: 'reporterName',
-              title: 'Người Báo Lỗi',
+              title: t('is.colReporter'),
               render: (iss) => (
                 <div className="flex flex-col gap-1">
                   <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">{iss.reporterName}</span>
@@ -302,7 +311,7 @@ export function IssuesPage() {
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800 whitespace-nowrap">
-                        <User className="w-3 h-3" /> Cư Dân / User
+                        <User className="w-3 h-3" /> {t('is.resident')}
                       </span>
                     )}
                     <span className="font-mono text-slate-500 text-[11px] whitespace-nowrap">{iss.reporterPhone}</span>
@@ -312,7 +321,7 @@ export function IssuesPage() {
             },
             {
               key: 'orgName',
-              title: 'Khu Trọ & Locker',
+              title: t('is.colOrgLocker'),
               render: (iss) => (
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1.5 text-[12px] font-mono font-bold text-slate-800 dark:text-slate-200">
@@ -321,7 +330,7 @@ export function IssuesPage() {
                   </div>
                   {iss.lockerCode && (
                     <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 w-max whitespace-nowrap">
-                      Ngăn Tủ {iss.lockerCode}
+                      {t('is.lockerLine', { code: iss.lockerCode })}
                     </span>
                   )}
                 </div>
@@ -329,7 +338,7 @@ export function IssuesPage() {
             },
             {
               key: 'title',
-              title: 'Nội Dung & Bằng Chứng',
+              title: t('is.colContent'),
               className: 'min-w-[260px] max-w-[340px]',
               render: (iss) => {
                 const catBadge = categoryBadges[iss.category] || categoryBadges.locker
@@ -339,11 +348,11 @@ export function IssuesPage() {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border whitespace-nowrap shrink-0 ${catBadge.style}`}>
                         {catBadge.icon}
-                        {catBadge.label}
+                        {t(catBadge.labelKey)}
                       </span>
                       {hasPhoto && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 whitespace-nowrap shrink-0">
-                          <ImageIcon className="w-3 h-3" /> {iss.attachments?.length} Ảnh đính kèm
+                          <ImageIcon className="w-3 h-3" /> {t('is.photos', { count: iss.attachments?.length ?? 0 })}
                         </span>
                       )}
                     </div>
@@ -354,33 +363,33 @@ export function IssuesPage() {
             },
             {
               key: 'priority',
-              title: 'Mức Độ',
+              title: t('is.colPriority'),
               render: (iss) => {
                 const prioBadge = priorityBadges[iss.priority] || priorityBadges.medium
                 return (
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border whitespace-nowrap ${prioBadge.style}`}>
                     {prioBadge.dot && <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />}
-                    {prioBadge.label}
+                    {t(prioBadge.labelKey)}
                   </span>
                 )
               },
             },
             {
               key: 'status',
-              title: 'Trạng Thái Xử Lý',
+              title: t('is.colStatus'),
               render: (iss) => {
                 const stBadge = statusBadges[iss.status] || statusBadges.pending
                 return (
                   <div className="flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap">
                     <span className={`w-2 h-2 rounded-full ${stBadge.dotColor}`} />
-                    <span className={stBadge.textColor}>{stBadge.label}</span>
+                    <span className={stBadge.textColor}>{t(stBadge.labelKey)}</span>
                   </div>
                 )
               },
             },
             {
               key: 'actions',
-              title: 'Thao Tác',
+              title: t('shipments.colActions'),
               align: 'right',
               render: (iss) => (
                 <button
@@ -388,7 +397,7 @@ export function IssuesPage() {
                   onClick={() => setSelectedTicket(iss)}
                   className="h-8 px-3.5 rounded-xl text-[12px] font-bold bg-sky-600 text-white hover:bg-sky-700 transition-all cursor-pointer shadow-2xs active:scale-95 inline-flex items-center justify-center gap-1 shrink-0 whitespace-nowrap ml-auto"
                 >
-                  <span>Xử lý</span>
+                  <span>{t('is.handle')}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               ),
@@ -399,8 +408,8 @@ export function IssuesPage() {
           minWidth="1100px"
           emptyState={
             <EmptyState
-              title="Không có sự cố nào"
-              description="Không tìm thấy ticket báo lỗi phù hợp với bộ lọc hiện tại."
+              title={t('is.emptyTitle')}
+              description={t('is.emptyDesc')}
             />
           }
         />
@@ -417,11 +426,11 @@ export function IssuesPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono font-bold text-[14px] text-sky-600 dark:text-sky-400">{selectedTicket.ticketCode}</span>
                   <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border ${priorityBadges[selectedTicket.priority].style}`}>
-                    {priorityBadges[selectedTicket.priority].label}
+                    {t(priorityBadges[selectedTicket.priority].labelKey)}
                   </span>
                   {selectedTicket.escalatedToSuperAdmin && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-300 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">
-                      <Rocket className="w-3 h-3 text-purple-600" /> ESCALATED TO SUPER ADMIN
+                      <Rocket className="w-3 h-3 text-purple-600" /> {t('is.escalatedBadge')}
                     </span>
                   )}
                 </div>
@@ -449,31 +458,31 @@ export function IssuesPage() {
               {/* Reporter Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl setting-input-custom border text-[12.5px]">
                 <div className="flex flex-col gap-1">
-                  <span className="setting-desc-custom font-medium">Người báo lỗi:</span>
+                  <span className="setting-desc-custom font-medium">{t('is.reporterLabel')}</span>
                   <span className="font-bold setting-title-custom flex items-center gap-1.5">
                     {selectedTicket.reporterRole === 'shipper' ? <Truck className="w-3.5 h-3.5 text-amber-600" /> : <User className="w-3.5 h-3.5 text-sky-600" />}
-                    {selectedTicket.reporterName} ({selectedTicket.reporterRole})
+                    {selectedTicket.reporterName} ({t(reporterRoleKeys[selectedTicket.reporterRole])})
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="setting-desc-custom font-medium">SĐT liên hệ:</span>
+                  <span className="setting-desc-custom font-medium">{t('is.phoneLabel')}</span>
                   <span className="font-mono font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5" />
                     {selectedTicket.reporterPhone}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <span className="setting-desc-custom font-medium">Khu trọ / Doanh nghiệp:</span>
+                  <span className="setting-desc-custom font-medium">{t('is.orgLabel')}</span>
                   <span className="font-semibold setting-title-custom flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                    {selectedTicket.orgName} {selectedTicket.lockerCode ? `— (Ngăn Tủ ${selectedTicket.lockerCode})` : ''}
+                    {selectedTicket.orgName} {selectedTicket.lockerCode ? t('is.orgLocker', { code: selectedTicket.lockerCode }) : ''}
                   </span>
                 </div>
               </div>
 
               {/* Error Description Detail */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">MÔ TẢ CHI TIẾT SỰ CỐ</label>
+                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('is.descLabel')}</label>
                 <div className="p-3.5 rounded-xl setting-input-custom border text-[13px] leading-relaxed font-medium">
                   {selectedTicket.description}
                 </div>
@@ -484,9 +493,9 @@ export function IssuesPage() {
                 <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-mono text-emerald-800 dark:text-emerald-400 uppercase font-bold flex items-center gap-1.5">
-                      <ImageIcon className="w-3.5 h-3.5" /> 📸 ẢNH BẰNG CHỨNG HỌ CHỤP HIỆN TRƯỜNG ({selectedTicket.attachments.length} Ảnh)
+                      <ImageIcon className="w-3.5 h-3.5" /> {t('is.evidenceLabel', { count: selectedTicket.attachments.length })}
                     </label>
-                    <span className="text-[10px] text-slate-500 font-mono">Bấm vào ảnh để xem phóng to</span>
+                    <span className="text-[10px] text-slate-500 font-mono">{t('is.clickToZoom')}</span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-1">
@@ -496,9 +505,9 @@ export function IssuesPage() {
                         onClick={() => setPreviewImage(imgUrl)}
                         className="group relative h-28 rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 cursor-pointer shadow-xs"
                       >
-                        <img src={imgUrl} alt={`Evidence ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                        <img src={imgUrl} alt={t('is.evidenceAlt', { index: idx + 1 })} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
                         <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-mono font-bold text-[11px] gap-1">
-                          <ExternalLink className="w-4 h-4" /> Phóng to
+                          <ExternalLink className="w-4 h-4" /> {t('is.zoom')}
                         </div>
                       </div>
                     ))}
@@ -511,10 +520,10 @@ export function IssuesPage() {
                 <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
                     <h4 className="text-[13px] font-bold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
-                      <Rocket className="w-4 h-4 text-purple-600" /> Không sửa được sự cố này tại cơ sở?
+                      <Rocket className="w-4 h-4 text-purple-600" /> {t('is.cantFix')}
                     </h4>
                     <p className="text-[11.5px] text-purple-700 dark:text-purple-300 mt-0.5">
-                      Chuyển (Escalate) ticket này lên Platform Super Admin & Kỹ thuật viên phần cứng cấp cao.
+                      {t('is.escalateHint')}
                     </p>
                   </div>
                   <button
@@ -522,17 +531,17 @@ export function IssuesPage() {
                     onClick={() => setShowEscalateModal(true)}
                     className="px-3.5 py-2 rounded-xl text-[12px] font-bold bg-purple-600 text-white hover:bg-purple-700 transition-all cursor-pointer shadow-xs shrink-0"
                   >
-                    🚀 Leo thang lên Super Admin
+                    {t('is.escalateBtn')}
                   </button>
                 </div>
               )}
 
               {/* Resolution Note Input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">GHI CHÚ KHẮC PHỤC / PHẢN HỒI NGUYÊN NHÂN</label>
+                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('is.resolutionLabel')}</label>
                 <textarea
                   rows={2}
-                  placeholder="Nhập ghi chú phản hồi cho cư dân/shipper hoặc ghi chú kỹ thuật..."
+                  placeholder={t('is.resolutionPh')}
                   value={resolutionInput}
                   onChange={(e) => setResolutionInput(e.target.value)}
                   className="setting-input-custom p-3 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -541,7 +550,7 @@ export function IssuesPage() {
 
               {/* Change Status Action Buttons Flow */}
               <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">CẬP NHẬT TRẠNG THÁI XỬ LÝ (PIPELINE FLOW)</label>
+                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('is.pipelineLabel')}</label>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
@@ -553,7 +562,7 @@ export function IssuesPage() {
                         : 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                     }`}
                   >
-                    <Clock className="w-3.5 h-3.5" /> 1. Tiếp nhận
+                    <Clock className="w-3.5 h-3.5" /> {t('is.step1')}
                   </button>
 
                   <button
@@ -565,7 +574,7 @@ export function IssuesPage() {
                         : 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                     }`}
                   >
-                    <Wrench className="w-3.5 h-3.5" /> 2. Đang xử lý
+                    <Wrench className="w-3.5 h-3.5" /> {t('is.step2')}
                   </button>
 
                   <button
@@ -577,7 +586,7 @@ export function IssuesPage() {
                         : 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                     }`}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" /> 3. Đã giải quyết
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {t('is.step3')}
                   </button>
 
                   <button
@@ -589,20 +598,20 @@ export function IssuesPage() {
                         : 'bg-white text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                     }`}
                   >
-                    <Lock className="w-3.5 h-3.5" /> 4. Đóng Ticket
+                    <Lock className="w-3.5 h-3.5" /> {t('is.step4')}
                   </button>
                 </div>
               </div>
 
               {/* History Timeline of Ticket */}
               <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">DÒNG THỜI GIAN XỬ LÝ (TIMELINE LOGS)</label>
+                <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('is.timelineLabel')}</label>
                 <div className="flex flex-col gap-2">
                   {selectedTicket.timeline.map((tl) => (
                     <div key={tl.id} className="flex items-center justify-between text-[12px] p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-l-4 border-l-sky-500">
                       <span className="font-mono font-bold text-sky-600 dark:text-sky-400">[{tl.time}]</span>
                       <span className="font-semibold text-slate-900 dark:text-white flex-1 mx-3">{tl.note}</span>
-                      <span className="text-[11px] font-mono text-slate-500">Bởi: {tl.actor}</span>
+                      <span className="text-[11px] font-mono text-slate-500">{t('is.by', { name: tl.actor })}</span>
                     </div>
                   ))}
                 </div>
@@ -617,7 +626,7 @@ export function IssuesPage() {
       {previewImage && (
         <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md" onClick={() => setPreviewImage(null)}>
           <div className="relative max-w-3xl max-h-[85vh] p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-700 overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <img src={previewImage} alt="Full evidence preview" className="max-w-full max-h-[78vh] object-contain rounded-xl" />
+            <img src={previewImage} alt={t('is.previewAlt')} className="max-w-full max-h-[78vh] object-contain rounded-xl" />
             <button
               type="button"
               onClick={() => setPreviewImage(null)}
@@ -635,18 +644,18 @@ export function IssuesPage() {
           <div data-reveal className="setting-card-custom w-full max-w-md rounded-3xl p-6 border shadow-2xl flex flex-col gap-4">
             <div className="flex items-center gap-3 text-purple-600 dark:text-purple-400">
               <Rocket className="w-6 h-6 shrink-0" />
-              <h3 className="text-[17px] font-bold setting-title-custom">Leo Thang Sự Cố Up Super Admin</h3>
+              <h3 className="text-[17px] font-bold setting-title-custom">{t('is.escTitle')}</h3>
             </div>
             
             <p className="text-[12.5px] setting-desc-custom leading-relaxed">
-              Ticket <strong className="font-mono text-sky-600 dark:text-sky-400">{selectedTicket.ticketCode}</strong> sẽ được chuyển trực tiếp lên bảng ưu tiên của Platform Super Admin và Đội Kỹ Thuật Phần Cứng.
+              {t('is.ticketWord')} <strong className="font-mono text-sky-600 dark:text-sky-400">{selectedTicket.ticketCode}</strong> {t('is.escBody')}
             </p>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">LÝ DO LEO THANG (NẾU CÓ)</label>
+              <label className="text-[11px] font-mono setting-desc-custom uppercase font-semibold">{t('is.escReasonLabel')}</label>
               <textarea
                 rows={2}
-                placeholder="VD: Hư chốt rơ-le khóa cơ khí, cần kỹ thuật viên qua thay bo MCU..."
+                placeholder={t('is.escReasonPh')}
                 value={escalateReasonInput}
                 onChange={(e) => setEscalateReasonInput(e.target.value)}
                 className="setting-input-custom p-3 rounded-xl text-[13px] border focus:outline-none focus:border-purple-500"
@@ -659,14 +668,14 @@ export function IssuesPage() {
                 onClick={() => setShowEscalateModal(false)}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
               >
-                Hủy bỏ
+                {t('is.dismiss')}
               </button>
               <button
                 type="button"
                 onClick={() => handleEscalate(selectedTicket.id)}
                 className="px-4 py-2 rounded-xl text-[12px] font-bold bg-purple-600 text-white hover:bg-purple-700 transition-all cursor-pointer shadow-xs"
               >
-                Xác nhận Leo Thang
+                {t('is.confirmEsc')}
               </button>
             </div>
           </div>

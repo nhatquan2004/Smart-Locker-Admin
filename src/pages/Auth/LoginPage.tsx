@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/useAuthStore'
+import { useTranslation } from '../../context/LanguageContext'
 import type { TAdminUser, TRole } from '../../types/auth.type'
 import lockerLogo from '../../assets/locker.png'
 import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react'
@@ -21,6 +22,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
+  const { t } = useTranslation()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -32,7 +34,7 @@ export function LoginPage() {
     setError('')
 
     if (!email.trim() || !password.trim()) {
-      setError('Vui lòng nhập đầy đủ Email và Mật khẩu.')
+      setError(t('auth.fillCredentials'))
       return
     }
 
@@ -48,7 +50,7 @@ export function LoginPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        const msg = data?.message || 'Đăng nhập thất bại. Kiểm tra lại thông tin.'
+        const msg = data?.message || t('auth.loginFailed')
         setError(Array.isArray(msg) ? msg.join(', ') : msg)
         return
       }
@@ -61,6 +63,7 @@ export function LoginPage() {
         fullName: backendUser.name,
         role: mapBackendRole(backendUser.role),
         orgId: backendUser.buildingId || 'all',
+        buildingId: backendUser.buildingId || undefined,
         orgName: backendUser.carrierName || undefined,
       }
 
@@ -68,9 +71,9 @@ export function LoginPage() {
       navigate('/dashboard')
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || 'Không thể kết nối tới server. Kiểm tra backend đang chạy chưa?')
+        setError(err.message || t('auth.cannotConnect'))
       } else {
-        setError('Không thể kết nối tới server. Kiểm tra backend đang chạy chưa?')
+        setError(t('auth.cannotConnect'))
       }
     } finally {
       setLoading(false)
@@ -93,7 +96,7 @@ export function LoginPage() {
           </div>
           <div>
             <h1 className="text-[22px] font-bold text-slate-900 dark:text-white tracking-tight">Smart Locker Admin</h1>
-            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">Đăng nhập cổng quản trị hệ thống</p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">{t('auth.loginSubtitle')}</p>
           </div>
         </div>
 
@@ -123,7 +126,7 @@ export function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">Mật khẩu</label>
+            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('auth.password')}</label>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 dark:text-slate-500" />
               <input
@@ -146,7 +149,7 @@ export function LoginPage() {
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <span>Đăng nhập hệ thống</span>
+                <span>{t('auth.loginBtn')}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -156,10 +159,10 @@ export function LoginPage() {
         {/* Server info hint */}
         <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
           <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center">
-            Kết nối đến: <span className="font-mono font-semibold text-sky-600 dark:text-sky-400">{BASE_URL}</span>
+            {t('auth.connectingTo')} <span className="font-mono font-semibold text-sky-600 dark:text-sky-400">{BASE_URL}</span>
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 text-center mt-0.5">
-            Đảm bảo Backend server đang chạy trước khi đăng nhập.
+            {t('auth.ensureBackend')}
           </p>
         </div>
 

@@ -1,4 +1,6 @@
 import {StatusBadge} from '../shared/StatusBadge/StatusBadge'
+import {useTranslation} from '../../context/LanguageContext'
+import type {TranslationKey} from '../../i18n/translations'
 import type {TUserStatus} from '../../types/user.type'
 
 type TProps = {
@@ -8,30 +10,31 @@ type TProps = {
 const statusMap: Record<
     TUserStatus,
     {
-        label: string
+        labelKey: TranslationKey
         tone: 'green' | 'gray' | 'red'
         pulse?: boolean
     }
 > = {
     active: {
-        label: 'ACTIVE',
+        labelKey: 'users.active',
         tone: 'green',
         pulse: true,
     },
     inactive: {
-        label: 'INACTIVE',
+        labelKey: 'users.inactive',
         tone: 'gray',
         pulse: false,
     },
     blocked: {
-        label: 'BANNED',
+        labelKey: 'users.blocked',
         tone: 'red',
         pulse: true,
     },
 }
 
 export function UserStatusBadge({status}: TProps) {
+    const {t} = useTranslation()
     const config = statusMap[status]
 
-    return <StatusBadge label={config.label} tone={config.tone} pulse={config.pulse}/>
+    return <StatusBadge label={t(config.labelKey)} tone={config.tone} pulse={config.pulse}/>
 }

@@ -18,6 +18,9 @@ import { ActivitiesPage } from "../pages/Activities"
 import { OrganizationsPage } from '../pages/Organizations'
 import { OrganizationDetailPage } from '../pages/Organizations/OrganizationDetail'
 import { IssuesPage } from '../pages/Issues'
+import { PendingApprovalsPage } from '../pages/PendingApprovals'
+import { NotificationsPage } from '../pages/Notifications'
+import { LockerMapPage } from '../pages/LockerMap'
 import { LoginPage } from '../pages/Auth/LoginPage'
 import { ForbiddenPage } from '../pages/Auth/ForbiddenPage'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -50,6 +53,10 @@ const router = createBrowserRouter([
           { path: 'users/:userId', element: <UserDetailPage /> },
           { path: 'users/:userId/manage', element: <UserManagePage /> },
           { path: 'users/:userId/history', element: <UserHistoryPage /> },
+          { path: 'pending-approvals', element: <PendingApprovalsPage /> },
+          { path: 'notifications', element: <NotificationsPage /> },
+
+          { path: 'locker-map', element: <LockerMapPage /> },
 
           // Restricted Super Admin Only Routes
           {

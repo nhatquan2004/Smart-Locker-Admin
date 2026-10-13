@@ -9,16 +9,17 @@ import { AppTable, type TColumn } from '../../components/common/AppTable'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
+import type { TranslationKey } from '../../i18n/translations'
 import { Search, Archive, Package, X } from 'lucide-react'
 
-const statusBadges: Record<TShipmentStatus, { label: string; style: string }> = {
-  pending:          { label: 'Chờ gửi tủ', style: 'bg-slate-100 text-slate-700 border-slate-300' },
-  waiting_pickup:   { label: 'Chờ nhận hàng', style: 'bg-amber-100 text-amber-800 border-amber-300' },
-  stored:           { label: 'Đã gửi vào tủ', style: 'bg-sky-100 text-sky-800 border-sky-300' },
-  picked_up:        { label: 'Đã hoàn tất',  style: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-  expired:          { label: 'Quá hạn',       style: 'bg-red-100 text-red-800 border-red-300' },
-  moved_to_storage: { label: 'Đã chuyển kho phụ', style: 'bg-purple-100 text-purple-800 border-purple-300' },
-  failed:           { label: 'Lỗi thiết bị', style: 'bg-rose-100 text-rose-800 border-rose-300' },
+const statusBadges: Record<TShipmentStatus, { labelKey: TranslationKey; style: string }> = {
+  pending:          { labelKey: 'sh.st.pending', style: 'bg-slate-100 text-slate-700 border-slate-300' },
+  waiting_pickup:   { labelKey: 'sh.st.waiting_pickup', style: 'bg-amber-100 text-amber-800 border-amber-300' },
+  stored:           { labelKey: 'sh.st.stored', style: 'bg-sky-100 text-sky-800 border-sky-300' },
+  picked_up:        { labelKey: 'sh.st.picked_up', style: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  expired:          { labelKey: 'sh.st.expired', style: 'bg-red-100 text-red-800 border-red-300' },
+  moved_to_storage: { labelKey: 'sh.st.moved_to_storage', style: 'bg-purple-100 text-purple-800 border-purple-300' },
+  failed:           { labelKey: 'sh.st.failed', style: 'bg-rose-100 text-rose-800 border-rose-300' },
 }
 
 export function ShipmentsPage() {
@@ -67,14 +68,14 @@ export function ShipmentsPage() {
 
   function handleOpenStorageModal(shipment: TShipment) {
     setStorageModalShipment(shipment)
-    setStorageLocation('Kệ A1 - Kho Bảo Vệ Tầng 1')
+    setStorageLocation(t('sh.defaultLocation'))
   }
 
   function handleConfirmMoveToStorage() {
     if (!storageModalShipment) return
     const targetCode = storageModalShipment.shipmentCode
     const lockerCode = storageModalShipment.lockerCode
-    const locationNote = storageLocation.trim() || 'Kho Bảo Vệ Tầng 1'
+    const locationNote = storageLocation.trim() || t('sh.defaultLocationShort')
 
     updateShipmentStatus(storageModalShipment.id, 'moved_to_storage', locationNote).then(() => {
       freeCompartmentByLockerCode(lockerCode).then(() => {
@@ -95,14 +96,14 @@ export function ShipmentsPage() {
           actorRole: 'admin',
           category: 'shipment',
           status: 'info',
-          title: 'Chuyển đơn quá hạn sang Kho Phụ',
-          description: `Đơn ${targetCode} đã được chuyển sang kho phụ [Vị trí: ${locationNote}]. Ngăn tủ ${lockerCode} đã tự động giải phóng (Available).`,
+          title: t('sh.logTitle'),
+          description: t('sh.logDesc', { code: targetCode, location: locationNote, locker: lockerCode }),
           targetId: storageModalShipment.id,
           targetType: 'shipment',
           targetLabel: targetCode,
         })
 
-        toast.success(`Đã chuyển đơn ${targetCode} sang Kho Phụ (${locationNote}) & giải phóng ngăn ${lockerCode}!`)
+        toast.success(t('sh.movedToast', { code: targetCode, location: locationNote, locker: lockerCode }))
         setStorageModalShipment(null)
         setStorageLocation('')
       })
@@ -112,49 +113,49 @@ export function ShipmentsPage() {
   const columns: TColumn<TShipment>[] = [
     {
       key: 'shipmentCode',
-      title: 'Mã Đơn & Locker',
+      title: t('shipments.colCode'),
       render: (s) => (
         <div className="flex flex-col gap-1">
           <span className="font-mono font-bold text-sky-700 dark:text-sky-400 text-[13px]">{s.shipmentCode}</span>
           <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 w-max">
-            Tủ {s.lockerCode} ({s.cluster})
+            {t('sh.lockerCluster', { code: s.lockerCode, cluster: s.cluster })}
           </span>
         </div>
       ),
     },
     {
       key: 'recipientName',
-      title: 'Shipper & Người Nhận',
+      title: t('shipments.colRecipient'),
       render: (s) => (
         <div className="flex flex-col text-[12px]">
           <span className="font-bold text-slate-900 dark:text-white">{s.recipientName}</span>
           <span className="font-mono text-slate-500 dark:text-slate-400">{s.recipientPhone}</span>
-          <span className="text-[11px] text-slate-400 mt-0.5">Bởi: {s.shipperName}</span>
+          <span className="text-[11px] text-slate-400 mt-0.5">{t('sh.by', { name: s.shipperName })}</span>
         </div>
       ),
     },
     {
       key: 'stepperProgress',
-      title: 'Tiến Trình (Parcel Stepper)',
+      title: t('shipments.colProgress'),
       render: (s) => (
         <div className="flex items-center gap-1.5 text-[11.5px] font-mono whitespace-nowrap">
           <span className={`px-2 py-0.5 rounded text-[11px] ${s.shipmentStatus !== 'pending' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border border-slate-200 dark:border-slate-700' : 'text-slate-400'}`}>
-            1. Đã gửi
+            {t('shipments.step1')}
           </span>
           <span className="text-slate-300 dark:text-slate-600">→</span>
           <span className={`px-2 py-0.5 rounded text-[11px] ${s.otpStatus === 'active' ? 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border border-slate-200 dark:border-slate-700' : 'text-slate-400'}`}>
-            2. OTP Active
+            {t('shipments.step2')}
           </span>
           <span className="text-slate-300 dark:text-slate-600">→</span>
           <span className={`px-2 py-0.5 rounded text-[11px] ${s.shipmentStatus === 'picked_up' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold' : 'text-slate-400'}`}>
-            3. Đã nhận
+            {t('shipments.step3')}
           </span>
         </div>
       ),
     },
     {
       key: 'otpStatus',
-      title: 'Trạng Thái OTP',
+      title: t('shipments.colOtp'),
       render: (s) => {
         const badge = statusBadges[s.shipmentStatus] ?? statusBadges.waiting_pickup
         return (
@@ -164,7 +165,7 @@ export function ShipmentsPage() {
                 s.shipmentStatus === 'picked_up' ? 'bg-emerald-500' : s.shipmentStatus === 'waiting_pickup' ? 'bg-sky-500 animate-pulse' : s.shipmentStatus === 'expired' ? 'bg-red-500' : s.shipmentStatus === 'moved_to_storage' ? 'bg-purple-500' : 'bg-slate-400'
               }`} />
               <span className={s.shipmentStatus === 'picked_up' ? 'text-emerald-600 dark:text-emerald-400' : s.shipmentStatus === 'waiting_pickup' ? 'text-sky-600 dark:text-sky-400' : s.shipmentStatus === 'expired' ? 'text-red-600' : s.shipmentStatus === 'moved_to_storage' ? 'text-purple-600 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}>
-                {badge.label}
+                {t(badge.labelKey)}
               </span>
             </div>
             {s.storageLocationNote && (
@@ -174,7 +175,7 @@ export function ShipmentsPage() {
             )}
             {s.otpCode && !s.storageLocationNote && (
               <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                Mã OTP: <strong className="text-slate-900 dark:text-white font-bold">{s.otpCode}</strong>
+                {t('sh.otpCode')} <strong className="text-slate-900 dark:text-white font-bold">{s.otpCode}</strong>
               </span>
             )}
           </div>
@@ -183,7 +184,7 @@ export function ShipmentsPage() {
     },
     {
       key: 'actions',
-      title: 'Thao Tác',
+      title: t('shipments.colActions'),
       align: 'right',
       render: (s) => (
         <div className="flex items-center justify-end gap-2 whitespace-nowrap">
@@ -194,7 +195,7 @@ export function ShipmentsPage() {
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-600 hover:text-white transition-all text-[11px] font-semibold cursor-pointer shadow-2xs active:scale-95"
             >
               <Archive className="w-3.5 h-3.5" />
-              <span>Chuyển Kho Phụ</span>
+              <span>{t('sh.moveBtn')}</span>
             </button>
           )}
           <button
@@ -202,7 +203,7 @@ export function ShipmentsPage() {
             onClick={() => navigate(`/shipments/${s.id}`)}
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-600 hover:text-white transition-all text-[11px] font-semibold font-mono cursor-pointer shadow-2xs active:scale-95"
           >
-            👁️ Chi tiết
+            👁️ {t('common.details')}
           </button>
         </div>
       ),
@@ -243,7 +244,7 @@ export function ShipmentsPage() {
                 : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200",
             ].join(" ")}
           >
-            Tất cả ({shipments.length})
+            {t('shipments.allFilter')} ({shipments.length})
           </button>
 
           <button
@@ -256,7 +257,7 @@ export function ShipmentsPage() {
                 : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
             ].join(" ")}
           >
-            Chờ nhận ({waitingPickupCount})
+            {t('shipments.waitingFilter')} ({waitingPickupCount})
           </button>
 
           <button
@@ -269,7 +270,7 @@ export function ShipmentsPage() {
                 : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100",
             ].join(" ")}
           >
-            Quá hạn ({expiredCount})
+            {t('sh.expiredFilter')} ({expiredCount})
           </button>
 
           <button
@@ -282,7 +283,7 @@ export function ShipmentsPage() {
                 : "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100",
             ].join(" ")}
           >
-            Đã hoàn tất ({completedCount})
+            {t('shipments.completedFilter')} ({completedCount})
           </button>
         </div>
       </section>
@@ -293,7 +294,7 @@ export function ShipmentsPage() {
           <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
-            placeholder="Tìm theo Mã đơn, Tên người nhận, SĐT, Mã tủ..."
+            placeholder={t('sh.searchPh')}
             value={filter.search}
             onChange={(e) => setFilter((prev) => ({ ...prev, search: e.target.value }))}
             className="setting-input-custom w-full h-10 pl-9 pr-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500"
@@ -306,10 +307,10 @@ export function ShipmentsPage() {
             onChange={(e) => setFilter((prev) => ({ ...prev, cluster: e.target.value as any }))}
             className="h-10 px-3.5 rounded-xl text-[13px] bg-slate-50 text-slate-900 border border-slate-300 focus:outline-none focus:border-sky-500 cursor-pointer w-full md:w-48"
           >
-            <option value="all">Tất cả cụm tủ</option>
-            <option value="A">Cụm A - Khu Văn Phòng</option>
-            <option value="B">Cụm B - Trọ Hoàng Nam</option>
-            <option value="C">Cụm C - KTX Bách Khoa</option>
+            <option value="all">{t('sh.allClusters')}</option>
+            <option value="A">{t('lockers.clusterA')}</option>
+            <option value="B">{t('lockers.clusterB')}</option>
+            <option value="C">{t('lockers.clusterC')}</option>
           </select>
         </div>
       </div>
@@ -323,8 +324,8 @@ export function ShipmentsPage() {
           minWidth="1000px"
           emptyState={
             <EmptyState
-              title="Không tìm thấy bưu kiện phù hợp"
-              description="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái."
+              title={t('sh.emptyTitle')}
+              description={t('sh.emptyDesc')}
             />
           }
         />
@@ -343,10 +344,10 @@ export function ShipmentsPage() {
                 </div>
                 <div>
                   <h3 className="text-[16px] font-bold text-slate-900 dark:text-white leading-snug">
-                    Chuyển Đơn Hàng Sang Kho Phụ
+                    {t('sh.modalTitle')}
                   </h3>
                   <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    Mã đơn: <strong className="text-purple-600 dark:text-purple-400 font-bold">{storageModalShipment.shipmentCode}</strong> (Tủ {storageModalShipment.lockerCode})
+                    {t('sh.orderLabel')} <strong className="text-purple-600 dark:text-purple-400 font-bold">{storageModalShipment.shipmentCode}</strong> {t('sh.lockerShort', { code: storageModalShipment.lockerCode })}
                   </p>
                 </div>
               </div>
@@ -361,19 +362,19 @@ export function ShipmentsPage() {
 
             {/* Info notice */}
             <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 text-[12px] text-purple-800 dark:text-purple-300 leading-relaxed">
-              📦 Đơn hàng này đã <strong>Quá hạn 48h</strong> giải phóng tủ chính. Hãy lấy kiện hàng ra và chuyển lưu giữ tại vị trí Kho phụ / Phòng Bảo vệ.
+              📦 {t('sh.noticePre')} <strong>{t('sh.noticeBold')}</strong> {t('sh.noticePost')}
             </div>
 
             {/* Storage location input */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">
-                Ghi chú vị trí lưu trữ kho mới
+                {t('sh.locationLabel')}
               </label>
               <input
                 type="text"
                 value={storageLocation}
                 onChange={(e) => setStorageLocation(e.target.value)}
-                placeholder="VD: Kệ A1 - Kho Bảo Vệ Tầng 1"
+                placeholder={t('sh.locationPh')}
                 className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-purple-500"
               />
             </div>
@@ -385,7 +386,7 @@ export function ShipmentsPage() {
                 onClick={() => setStorageModalShipment(null)}
                 className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                Hủy
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -393,7 +394,7 @@ export function ShipmentsPage() {
                 className="h-10 px-4 rounded-xl text-[12.5px] font-bold bg-purple-600 hover:bg-purple-700 text-white transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5"
               >
                 <Package className="w-4 h-4" />
-                <span>Xác Nhận Chuyển Kho</span>
+                <span>{t('sh.confirmMove')}</span>
               </button>
             </div>
 

@@ -7,6 +7,7 @@ import { UserStatusBadge } from "../../../components/Users/UserStatusBadge"
 import type { TShipment } from "../../../types/shipment.type"
 import type { TActivityItem } from "../../../types/activity.type"
 import { useTranslation } from '../../../context/LanguageContext'
+import type { TranslationKey } from '../../../i18n/translations'
 import {
   User as UserIcon,
   Clock,
@@ -81,12 +82,12 @@ export function UserDetailPage() {
     )
   }
 
-  const shipmentStatusBadges: Record<string, { label: string; style: string }> = {
-    waiting_pickup: { label: 'Chờ nhận hàng', style: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800' },
-    stored: { label: 'Đã lưu tủ', style: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800' },
-    picked_up: { label: 'Đã hoàn thành', style: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
-    expired: { label: 'Quá hạn', style: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800' },
-    pending: { label: 'Chờ xử lý', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800' },
+  const shipmentStatusBadges: Record<string, { labelKey: TranslationKey; style: string }> = {
+    waiting_pickup: { labelKey: 'ud.ship.waiting_pickup', style: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800' },
+    stored: { labelKey: 'ud.ship.stored', style: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800' },
+    picked_up: { labelKey: 'ud.ship.picked_up', style: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
+    expired: { labelKey: 'ud.ship.expired', style: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800' },
+    pending: { labelKey: 'ud.ship.pending', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800' },
   }
 
   return (
@@ -100,7 +101,7 @@ export function UserDetailPage() {
             onClick={() => navigate('/users')}
             className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline mb-3 transition-colors cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" /> Quay lại danh sách Users
+            <ArrowLeft className="w-4 h-4" /> {t('ud.backToList')}
           </button>
 
           <div className="flex items-center gap-3 mb-1">
@@ -111,7 +112,7 @@ export function UserDetailPage() {
           </div>
           <h1 className="text-[22px] font-bold text-slate-900 dark:text-white leading-tight truncate">{user.fullName}</h1>
           <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">
-            Thông tin chi tiết hồ sơ tài khoản, đơn vị công tác và toàn bộ lịch sử đơn hàng cá nhân.
+            {t('ud.desc')}
           </p>
         </div>
 
@@ -129,7 +130,7 @@ export function UserDetailPage() {
               <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            <span>Cấu Hình & Quản Lý</span>
+            <span>{t('ud.manageBtn')}</span>
           </button>
         </div>
       </section>
@@ -141,19 +142,19 @@ export function UserDetailPage() {
         <article className="setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs">
           <h2 className="setting-title-custom text-[15px] font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-            Thông tin cá nhân
+            {t('ud.personal')}
           </h2>
           <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800 text-[13px]">
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Mã người dùng</span>
+              <span className="setting-desc-custom font-medium">{t('ud.userCode')}</span>
               <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{user.userCode}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Họ và tên</span>
+              <span className="setting-desc-custom font-medium">{t('ud.fullName')}</span>
               <span className="font-bold setting-title-custom">{user.fullName}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Số điện thoại</span>
+              <span className="setting-desc-custom font-medium">{t('ud.phone')}</span>
               <span className="font-mono font-semibold setting-title-custom">{user.phone}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
@@ -161,11 +162,11 @@ export function UserDetailPage() {
               <span className="setting-title-custom font-medium">{user.email}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Doanh nghiệp / Khu trọ</span>
+              <span className="setting-desc-custom font-medium">{t('ud.org')}</span>
               <span className="font-semibold text-sky-700 dark:text-sky-300">{user.companyName}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Vị trí / Vị trí phòng</span>
+              <span className="setting-desc-custom font-medium">{t('ud.unit')}</span>
               <span className="font-semibold setting-title-custom">{user.unitNumber}</span>
             </div>
           </div>
@@ -175,27 +176,27 @@ export function UserDetailPage() {
         <article className="setting-card-custom flex flex-col gap-4 p-6 rounded-2xl border shadow-xs">
           <h2 className="setting-title-custom text-[15px] font-bold border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2">
             <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            Trạng thái & Hoạt động
+            {t('ud.statusSection')}
           </h2>
           <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800 text-[13px]">
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Vai trò hệ thống</span>
+              <span className="setting-desc-custom font-medium">{t('ud.role')}</span>
               <span className="font-mono uppercase font-bold text-sky-600 dark:text-sky-400">{user.role}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Ngày tạo tài khoản</span>
+              <span className="setting-desc-custom font-medium">{t('ud.createdAt')}</span>
               <span className="font-mono setting-title-custom">{user.createdAt}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Hoạt động gần nhất</span>
+              <span className="setting-desc-custom font-medium">{t('ud.lastActive')}</span>
               <span className="font-mono setting-title-custom">{user.lastActive}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Tổng đơn giao/nhận</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[15px]">{userShipments.length} đơn</span>
+              <span className="setting-desc-custom font-medium">{t('ud.totalShipments')}</span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[15px]">{t('ud.shipmentCount', { count: userShipments.length })}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
-              <span className="setting-desc-custom font-medium">Số nhật ký ghi nhận</span>
+              <span className="setting-desc-custom font-medium">{t('ud.logCount')}</span>
               <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-[15px]">{userActivities.length} logs</span>
             </div>
           </div>
@@ -205,41 +206,39 @@ export function UserDetailPage() {
 
       {/* ── DEDICATED PERSONAL HISTORY & SHIPMENT SECTION ── */}
       <section data-reveal className="setting-card-custom rounded-2xl border p-6 flex flex-col gap-5 shadow-xs">
-        
+
         {/* Section Header & Tab Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <span className="text-[10px] font-mono font-bold text-sky-700 dark:text-sky-400 uppercase bg-sky-50 dark:bg-sky-950 px-2.5 py-0.5 rounded-full border border-sky-200 dark:border-sky-800">
-              Personal Audit & Shipments
+              {t('ud.eyebrow')}
             </span>
-            <h2 className="setting-title-custom text-[17px] font-bold mt-1.5">Lịch Sử Cá Nhân: {user.fullName}</h2>
+            <h2 className="setting-title-custom text-[17px] font-bold mt-1.5">{t('ud.historyTitle', { name: user.fullName })}</h2>
           </div>
 
           <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
             <button
               type="button"
               onClick={() => setActiveTab('shipments')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
-                activeTab === 'shipments'
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${activeTab === 'shipments'
                   ? 'bg-sky-600 text-white dark:bg-sky-500 shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               <PackageCheck className="w-4 h-4" />
-              Đơn Hàng ({userShipments.length})
+              {t('ud.tabOrders', { count: userShipments.length })}
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('activities')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${
-                activeTab === 'activities'
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${activeTab === 'activities'
                   ? 'bg-purple-600 text-white dark:bg-purple-500 shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               <ActivityIcon className="w-4 h-4" />
-              Nhật Ký Thao Tác ({userActivities.length})
+              {t('ud.tabLogs', { count: userActivities.length })}
             </button>
           </div>
         </div>
@@ -251,12 +250,12 @@ export function UserDetailPage() {
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-4">Mã Đơn Hàng</th>
-                    <th className="py-3 px-4">Locker & Size</th>
-                    <th className="py-3 px-4">Shipper Giao</th>
-                    <th className="py-3 px-4">Mã OTP</th>
-                    <th className="py-3 px-4">Thời Gian Nạp Tủ</th>
-                    <th className="py-3 px-4 text-right">Trạng Thái</th>
+                    <th className="py-3 px-4">{t('ud.colOrderCode')}</th>
+                    <th className="py-3 px-4">{t('ud.colLockerSize')}</th>
+                    <th className="py-3 px-4">{t('ud.colShipper')}</th>
+                    <th className="py-3 px-4">{t('ud.colOtp')}</th>
+                    <th className="py-3 px-4">{t('ud.colDeposit')}</th>
+                    <th className="py-3 px-4 text-right">{t('ud.colStatus')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[13px]">
@@ -290,7 +289,7 @@ export function UserDetailPage() {
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${stBadge.style}`}>
-                            {stBadge.label}
+                            {t(stBadge.labelKey)}
                           </span>
                         </td>
                       </tr>
@@ -301,7 +300,7 @@ export function UserDetailPage() {
             ) : (
               <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-[13px]">
                 <PackageCheck className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>Chưa có lịch sử đơn hàng nào được ghi nhận cho người dùng này.</p>
+                <p>{t('ud.noOrders')}</p>
               </div>
             )}
           </div>
@@ -314,10 +313,10 @@ export function UserDetailPage() {
               <table className="w-full text-left border-collapse min-w-[850px]">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-4">Thời Gian</th>
-                    <th className="py-3 px-4">Sự Kiện & Thao Tác</th>
-                    <th className="py-3 px-4">Chi Tiết Thao Tác</th>
-                    <th className="py-3 px-4 text-right">Trạng Thái</th>
+                    <th className="py-3 px-4">{t('ud.colTime')}</th>
+                    <th className="py-3 px-4">{t('ud.colEvent')}</th>
+                    <th className="py-3 px-4">{t('ud.colDetail')}</th>
+                    <th className="py-3 px-4 text-right">{t('ud.colStatus')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[13px]">
@@ -340,11 +339,10 @@ export function UserDetailPage() {
                         {act.description}
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${
-                          act.status === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' :
-                          act.status === 'warning' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
-                          'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
-                        }`}>
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${act.status === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' :
+                            act.status === 'warning' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
+                              'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
+                          }`}>
                           {act.status.toUpperCase()}
                         </span>
                       </td>
@@ -355,7 +353,7 @@ export function UserDetailPage() {
             ) : (
               <div className="py-10 text-center text-slate-400 dark:text-slate-500 text-[13px]">
                 <ActivityIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>Chưa có nhật ký thao tác cá nhân nào được ghi nhận cho người dùng này.</p>
+                <p>{t('ud.noLogs')}</p>
               </div>
             )}
           </div>

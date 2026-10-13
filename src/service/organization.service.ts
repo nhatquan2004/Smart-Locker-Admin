@@ -1,4 +1,5 @@
 import type { TCreateOrgPayload, TOrganization } from '../types/organization.type'
+import { apiClient } from './api.client'
 
 const mockOrganizations: TOrganization[] = [
   {
@@ -58,38 +59,79 @@ const mockOrganizations: TOrganization[] = [
 let orgStore = [...mockOrganizations]
 
 export async function getOrganizations(): Promise<TOrganization[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve([...orgStore]), 300)
-  })
+  try {
+    const res = await apiClient.get<any[]>('/buildings')
+    if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data.map((b) => ({
+        id: b._id || b.id,
+        code: b.code || 'BLD',
+        name: b.name,
+        type: 'enterprise',
+        address: b.address || '—',
+        totalLockers: b.totalFloors || 10,
+        totalMembers: b.totalApartments || 0,
+        adminEmail: b.managementEmail || 'admin@smartlocker.vn',
+        adminName: 'Ban Quản Lý',
+        status: b.status === 'ACTIVE' ? 'active' : 'inactive',
+        createdAt: b.createdAt ? new Date(b.createdAt).toISOString().replace('T', ' ').slice(0, 16) : '2026-01-01',
+      }))
+    }
+  } catch (err) {
+    console.warn('Could not fetch buildings from backend, falling back to local list', err)
+  }
+  return [...orgStore]
 }
 
 export async function createOrganization(payload: TCreateOrgPayload): Promise<TOrganization> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newOrg: TOrganization = {
-        id: `org-${Date.now().toString().slice(-4)}`,
-        code: payload.code.toUpperCase(),
-        name: payload.name,
-        type: payload.type,
-        address: payload.address,
-        totalLockers: payload.totalLockers,
-        totalMembers: 0,
-        adminEmail: payload.adminEmail,
-        adminName: payload.adminName,
-        status: 'active',
-        createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
-      }
-      orgStore = [newOrg, ...orgStore]
-      resolve(newOrg)
-    }, 400)
-  })
+  try {
+    const res = await apiClient.post<any>('/buildings', {
+      name: payload.name,
+      code: payload.code.toUpperCase(),
+      address: payload.address,
+      totalFloors: payload.totalLockers || 10,
+      totalApartments: 50,
+      managementEmail: payload.adminEmail,
+    })
+    const b = res.data
+    const newOrg: TOrganization = {
+      id: b._id || b.id,
+      code: b.code,
+      name: b.name,
+      type: payload.type,
+      address: b.address,
+      totalLockers: b.totalFloors || payload.totalLockers,
+      totalMembers: b.totalApartments || 0,
+      adminEmail: payload.adminEmail,
+      adminName: payload.adminName,
+      status: 'active',
+      createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+    }
+    return newOrg
+  } catch {
+    const newOrg: TOrganization = {
+      id: `org-${Date.now().toString().slice(-4)}`,
+      code: payload.code.toUpperCase(),
+      name: payload.name,
+      type: payload.type,
+      address: payload.address,
+      totalLockers: payload.totalLockers,
+      totalMembers: 0,
+      adminEmail: payload.adminEmail,
+      adminName: payload.adminName,
+      status: 'active',
+      createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+    }
+    orgStore = [newOrg, ...orgStore]
+    return newOrg
+  }
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      orgStore = orgStore.filter((o) => o.id !== id)
-      resolve(true)
-    }, 300)
-  })
+  try {
+    await apiClient.delete(`/buildings/${id}`)
+    return true
+  } catch {
+    orgStore = orgStore.filter((o) => o.id !== id)
+    return true
+  }
 }

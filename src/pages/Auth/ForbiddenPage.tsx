@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { ShieldAlert, ArrowLeft, LayoutDashboard } from 'lucide-react'
+import { useTranslation } from '../../context/LanguageContext'
 
 export function ForbiddenPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-4">
@@ -17,12 +19,12 @@ export function ForbiddenPage() {
           HTTP 403 FORBIDDEN
         </span>
         <h1 className="text-[22px] font-bold text-slate-900 dark:text-white leading-tight">
-          Bạn Không Có Quyền Truy Cập
+          {t('forbidden.title')}
         </h1>
 
         {/* Description */}
         <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-          Trang này chỉ dành cho tài khoản <strong>Super Admin</strong>. Tài khoản của bạn không đủ đặc quyền để xem hoặc chỉnh sửa dữ liệu tại địa chỉ này.
+          {t('forbidden.descPre')} <strong>Super Admin</strong>{t('forbidden.descPost')}
         </p>
 
         {/* Actions */}
@@ -33,7 +35,7 @@ export function ForbiddenPage() {
             className="flex-1 h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
-            Quay lại
+            {t('common.back')}
           </button>
           <button
             type="button"
@@ -41,7 +43,7 @@ export function ForbiddenPage() {
             className="flex-1 h-10 px-4 rounded-xl text-[12.5px] font-semibold bg-sky-600 text-white hover:bg-sky-700 transition-all cursor-pointer shadow-md shadow-sky-600/20 flex items-center justify-center gap-1.5"
           >
             <LayoutDashboard className="w-4 h-4" />
-            Trang Dashboard
+            {t('forbidden.goDashboard')}
           </button>
         </div>
       </div>
