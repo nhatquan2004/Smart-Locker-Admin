@@ -1,6 +1,6 @@
 import type { TDashboardStat } from "../../types/dashboard.type"
 import { useEffect, useState } from 'react'
-import { Boxes, CheckCircle2, PackageCheck, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Boxes, CheckCircle2, PackageCheck } from 'lucide-react'
 
 type TProps = {
   stat: TDashboardStat
@@ -29,14 +29,15 @@ function useCountUp(value: string) {
     return () => window.clearInterval(timer)
   }, [value])
 
-  return display
+  // Giá trị không phải số (ví dụ dấu gạch khi chưa lấy được dữ liệu) thì hiện nguyên văn
+  return Number.isNaN(parseFloat(value)) ? value : display
 }
 
 const statIcons: Record<TDashboardStat['id'], React.ReactNode> = {
   'total-lockers': <Boxes className="w-5 h-5" />,
   'available-lockers': <CheckCircle2 className="w-5 h-5" />,
   'active-shipments': <PackageCheck className="w-5 h-5" />,
-  'success-rate': <TrendingUp className="w-5 h-5" />,
+  'overdue-shipments': <AlertTriangle className="w-5 h-5" />,
 }
 
 export function StatCard({ stat }: TProps) {

@@ -3,10 +3,20 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { UserRoleBadge } from "../../../components/Users/UserRoleBadge"
 import { UserStatusBadge } from '../../../components/Users/UserStatusBadge'
 import type { TUser, TUserRole, TUserStatus } from '../../../types/user.type'
+import { useAuthStore } from '../../../store/useAuthStore'
+import { useUserStore } from '../../../store/useUserStore'
 import { deleteUser, getUserById, updateUser } from '../../../service/user.service'
 import { useToast } from '../../../context/ToastContext'
 import { useTranslation } from '../../../context/LanguageContext'
+import type { TranslationKey } from '../../../i18n/translations'
 import { AlertTriangle, X } from 'lucide-react'
+
+const roleKeys: Record<TUserRole, TranslationKey> = {
+  user: 'um.optUser',
+  shipper: 'um.optShipper',
+  org_admin: 'um.optOrgAdmin',
+  super_admin: 'um.optSuperAdmin',
+}
 
 export function UserManagePage() {
   const navigate = useNavigate()
@@ -16,7 +26,11 @@ export function UserManagePage() {
   const [user, setUser] = useState<TUser | null>(null)
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
+  const loggedUser = useAuthStore((state) => state.user)
+  // Vai trò chỉ để hiển thị: PATCH /users/:id của server không cho đổi vai trò
   const [role, setRole] = useState<TUserRole>('user')
+  const [fullName, setFullName] = useState('')
+  const [apartment, setApartment] = useState('')
   const [status, setStatus] = useState<TUserStatus>('active')
   const [note, setNote] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -27,10 +41,12 @@ export function UserManagePage() {
 
   useEffect(() => {
     setLoading(true)
-    getUserById(userId || 'user-101').then((res) => {
+    getUserById(userId ?? '').then((res) => {
       if (res) {
         setUser(res)
         setRole(res.role)
+        setFullName(res.fullName)
+        setApartment(res.apartment ?? '')
         setStatus(res.status)
         setNote(res.note || '')
       }
@@ -38,21 +54,49 @@ export function UserManagePage() {
     })
   }, [userId])
 
-  function handleSave() {
+  // Server chỉ khóa/mở khóa được tài khoản đã duyệt, và không cho tự khóa chính mình
+  const isSelf = !!user && user.id === loggedUser?.id
+  const canToggleStatus =
+    !!user && !isSelf && (user.approvalStatus === 'ACTIVE' || user.approvalStatus === 'SUSPENDED')
+
+  async function handleSave() {
     if (!user) return
+
+    const updates: Partial<TUser> = {}
+    if (fullName.trim() && fullName.trim() !== user.fullName) updates.fullName = fullName.trim()
+    if (user.role === 'user' && apartment.trim() !== (user.apartment ?? '')) updates.apartment = apartment.trim()
+    if (note.trim() !== (user.note ?? '')) updates.note = note.trim()
+    if (canToggleStatus && status !== user.status) updates.status = status
+
+    if (Object.keys(updates).length === 0) {
+      toast.info(t('um.noChange'))
+      return
+    }
+
     setIsSaving(true)
     const prevStatus = user.status
-    updateUser(user.id, { role, status, note }).then(() => {
-      setIsSaving(false)
-      setUser((prev) => (prev ? { ...prev, role, status, note } : null))
-      if (status === 'blocked') {
+    try {
+      await updateUser(user.id, updates)
+      const saved = useUserStore.getState().users.find((u) => u.id === user.id)
+      if (saved) {
+        setUser(saved)
+        setFullName(saved.fullName)
+        setApartment(saved.apartment ?? '')
+        setStatus(saved.status)
+        setNote(saved.note ?? '')
+      }
+      if (updates.status === 'blocked') {
         toast.success(t('um.lockedToast', { name: user.fullName }))
-      } else if (status === 'active' && prevStatus === 'blocked') {
+      } else if (updates.status === 'active' && prevStatus === 'blocked') {
         toast.success(t('um.unlockedToast', { name: user.fullName }))
       } else {
         toast.success(t('um.updatedToast', { name: user.fullName }))
       }
-    })
+    } catch (err) {
+      toast.error(t('um.saveFailed', { message: err instanceof Error ? err.message : '' }))
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   function handleDeleteUser() {
@@ -63,12 +107,16 @@ export function UserManagePage() {
   function handleConfirmDelete() {
     if (!user) return
     setIsDeleting(true)
-    deleteUser(user.id).then(() => {
-      setIsDeleting(false)
-      setShowDeleteModal(false)
-      toast.success(t('um.deletedToast', { name: user.fullName }))
-      navigate('/users')
-    })
+    deleteUser(user.id)
+      .then(() => {
+        setShowDeleteModal(false)
+        toast.success(t('um.deletedToast', { name: user.fullName }))
+        navigate('/users')
+      })
+      .catch((err: unknown) => {
+        toast.error(t('um.deleteFailed', { message: err instanceof Error ? err.message : '' }))
+      })
+      .finally(() => setIsDeleting(false))
   }
 
   if (loading) {
@@ -180,19 +228,23 @@ export function UserManagePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Role selection */}
+          {/* Họ và tên */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldName')}</label>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+            />
+          </div>
+
+          {/* Vai trò: chỉ xem */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldRole')}</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as TUserRole)}
-              className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-            >
-              <option value="user">{t('um.optUser')}</option>
-              <option value="shipper">{t('um.optShipper')}</option>
-              <option value="org_admin">{t('um.optOrgAdmin')}</option>
-              <option value="super_admin">{t('um.optSuperAdmin')}</option>
-            </select>
+            <div className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 flex items-center">
+              {t(roleKeys[role])}
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('um.roleReadonly')}</span>
           </div>
 
           {/* Status selection */}
@@ -200,14 +252,34 @@ export function UserManagePage() {
             <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldStatus')}</label>
             <select
               value={status}
+              disabled={!canToggleStatus}
               onChange={(e) => setStatus(e.target.value as TUserStatus)}
               className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
             >
               <option value="active">{t('um.optActive')}</option>
-              <option value="inactive">{t('um.optInactive')}</option>
+              {!canToggleStatus && status === 'inactive' && (
+                <option value="inactive">{t('um.optInactive')}</option>
+              )}
               <option value="blocked">{t('um.optBlocked')}</option>
             </select>
+            {isSelf ? (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('um.selfLockNotice')}</span>
+            ) : !canToggleStatus ? (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">{t('um.notApprovedNotice')}</span>
+            ) : null}
           </div>
+
+          {/* Căn hộ: chỉ cư dân mới có */}
+          {role === 'user' && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('um.fieldApartment')}</label>
+              <input
+                value={apartment}
+                onChange={(e) => setApartment(e.target.value)}
+                className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+              />
+            </div>
+          )}
         </div>
 
         {/* Note textarea */}
@@ -216,6 +288,7 @@ export function UserManagePage() {
           <textarea
             rows={3}
             value={note}
+            maxLength={500}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t('um.notePh')}
             className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"

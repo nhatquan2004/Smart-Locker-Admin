@@ -1,45 +1,49 @@
-export type TShipmentStatus =
-    | 'pending'
-    | 'stored'
-    | 'waiting_pickup'
-    | 'picked_up'
-    | 'expired'
-    | 'moved_to_storage'
-    | 'failed'
+// Trạng thái bưu kiện theo đúng enum PackageStatus của server
+export type TShipmentStatus = 'WAITING_FOR_PICKUP' | 'PICKED_UP' | 'OVERDUE' | 'RETURNED'
 
-export type TOtpStatus = 'active' | 'used' | 'expired'
+export type TShipmentBoxSize = 'SMALL' | 'MEDIUM' | 'LARGE'
 
-export type TShipmentCluster = 'A' | 'B' | 'C' | 'D'
-
+// Bưu kiện hiển thị cho admin. Server không bao giờ trả mã OTP hay mã QR.
 export type TShipment = {
-    id: string
-    shipmentCode: string
-    recipientName: string
-    recipientPhone: string
-    lockerCode: string
-    cluster: TShipmentCluster
-    lockerSize: 'small' | 'medium' | 'large'
-    otpCode: string
-    otpStatus: TOtpStatus
-    shipmentStatus: TShipmentStatus
-    createdAt: string
-    updatedAt: string
-    shipperName: string
-    storageLocationNote?: string
-    note?: string
+  id: string
+  trackingNumber: string
+  status: TShipmentStatus
+  boxNumber: number
+  boxSize: TShipmentBoxSize
+  carrierName: string
+  receiverName: string
+  receiverPhone: string
+  apartment: string
+  shipperName?: string
+  shipperPhone: string
+  isShipperVerified: boolean
+  lockerId?: string
+  lockerCode?: string
+  lockerName?: string
+  buildingName?: string
+  droppedOffAt: string
+  expiredAt: string
+  pickedUpAt?: string
+  paidUntil?: string
+  totalFeePaid: number
+  note?: string
+  createdAt: string
+  updatedAt: string
 }
 
-export type TShipmentFilter = {
-    search: string
-    shipmentStatus: 'all' | TShipmentStatus
-    otpStatus: 'all' | TOtpStatus
-    cluster: 'all' | TShipmentCluster
+export type TShipmentQuery = {
+  status?: TShipmentStatus
+  search?: string
+  // Chỉ Super Admin dùng được; Ban quản lý luôn bị giới hạn trong tòa của mình
+  buildingId?: string
+  lockerId?: string
+  page?: number
+  limit?: number
 }
 
-export type TShipmentStatItem = {
-    id: string
-    label: string
-    value: string
-    helper: string
-    tone: 'blue' | 'green' | 'orange' | 'red'
+export type TShipmentPage = {
+  items: TShipment[]
+  total: number
+  page: number
+  limit: number
 }

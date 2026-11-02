@@ -15,7 +15,6 @@ import {
   rejectResident,
   type TPendingResident,
 } from '../../service/approval.service'
-import { logActivity } from '../../service/activity.service'
 import {
   getMyNotifications,
   getUnreadCount,
@@ -196,17 +195,6 @@ export function ApprovalBell() {
     try {
       await approveResident(selectedResident._id)
       setPendingList((prev) => prev.filter((r) => r._id !== selectedResident._id))
-      logActivity({
-        actorName: user?.fullName || 'Admin',
-        actorRole: 'admin',
-        title: t('approval.logApproveTitle'),
-        description: t('approval.logApproveDesc', { name: selectedResident.name, phone: selectedResident.phone, apartment: selectedResident.apartment }),
-        targetId: selectedResident._id,
-        targetType: 'user',
-        targetLabel: selectedResident.name,
-        category: 'user',
-        status: 'success',
-      })
       toast.success(t('approval.approvedToast'))
       setSelectedResident(null)
     } catch (err: unknown) {
@@ -225,17 +213,6 @@ export function ApprovalBell() {
     try {
       await rejectResident(selectedResident._id, rejectReason.trim())
       setPendingList((prev) => prev.filter((r) => r._id !== selectedResident._id))
-      logActivity({
-        actorName: user?.fullName || 'Admin',
-        actorRole: 'admin',
-        title: t('approval.logRejectTitle'),
-        description: t('approval.logRejectDesc', { name: selectedResident.name, phone: selectedResident.phone, reason: rejectReason.trim() }),
-        targetId: selectedResident._id,
-        targetType: 'user',
-        targetLabel: selectedResident.name,
-        category: 'user',
-        status: 'warning',
-      })
       toast.success(t('approval.rejectedToast', { name: selectedResident.name }))
       setSelectedResident(null)
       setRejectReason('')
@@ -307,12 +284,12 @@ export function ApprovalBell() {
               return !v
             })
           }}
-          className="relative h-8.5 w-8.5 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
+          className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title={t('bell.title')}
         >
           <Bell className="w-4 h-4" />
           {totalBadge > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none shadow-md animate-pulse">
+            <span className="absolute top-0 right-0 min-w-[17px] h-[17px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center leading-none ring-2 ring-white dark:ring-slate-900">
               {totalBadge > 99 ? '99+' : totalBadge}
             </span>
           )}

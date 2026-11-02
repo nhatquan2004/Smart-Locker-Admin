@@ -11,7 +11,6 @@ import {
   rejectResident,
   type TPendingResident,
 } from '../../service/approval.service'
-import { logActivity } from '../../service/activity.service'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
 
 import {
@@ -94,17 +93,6 @@ export function PendingApprovalsPage() {
     try {
       await approveResident(resident._id)
       setPendingList((prev) => prev.filter((r) => r._id !== resident._id))
-      logActivity({
-        actorName: user?.fullName || 'Admin',
-        actorRole: 'admin',
-        title: tNow('approval.logApproveTitle'),
-        description: tNow('approval.logApproveDesc', { name: resident.name, phone: resident.phone, apartment: resident.apartment }),
-        targetId: resident._id,
-        targetType: 'user',
-        targetLabel: resident.name,
-        category: 'user',
-        status: 'success',
-      })
       toast.success(tNow('approval.approvedToast'))
       setSelectedResident(null)
     } catch (err: unknown) {
@@ -126,17 +114,6 @@ export function PendingApprovalsPage() {
     try {
       await rejectResident(selectedResident._id, rejectReason.trim())
       setPendingList((prev) => prev.filter((r) => r._id !== selectedResident._id))
-      logActivity({
-        actorName: user?.fullName || 'Admin',
-        actorRole: 'admin',
-        title: tNow('approval.logRejectTitle'),
-        description: tNow('approval.logRejectDesc', { name: selectedResident.name, phone: selectedResident.phone, reason: rejectReason.trim() }),
-        targetId: selectedResident._id,
-        targetType: 'user',
-        targetLabel: selectedResident.name,
-        category: 'user',
-        status: 'warning',
-      })
       toast.success(tNow('approval.rejectedToast', { name: selectedResident.name }))
       setSelectedResident(null)
       setRejectReason('')

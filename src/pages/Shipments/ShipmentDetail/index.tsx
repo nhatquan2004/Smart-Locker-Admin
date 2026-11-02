@@ -1,52 +1,108 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, BadgeCheck, Building2, Copy, MapPin, Phone, Truck } from 'lucide-react'
 import { ShipmentStatusBadge } from '../../../components/Shipments/ShipmentStatusBadge'
-import type { TShipment } from "../../../types/shipment.type"
+import { ShipmentActions } from '../../../components/Shipments/ShipmentActions'
+import { ShipmentFeeCard } from '../../../components/Shipments/ShipmentFeeCard'
+import { ShipmentTimeline } from '../../../components/Shipments/ShipmentTimeline'
+import { CompartmentArt } from '../../../components/Shipments/CompartmentArt'
+import { getShipmentById } from '../../../service/shipment.service'
+import type { TShipment } from '../../../types/shipment.type'
 import { useTranslation } from '../../../context/LanguageContext'
 import { useToast } from '../../../context/ToastContext'
+import { formatCurrencyVnd } from '../../../i18n/format'
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+// Một người liên quan tới bưu kiện: avatar chữ cái đầu, tên, số điện thoại bấm gọi được
+function PersonCard({
+  title,
+  name,
+  phone,
+  tone,
+  children,
+}: {
+  title: string
+  name: string
+  phone: string
+  tone: 'sky' | 'amber'
+  children?: React.ReactNode
+}) {
+  const avatar =
+    tone === 'sky'
+      ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
+      : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+
+  return (
+    <article className="rounded-2xl glass-card border border-slate-200 dark:border-slate-800 shadow-xs p-5 flex flex-col gap-4">
+      <h2 className="text-[12px] font-semibold uppercase tracking-wide setting-desc-custom">{title}</h2>
+      <div className="flex items-center gap-3 min-w-0">
+        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold ${avatar}`}>
+          {initials(name)}
+        </span>
+        <div className="min-w-0">
+          <p className="setting-title-custom text-[16px] font-bold truncate" title={name}>{name}</p>
+          <a
+            href={`tel:${phone}`}
+            className="mt-0.5 inline-flex items-center gap-1.5 text-[13px] font-medium text-sky-600 dark:text-sky-400 hover:underline"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            {phone}
+          </a>
+        </div>
+      </div>
+      {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
+    </article>
+  )
+}
+
+const chip =
+  'inline-flex items-center gap-1.5 h-7 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-2.5 text-[12px] font-medium text-slate-700 dark:text-slate-300'
 
 export function ShipmentDetailPage() {
   const navigate = useNavigate()
   const { shipmentId } = useParams()
   const { t } = useTranslation()
   const toast = useToast()
-  const [copiedOtp, setCopiedOtp] = useState(false)
 
-  const shipments = useMemo<TShipment[]>(() => {
-    return [
-      {
-        id: '1', shipmentCode: 'SHP-2026-001', recipientName: 'Nguyễn Văn A', recipientPhone: '0901234567',
-        lockerCode: 'A02', cluster: 'A', lockerSize: 'medium', otpCode: '482913', otpStatus: 'active',
-        shipmentStatus: 'waiting_pickup', createdAt: '2026-04-28 08:20', updatedAt: '2026-04-28 08:30',
-        shipperName: 'Shipper Minh', note: 'Khách sẽ nhận trong sáng nay',
-      },
-      {
-        id: '2', shipmentCode: 'SHP-2026-002', recipientName: 'Trần Thị B', recipientPhone: '0912345678',
-        lockerCode: 'C02', cluster: 'C', lockerSize: 'large', otpCode: '731205', otpStatus: 'active',
-        shipmentStatus: 'stored', createdAt: '2026-04-28 07:45', updatedAt: '2026-04-28 07:50',
-        shipperName: 'Shipper Long', note: 'Đã lưu ảnh kiện hàng',
-      },
-      {
-        id: '3', shipmentCode: 'SHP-2026-003', recipientName: 'Phạm Văn C', recipientPhone: '0987654321',
-        lockerCode: 'D02', cluster: 'D', lockerSize: 'medium', otpCode: '664120', otpStatus: 'used',
-        shipmentStatus: 'picked_up', createdAt: '2026-04-28 06:30', updatedAt: '2026-04-28 07:10',
-        shipperName: 'Shipper Hùng', note: 'Khách đã lấy hàng thành công',
-      },
-    ]
-  }, [])
+  const [shipment, setShipment] = useState<TShipment | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
+  const reload = useCallback(() => setReloadKey((n) => n + 1), [])
 
-  const shipment = useMemo(() => {
-    return shipments.find((item) => item.id === shipmentId) ?? shipments[0]
-  }, [shipments, shipmentId])
+  useEffect(() => {
+    let active = true
+    getShipmentById(shipmentId ?? '')
+      .then((res) => {
+        if (active) setShipment(res)
+      })
+      .catch(() => {
+        if (active) setShipment(null)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [shipmentId, reloadKey])
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500">{t('common.loading')}</div>
+  }
 
   if (!shipment) {
     return (
       <div className="p-8 text-center text-slate-500">
-        <p>{t('common.noData')}</p>
+        <p>{t('pkg.notFound')}</p>
         <button
           type="button"
           onClick={() => navigate('/shipments')}
-          className="mt-4 px-4 py-2 rounded-xl bg-slate-100 text-[13px] text-slate-800 hover:bg-slate-200"
+          className="mt-4 px-4 py-2 rounded-xl bg-slate-100 text-[13px] text-slate-800 hover:bg-slate-200 cursor-pointer"
         >
           ← {t('common.back')}
         </button>
@@ -54,144 +110,134 @@ export function ShipmentDetailPage() {
     )
   }
 
-  function handleCopyOtp() {
-    if (shipment.otpCode) {
-      navigator.clipboard.writeText(shipment.otpCode)
-      setCopiedOtp(true)
-      toast.success(t('shd.copiedToast', { code: shipment.otpCode }))
-      setTimeout(() => setCopiedOtp(false), 2000)
+  async function copyTracking() {
+    if (!shipment) return
+    try {
+      await navigator.clipboard.writeText(shipment.trackingNumber)
+      toast.success(t('pkg.d.copied', { code: shipment.trackingNumber }))
+    } catch {
+      // Trình duyệt chặn clipboard thì người dùng vẫn bôi đen mã để sao chép
     }
   }
 
   return (
     <div className="flex flex-col gap-6 max-w-[1250px]">
 
-      {/* Header Banner */}
-      <section data-reveal className="relative overflow-hidden rounded-2xl glass-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-xs border border-slate-200">
-        <div className="relative z-10 flex-1 min-w-0">
-          <button
-            type="button"
-            onClick={() => navigate('/shipments')}
-            className="inline-flex items-center gap-1.5 text-[12px] font-bold text-sky-600 hover:text-sky-700 mb-3 transition-colors cursor-pointer"
-          >
-            ← {t('common.back')}
-          </button>
+      {/* Đầu trang: mã vận đơn là nhân vật chính */}
+      <section data-reveal className="rounded-2xl glass-card border border-slate-200 dark:border-slate-800 shadow-xs p-6 flex flex-col gap-5">
+        <button
+          type="button"
+          onClick={() => navigate('/shipments')}
+          className="inline-flex w-fit items-center gap-1.5 text-[12.5px] font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" /> {t('common.back')}
+        </button>
 
-          <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold text-slate-900 leading-tight truncate">
-              {t('shipments.detailTitle')}: {shipment.shipmentCode}
-            </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              {t('shd.realtime')}
-            </span>
-          </div>
-          <p className="mt-1 text-[13px] text-slate-600 leading-relaxed max-w-lg">
-            {t('shipments.desc')}
-          </p>
-        </div>
-
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 shrink-0">
-          <ShipmentStatusBadge type="shipment" shipmentStatus={shipment.shipmentStatus} />
-          <ShipmentStatusBadge type="otp" otpStatus={shipment.otpStatus} />
-        </div>
-      </section>
-
-      {/* Live Stepper Progress Bar */}
-      <section data-reveal className="p-6 rounded-2xl glass-card border border-slate-200 shadow-xs flex flex-col gap-4">
-        <h2 className="text-[14px] font-bold text-slate-900 font-mono uppercase tracking-wider">{t('shipments.colProgress')}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`p-4 rounded-xl border flex flex-col gap-1 ${shipment.shipmentStatus !== 'pending' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-            <span className="text-[11px] font-mono font-bold uppercase">{t('shipments.step1')}</span>
-            <p className="text-[14px] font-bold">{t('shd.deposit')}</p>
-            <span className="text-[11px] font-mono text-slate-500">{shipment.createdAt}</span>
-          </div>
-
-          <div className={`p-4 rounded-xl border flex flex-col gap-1 ${shipment.otpStatus === 'active' ? 'bg-sky-50 border-sky-300 text-sky-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-            <span className="text-[11px] font-mono font-bold uppercase">{t('shipments.step2')}</span>
-            <p className="text-[14px] font-bold">OTP: {shipment.otpCode || 'N/A'}</p>
-            <span className="text-[11px] font-mono text-slate-500">{shipment.recipientPhone}</span>
-          </div>
-
-          <div className={`p-4 rounded-xl border flex flex-col gap-1 ${shipment.shipmentStatus === 'picked_up' ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
-            <span className="text-[11px] font-mono font-bold uppercase">{t('shipments.step3')}</span>
-            <p className="text-[14px] font-bold">{shipment.shipmentStatus === 'picked_up' ? t('shipments.completedFilter') : t('shipments.waitingFilter')}</p>
-            <span className="text-[11px] font-mono text-slate-500">{shipment.shipmentStatus === 'picked_up' ? shipment.updatedAt : '—'}</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Detail Grid */}
-      <section data-stagger className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-        {/* Recipient & Shipper Info Card */}
-        <article className="flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs border border-slate-200">
-          <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">{t('shipments.colRecipient')}</h2>
-          <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('shipments.recipient')}:</span>
-              <span className="font-bold text-slate-900">{shipment.recipientName}</span>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">{t('pkg.d.eyebrow')}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <h1 className="text-[28px] leading-tight font-bold setting-title-custom break-all">{shipment.trackingNumber}</h1>
+              <button
+                type="button"
+                onClick={copyTracking}
+                aria-label={t('pkg.d.copy')}
+                title={t('pkg.d.copy')}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+              <ShipmentStatusBadge status={shipment.status} />
             </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('shd.phone')}</span>
-              <span className="font-mono font-semibold text-slate-800">{shipment.recipientPhone}</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('shipments.sender')}:</span>
-              <span className="font-medium text-slate-800">{shipment.shipperName || t('shd.defaultShipper')}</span>
-            </div>
-          </div>
-        </article>
-
-        {/* Locker Location & OTP Card */}
-        <article className="flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs border border-slate-200">
-          <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">{t('shipments.otpModalTitle')}</h2>
-          <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('shd.lockerLabel')}</span>
-              <span className="font-mono font-bold text-sky-700 text-[14px]">{t('shd.lockerValue', { code: shipment.lockerCode })}</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('shd.clusterLabel')}</span>
-              <span className="font-bold text-slate-800">{t('shd.clusterValue', { cluster: shipment.cluster })}</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">OTP:</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-emerald-700 text-[15px] bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-                  {shipment.otpCode || '------'}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {shipment.buildingName && (
+                <span className={chip}><Building2 className="w-3.5 h-3.5" />{shipment.buildingName}</span>
+              )}
+              {shipment.lockerCode && (
+                <span className={chip}>
+                  <MapPin className="w-3.5 h-3.5" />
+                  {t('pkg.lockerBox', { code: shipment.lockerCode, box: shipment.boxNumber })}
                 </span>
-                {shipment.otpCode && (
-                  <button
-                    type="button"
-                    onClick={handleCopyOtp}
-                    className="px-2 py-0.5 rounded text-[11px] font-mono bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer"
-                  >
-                    {copiedOtp ? '✓' : t('shd.copy')}
-                  </button>
-                )}
-              </div>
+              )}
+              <span className={chip}><Truck className="w-3.5 h-3.5" />{shipment.carrierName}</span>
             </div>
           </div>
-        </article>
 
-        {/* Audit Log Timeline Card */}
-        <article className="flex flex-col gap-4 p-6 rounded-2xl glass-card shadow-xs border border-slate-200">
-          <h2 className="text-[15px] font-bold text-slate-900 border-b border-slate-100 pb-3">{t('activities.colTime')}</h2>
-          <div className="flex flex-col divide-y divide-slate-100 text-[13px]">
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('shipments.depositedAt')}:</span>
-              <span className="font-mono text-slate-700">{shipment.createdAt}</span>
-            </div>
-            <div className="flex items-center justify-between py-2.5">
-              <span className="text-slate-500 font-medium">{t('activities.colTime')}:</span>
-              <span className="font-mono text-slate-700">{shipment.updatedAt}</span>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <ShipmentActions shipment={shipment} onChanged={reload} />
           </div>
-        </article>
-
+        </div>
       </section>
 
+      <ShipmentTimeline shipment={shipment} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        <div className="xl:col-span-2 flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <PersonCard title={t('pkg.colReceiver')} name={shipment.receiverName} phone={shipment.receiverPhone} tone="sky">
+              <span className={chip}>{t('pkg.apartment', { apartment: shipment.apartment })}</span>
+            </PersonCard>
+
+            <PersonCard
+              title={t('pkg.colShipper')}
+              name={shipment.shipperName || shipment.carrierName}
+              phone={shipment.shipperPhone}
+              tone="amber"
+            >
+              <span className={chip}>{shipment.carrierName}</span>
+              <span
+                className={`inline-flex items-center gap-1.5 h-7 rounded-full px-2.5 text-[12px] font-semibold ${
+                  shipment.isShipperVerified
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300'
+                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                }`}
+              >
+                <BadgeCheck className="w-3.5 h-3.5" />
+                {shipment.isShipperVerified ? t('pkg.d.verified') : t('pkg.d.notVerified')}
+              </span>
+            </PersonCard>
+          </div>
+
+          {/* Vị trí lưu hàng */}
+          <article className="rounded-2xl glass-card border border-slate-200 dark:border-slate-800 shadow-xs p-6 flex flex-col sm:flex-row gap-6 sm:items-center">
+            <CompartmentArt boxNumber={shipment.boxNumber} size={shipment.boxSize} />
+            <div className="flex-1 min-w-0">
+              <h2 className="setting-title-custom text-[15px] font-bold">{t('pkg.d.locationTitle')}</h2>
+              <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
+                <div>
+                  <dt className="setting-desc-custom text-[12px]">{t('pkg.fieldLocker')}</dt>
+                  <dd className="mt-0.5 font-semibold setting-title-custom">{shipment.lockerCode ?? '—'}</dd>
+                  {shipment.lockerName && <dd className="text-[12px] setting-desc-custom truncate">{shipment.lockerName}</dd>}
+                </div>
+                <div>
+                  <dt className="setting-desc-custom text-[12px]">{t('pkg.d.building')}</dt>
+                  <dd className="mt-0.5 font-semibold setting-title-custom">{shipment.buildingName ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="setting-desc-custom text-[12px]">{t('pkg.fieldBox')}</dt>
+                  <dd className="mt-0.5 font-semibold setting-title-custom">#{shipment.boxNumber}</dd>
+                </div>
+                <div>
+                  <dt className="setting-desc-custom text-[12px]">{t('pkg.fieldFee')}</dt>
+                  <dd className="mt-0.5 font-semibold setting-title-custom">{formatCurrencyVnd(shipment.totalFeePaid)}</dd>
+                </div>
+              </dl>
+            </div>
+          </article>
+
+          {shipment.note && (
+            <article className="rounded-2xl glass-card border border-slate-200 dark:border-slate-800 shadow-xs p-5">
+              <h2 className="text-[12px] font-semibold uppercase tracking-wide setting-desc-custom">{t('pkg.fieldNote')}</h2>
+              <p className="mt-2 text-[13.5px] leading-relaxed setting-title-custom">{shipment.note}</p>
+            </article>
+          )}
+        </div>
+
+        {/* Hóa đơn phí lưu kho luôn nằm trong tầm mắt khi cuộn */}
+        <div className="xl:sticky xl:top-0">
+          <ShipmentFeeCard shipment={shipment} reloadKey={reloadKey} />
+        </div>
+      </div>
     </div>
   )
 }

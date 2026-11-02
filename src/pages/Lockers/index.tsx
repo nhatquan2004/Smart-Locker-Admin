@@ -17,6 +17,8 @@ export function LockersPage() {
   const { t } = useTranslation()
 
   const [stations, setStations] = useState<TLockerStation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<TLockerFilter>({
     search: '',
     companyId: 'all',
@@ -24,8 +26,21 @@ export function LockersPage() {
   })
 
   useEffect(() => {
-    getLockerStations().then(setStations)
+    getLockerStations()
+      .then((list) => {
+        setStations(list)
+        setError(null)
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : ''))
+      .finally(() => setLoading(false))
   }, [])
+
+  // Danh sách doanh nghiệp cho bộ lọc, lấy từ chính các tủ đang có
+  const orgOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of stations) if (s.orgId) map.set(s.orgId, s.orgName)
+    return [...map.entries()]
+  }, [stations])
 
   const filteredStations = useMemo(() => {
     return stations.filter((s) => {
@@ -84,9 +99,9 @@ export function LockersPage() {
               className="h-10 px-3.5 rounded-xl text-[13px] font-medium bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer"
             >
               <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('lk.allOrgs')}</option>
-              <option value="org-001" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">TechCorp Office Building</option>
-              <option value="org-002" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Khu Nhà Trọ Hoàng Nam</option>
-              <option value="org-003" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Ký Túc Xá Đại Học Bách Khoa</option>
+              {orgOptions.map(([id, name]) => (
+                <option key={id} value={id} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{name}</option>
+              ))}
             </select>
           </div>
 
@@ -107,7 +122,11 @@ export function LockersPage() {
       </div>
 
       {/* Stations List Card Grid */}
-      {filteredStations.length > 0 ? (
+      {loading ? (
+        <div className="p-10 text-center text-[13px] text-slate-500 dark:text-slate-400">{t('common.loading')}</div>
+      ) : error !== null ? (
+        <EmptyState title={t('common.noData')} description={t('lk.loadFailed', { message: error })} />
+      ) : filteredStations.length > 0 ? (
         <section data-stagger className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
           {filteredStations.map((s) => {
             const smallCount = s.compartments.filter((c) => c.size === 'small').length
@@ -169,10 +188,9 @@ export function LockersPage() {
                   </div>
                 </div>
 
-                {/* Master controller IoT status */}
-                <div className="flex items-center justify-between text-[11.5px] font-mono text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span>MCU Temp: {s.masterController.temperatureCelsius}°C</span>
-                  <span>IP: {s.masterController.ipAddress}</span>
+                {/* Nhịp tim gần nhất từ tủ */}
+                <div className="text-[11.5px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  {t('lk.lastSignal', { time: s.lastHeartbeat })}
                 </div>
 
                 {/* Actions */}

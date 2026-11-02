@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Crosshair, Loader2, Search, X } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { useTranslation } from '../../context/LanguageContext'
-import { GeocodeRateLimitError, geocodeAddress } from './geocode'
+import { GeocodeRateLimitError, geocodeAddress } from '../../utils/geocode'
 import type { LockerMapItem } from './types'
 import { parseCoord } from './utils'
 
@@ -15,7 +15,12 @@ type Props = {
   onCoordsChange: (lat: string, lng: string) => void
   onPickOnMap: () => void
   onGeocoded: (lat: number, lng: number) => void
-  onSave: (payload: { lat: number; lng: number; locationDescription: string }) => Promise<void>
+  onSave: (payload: {
+    lat: number
+    lng: number
+    locationDescription: string
+    address: string
+  }) => Promise<void>
   onClose: () => void
 }
 
@@ -93,6 +98,7 @@ export function EditLocationModal({
         lat: latitude,
         lng: longitude,
         locationDescription: description.trim(),
+        address: address.trim(),
       })
     } finally {
       setIsSaving(false)
@@ -157,6 +163,7 @@ export function EditLocationModal({
             </div>
             <p className="mt-1.5 text-[11.5px] text-slate-400">
               {t('map.osmNote')}
+              {locker.buildingId && ' ' + t('map.addressSaveNote')}
             </p>
           </div>
 

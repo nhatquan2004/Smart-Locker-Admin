@@ -18,3 +18,11 @@ export interface LockerMapItem {
 export type LockerFilter = 'ALL' | LockerStatus | 'HAS_ISSUES'
 
 export type FlyTarget = { lat: number; lng: number; id: string }
+
+// Các tủ cùng một doanh nghiệp được gộp thành một ghim trên bản đồ
+export interface LockerGroup {
+  key: string
+  lockers: LockerMapItem[]
+  position: [number, number]
+  status: LockerStatus
+}

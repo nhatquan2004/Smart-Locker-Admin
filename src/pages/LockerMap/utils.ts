@@ -37,3 +37,15 @@ export function formatRelativeTime(iso?: string): string {
   if (!iso || Number.isNaN(new Date(iso).getTime())) return tNow('map.noSignal')
   return formatRelative(iso)
 }
+
+// Các tủ cùng doanh nghiệp dùng chung một khóa nhóm; tủ chưa gắn doanh nghiệp đứng riêng
+export function groupKey(l: LockerMapItem): string {
+  return l.buildingId?._id ?? l._id
+}
+
+// Trạng thái "tệ nhất" của nhóm: có tủ Offline thì đỏ, rồi đến Bảo trì, còn lại là xanh
+export function worstStatus(lockers: LockerMapItem[]): LockerStatus {
+  if (lockers.some((l) => l.status === 'OFFLINE')) return 'OFFLINE'
+  if (lockers.some((l) => l.status === 'MAINTENANCE')) return 'MAINTENANCE'
+  return 'ONLINE'
+}

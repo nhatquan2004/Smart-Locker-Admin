@@ -12,6 +12,7 @@ import issues from './locales/issues'
 import notifications from './locales/notifications'
 import activities from './locales/activities'
 import settings from './locales/settings'
+import payments from './locales/payments'
 
 // Từ điển nền (điều hướng, nhãn dùng chung). Các nhóm tính năng nằm trong ./locales
 const base = {
@@ -495,6 +496,7 @@ export const translations = {
     ...notifications.vi,
     ...activities.vi,
     ...settings.vi,
+    ...payments.vi,
   },
   en: {
     ...base.en,
@@ -511,6 +513,7 @@ export const translations = {
     ...notifications.en,
     ...activities.en,
     ...settings.en,
+    ...payments.en,
   },
 }
 

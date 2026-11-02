@@ -4,10 +4,11 @@ import { getShipments } from '../../../service/shipment.service'
 import { getActivities } from '../../../service/activity.service'
 import { UserRoleBadge } from "../../../components/Users/UserRoleBadge"
 import { UserStatusBadge } from "../../../components/Users/UserStatusBadge"
+import { ShipmentStatusBadge } from "../../../components/Shipments/ShipmentStatusBadge"
 import type { TShipment } from "../../../types/shipment.type"
+import { formatDateTime } from "../../../i18n/format"
 import type { TActivityItem } from "../../../types/activity.type"
 import { useTranslation } from '../../../context/LanguageContext'
-import type { TranslationKey } from '../../../i18n/translations'
 import {
   User as UserIcon,
   Clock,
@@ -24,8 +25,12 @@ export function UserDetailPage() {
   const { t } = useTranslation()
 
   const masterUsers = useUserStore((state) => state.users)
-  const [allShipments, setAllShipments] = useState<TShipment[]>([])
-  const [allActivities, setAllActivities] = useState<TActivityItem[]>([])
+  // Bưu kiện của người dùng, tìm theo SĐT trên server (người nhận hoặc shipper)
+  const [userShipments, setUserShipments] = useState<TShipment[]>([])
+  const [shipmentTotal, setShipmentTotal] = useState(0)
+  // Nhật ký thao tác của chính người dùng này, lọc theo actorId trên server
+  const [userActivities, setUserActivities] = useState<TActivityItem[]>([])
+  const [activityTotal, setActivityTotal] = useState(0)
   const [activeTab, setActiveTab] = useState<'shipments' | 'activities'>('shipments')
   const [loading, setLoading] = useState(true)
 
@@ -34,44 +39,46 @@ export function UserDetailPage() {
   }, [masterUsers, userId])
 
   useEffect(() => {
-    setLoading(true)
-    Promise.all([getShipments(), getActivities()]).then(
-      ([shipments, activities]) => {
-        setAllShipments(shipments)
-        setAllActivities(activities)
-        setLoading(false)
-      }
-    )
+    if (!userId) return
+    let active = true
+    getActivities({ actorId: userId, limit: 50 })
+      .then((res) => {
+        if (!active) return
+        setUserActivities(res.items)
+        setActivityTotal(res.total)
+      })
+      .catch(() => {
+        if (!active) return
+        setUserActivities([])
+        setActivityTotal(0)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [userId])
 
-  // Filter personal shipments for this specific user
-  const userShipments = useMemo(() => {
-    if (!user) return []
-    const phone = user.phone.trim()
-    const name = user.fullName.trim().toLowerCase()
-
-    return allShipments.filter((s) => {
-      const matchPhone = s.recipientPhone && s.recipientPhone.includes(phone)
-      const matchName = s.recipientName && s.recipientName.toLowerCase().includes(name)
-      const matchShipper = s.shipperName && s.shipperName.toLowerCase().includes(name)
-      return matchPhone || matchName || matchShipper
-    })
-  }, [user, allShipments])
-
-  // Filter personal audit logs for this specific user
-  const userActivities = useMemo(() => {
-    if (!user) return []
-    const phone = user.phone.trim()
-    const name = user.fullName.trim().toLowerCase()
-    const id = user.id
-
-    return allActivities.filter((a) => {
-      const matchId = a.actorId === id
-      const matchPhone = a.actorPhone && a.actorPhone.includes(phone)
-      const matchName = a.actorName && a.actorName.toLowerCase().includes(name)
-      return matchId || matchPhone || matchName
-    })
-  }, [user, allActivities])
+  const userPhone = user?.phone
+  useEffect(() => {
+    if (!userPhone || userPhone === '—') return
+    let active = true
+    getShipments({ search: userPhone, limit: 50 })
+      .then((res) => {
+        if (!active) return
+        setUserShipments(res.items)
+        setShipmentTotal(res.total)
+      })
+      .catch(() => {
+        if (!active) return
+        setUserShipments([])
+        setShipmentTotal(0)
+      })
+    return () => {
+      active = false
+    }
+  }, [userPhone])
 
   if (loading || !user) {
     return (
@@ -80,14 +87,6 @@ export function UserDetailPage() {
         <p className="text-[13px] font-medium">{t('common.loading')}</p>
       </div>
     )
-  }
-
-  const shipmentStatusBadges: Record<string, { labelKey: TranslationKey; style: string }> = {
-    waiting_pickup: { labelKey: 'ud.ship.waiting_pickup', style: 'bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-800' },
-    stored: { labelKey: 'ud.ship.stored', style: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800' },
-    picked_up: { labelKey: 'ud.ship.picked_up', style: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
-    expired: { labelKey: 'ud.ship.expired', style: 'bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800' },
-    pending: { labelKey: 'ud.ship.pending', style: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800' },
   }
 
   return (
@@ -193,11 +192,11 @@ export function UserDetailPage() {
             </div>
             <div className="flex items-center justify-between py-2.5">
               <span className="setting-desc-custom font-medium">{t('ud.totalShipments')}</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[15px]">{t('ud.shipmentCount', { count: userShipments.length })}</span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[15px]">{t('ud.shipmentCount', { count: user.totalShipments })}</span>
             </div>
             <div className="flex items-center justify-between py-2.5">
               <span className="setting-desc-custom font-medium">{t('ud.logCount')}</span>
-              <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-[15px]">{userActivities.length} logs</span>
+              <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-[15px]">{activityTotal} logs</span>
             </div>
           </div>
         </article>
@@ -226,7 +225,7 @@ export function UserDetailPage() {
                 }`}
             >
               <PackageCheck className="w-4 h-4" />
-              {t('ud.tabOrders', { count: userShipments.length })}
+              {t('ud.tabOrders', { count: shipmentTotal })}
             </button>
 
             <button
@@ -238,7 +237,7 @@ export function UserDetailPage() {
                 }`}
             >
               <ActivityIcon className="w-4 h-4" />
-              {t('ud.tabLogs', { count: userActivities.length })}
+              {t('ud.tabLogs', { count: activityTotal })}
             </button>
           </div>
         </div>
@@ -253,48 +252,43 @@ export function UserDetailPage() {
                     <th className="py-3 px-4">{t('ud.colOrderCode')}</th>
                     <th className="py-3 px-4">{t('ud.colLockerSize')}</th>
                     <th className="py-3 px-4">{t('ud.colShipper')}</th>
-                    <th className="py-3 px-4">{t('ud.colOtp')}</th>
                     <th className="py-3 px-4">{t('ud.colDeposit')}</th>
                     <th className="py-3 px-4 text-right">{t('ud.colStatus')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[13px]">
-                  {userShipments.map((shp) => {
-                    const stBadge = shipmentStatusBadges[shp.shipmentStatus] || shipmentStatusBadges.stored
-                    return (
-                      <tr key={shp.id} className="hover:bg-sky-50/40 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <span className="font-mono font-bold text-sky-600 dark:text-sky-400 text-[13px]">
-                            {shp.shipmentCode}
+                  {userShipments.map((shp) => (
+                    <tr
+                      key={shp.id}
+                      onClick={() => navigate(`/shipments/${shp.id}`)}
+                      className="hover:bg-sky-50/40 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                    >
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono font-bold text-sky-600 dark:text-sky-400 text-[13px]">
+                          {shp.trackingNumber}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                            {shp.lockerCode ?? '—'}
                           </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-                              {shp.lockerCode}
-                            </span>
-                            <span className="text-[10px] font-mono uppercase text-slate-500">
-                              ({shp.lockerSize})
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 font-medium setting-title-custom">
-                          {shp.shipperName}
-                        </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-purple-600 dark:text-purple-400">
-                          {shp.otpCode || '----'}
-                        </td>
-                        <td className="py-3.5 px-4 font-mono setting-desc-custom text-[12px]">
-                          {shp.createdAt}
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${stBadge.style}`}>
-                            {t(stBadge.labelKey)}
+                          <span className="text-[10px] font-mono uppercase text-slate-500">
+                            #{shp.boxNumber} ({shp.boxSize})
                           </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 font-medium setting-title-custom">
+                        {shp.shipperName || shp.carrierName}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono setting-desc-custom text-[12px]">
+                        {formatDateTime(shp.droppedOffAt)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <ShipmentStatusBadge status={shp.status} />
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             ) : (
@@ -323,7 +317,7 @@ export function UserDetailPage() {
                   {userActivities.map((act) => (
                     <tr key={act.id} className="hover:bg-sky-50/40 dark:hover:bg-slate-800/40 transition-colors">
                       <td className="py-3.5 px-4 font-mono text-[12px] setting-desc-custom">
-                        {act.timeLabel}
+                        {formatDateTime(act.createdAt)}
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col gap-0.5">
@@ -339,11 +333,11 @@ export function UserDetailPage() {
                         {act.description}
                       </td>
                       <td className="py-3.5 px-4 text-right">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${act.status === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' :
-                            act.status === 'warning' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${act.status === 'SUCCESS' ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800' :
+                            act.status === 'WARNING' ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' :
                               'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800'
                           }`}>
-                          {act.status.toUpperCase()}
+                          {act.status}
                         </span>
                       </td>
                     </tr>

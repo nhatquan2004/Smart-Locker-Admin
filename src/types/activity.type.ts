@@ -1,16 +1,26 @@
-export type TActivityRole = 'customer' | 'shipper' | 'admin' | 'system'
+// Giá trị theo đúng enum của module activity-logs trên server
+export type TActivityRole =
+  | 'SYSTEM_ADMIN'
+  | 'BUILDING_ADMIN'
+  | 'SHIPPER'
+  | 'RESIDENT'
+  | 'KIOSK'
+  | 'SYSTEM'
+  | 'DEVICE'
 
 export type TActivityCategory =
-  | 'shipment'
-  | 'otp'
-  | 'locker'
-  | 'hardware'
-  | 'settings'
-  | 'user'
+  | 'PACKAGE'
+  | 'PICKUP'
+  | 'LOCKER'
+  | 'HARDWARE'
+  | 'SETTINGS'
+  | 'USER'
+  | 'PAYMENT'
+  | 'ISSUE'
 
-export type TActivityStatus = 'success' | 'info' | 'warning' | 'error'
+export type TActivityStatus = 'SUCCESS' | 'INFO' | 'WARNING' | 'ERROR'
 
-export type TActivityTargetType = 'locker' | 'shipment' | 'user' | 'system'
+export type TActivityTargetType = 'LOCKER' | 'PACKAGE' | 'USER' | 'BUILDING' | 'ISSUE' | 'SYSTEM'
 
 export type TActivityItem = {
   id: string
@@ -18,31 +28,39 @@ export type TActivityItem = {
   actorName: string
   actorRole: TActivityRole
   actorPhone?: string
-  orgId?: string
+  buildingId?: string
   orgName?: string
   category: TActivityCategory
   status: TActivityStatus
   title: string
-  description: string
-  targetId?: string
+  description?: string
   targetType?: TActivityTargetType
+  targetId?: string
   targetLabel?: string
   createdAt: string
-  timeLabel: string
 }
 
-export type TActivityStatItem = {
-  id: string
-  label: string
-  value: string
-  helper: string
-  tone: 'blue' | 'green' | 'orange' | 'red'
+export type TActivityQuery = {
+  category?: TActivityCategory
+  status?: TActivityStatus
+  actorRole?: TActivityRole
+  actorId?: string
+  buildingId?: string
+  search?: string
+  from?: string
+  to?: string
+  page?: number
+  limit?: number
 }
 
-export type TActivityFilter = {
-  search: string
-  companyId: string
-  role: 'all' | TActivityRole
-  category: 'all' | TActivityCategory
-  status: 'all' | TActivityStatus
+export type TActivityPage = { items: TActivityItem[]; total: number; page: number; limit: number }
+
+// Thống kê của server: mặc định 30 ngày gần nhất, tối đa 366 ngày
+export type TActivityStats = {
+  from: string
+  to: string
+  total: number
+  byStatus: Partial<Record<TActivityStatus, number>>
+  byCategory: Partial<Record<TActivityCategory, number>>
+  byDay: { date: string; count: number }[]
 }

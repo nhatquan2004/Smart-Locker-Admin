@@ -23,6 +23,8 @@ export default defineLocale(
 
     'map.capacity': '{avail}/{total} ngăn trống',
     'map.boxes': '{count} ngăn',
+    'map.groupSummary': '{count} tủ · {online} online',
+    'map.groupSummary_one': '{count} tủ · {online} online',
     'map.boxes_one': '{count} ngăn',
     'map.issueCount': '{count} sự cố',
     'map.issueCount_one': '{count} sự cố',
@@ -58,6 +60,7 @@ export default defineLocale(
     'map.addressPh': 'Ví dụ: 120 Linh Đông, Thủ Đức, TP.HCM',
     'map.find': 'Tìm',
     'map.osmNote': 'Dùng dữ liệu OpenStreetMap, có thể lệch vài chục mét so với thực tế.',
+    'map.addressSaveNote': 'Địa chỉ này cũng sẽ được lưu làm địa chỉ của doanh nghiệp.',
     'map.gps': 'Tọa độ GPS',
     'map.pickOnMap': 'Chọn trên bản đồ',
     'map.latitude': 'Vĩ độ',
@@ -87,6 +90,8 @@ export default defineLocale(
 
     'map.capacity': '{avail}/{total} compartments free',
     'map.boxes': '{count} compartments',
+    'map.groupSummary': '{count} lockers · {online} online',
+    'map.groupSummary_one': '{count} locker · {online} online',
     'map.boxes_one': '{count} compartment',
     'map.issueCount': '{count} issues',
     'map.issueCount_one': '{count} issue',
@@ -122,6 +127,7 @@ export default defineLocale(
     'map.addressPh': 'e.g. 120 Linh Dong, Thu Duc, Ho Chi Minh City',
     'map.find': 'Find',
     'map.osmNote': 'Uses OpenStreetMap data and may be off by a few dozen meters.',
+    'map.addressSaveNote': 'The address will also be saved as the organization address.',
     'map.gps': 'GPS coordinates',
     'map.pickOnMap': 'Pick on the map',
     'map.latitude': 'Latitude',

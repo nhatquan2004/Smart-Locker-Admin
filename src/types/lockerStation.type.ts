@@ -21,6 +21,8 @@ export type TCompartmentShipmentInfo = {
 
 export type TCompartment = {
   id: string
+  // Số thứ tự ngăn trên server, dùng cho các API mở khóa và bảo trì
+  boxNumber?: number
   code: string // e.g. 'A-01'
   size: TCompartmentSize
   status: TCompartmentStatus
@@ -39,7 +41,8 @@ export type TLockerStation = {
   orgName: string
   location: string
   status: TLockerStationStatus
-  masterController: {
+  // Server chưa lưu thông tin bo mạch, chỉ dữ liệu mẫu mới có
+  masterController?: {
     ipAddress: string
     gatewayStatus: string
     temperatureCelsius: number
@@ -48,6 +51,7 @@ export type TLockerStation = {
   compartments: TCompartment[]
   createdAt: string
   lastHeartbeat: string
+  lastHeartbeatAt?: string
 }
 
 export type TLockerStationFilter = {
