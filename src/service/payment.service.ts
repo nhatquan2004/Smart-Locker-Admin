@@ -12,6 +12,8 @@ export type TBankAccount = {
 export type TPricingPolicy = {
   monthlySubscriptionFee: number
   perUseFee: number
+  // Số giờ đầu miễn phí cho cư dân có gói tháng (từ T1 đến T3)
+  subscriberFreeHours: number
   t1Hours: number
   t2Hours: number
   t3Hours: number
@@ -58,7 +60,8 @@ export type TPackageFee = {
 // Biểu phí mặc định của server (DEFAULT_PRICING_POLICY) khi tòa chưa cấu hình riêng
 export const DEFAULT_PRICING_POLICY: TPricingPolicy = {
   monthlySubscriptionFee: 30000,
-  perUseFee: 5000,
+  perUseFee: 0,
+  subscriberFreeHours: 24,
   t1Hours: 12,
   t2Hours: 24,
   t3Hours: 48,
@@ -77,20 +80,23 @@ export function isBankAccountComplete(bank?: Partial<TBankAccount>): boolean {
 // Dựng bảng 4 chặng theo đúng công thức buildPricingTiers của server, dùng để xem trước khi lưu
 export function buildPricingTiers(policy: TPricingPolicy): TPricingTier[] {
   const cappedOverdueFee = Math.min(policy.feeX1 + policy.feeX2, policy.maxOverdueFeeCap)
+  // Gói tháng luôn được miễn phí tối thiểu bằng chặng T1 của khách thường
+  const subscriberFreeHours = Math.max(policy.t1Hours, policy.subscriberFreeHours)
   return [
     { tier: 'FREE', fromHours: 0, toHours: policy.t1Hours, subscriberFee: 0, retailFee: policy.perUseFee },
     {
       tier: 'TIER_1',
       fromHours: policy.t1Hours,
       toHours: policy.t2Hours,
-      subscriberFee: policy.feeX1,
+      subscriberFee: subscriberFreeHours >= policy.t2Hours ? 0 : policy.feeX1,
       retailFee: policy.perUseFee + policy.feeX1,
     },
     {
       tier: 'TIER_2',
       fromHours: policy.t2Hours,
       toHours: policy.t3Hours,
-      subscriberFee: cappedOverdueFee,
+      // Gói tháng chỉ chịu phụ thu X1 khi hết thời gian miễn phí, không cộng X2
+      subscriberFee: subscriberFreeHours >= policy.t3Hours ? 0 : policy.feeX1,
       retailFee: policy.perUseFee + cappedOverdueFee,
     },
     {

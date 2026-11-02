@@ -77,6 +77,7 @@ const POLICY_FIELDS: { group: TranslationKey; fields: { key: keyof TPricingPolic
       { key: 't1Hours', label: 'pay.t1', unit: 'hours' },
       { key: 't2Hours', label: 'pay.t2', unit: 'hours' },
       { key: 't3Hours', label: 'pay.t3', unit: 'hours' },
+      { key: 'subscriberFreeHours', label: 'pay.subFree', unit: 'hours', hint: 'pay.subFreeHint' },
     ],
   },
   {
@@ -94,6 +95,7 @@ function validatePolicy(p: TPricingPolicy): TranslationKey | null {
   const hours = [p.t1Hours, p.t2Hours, p.t3Hours]
   if (hours.some((h) => !Number.isInteger(h) || h < 1)) return 'pay.errHoursInt'
   if (!(p.t1Hours < p.t2Hours && p.t2Hours < p.t3Hours)) return 'pay.errHoursOrder'
+  if (!Number.isInteger(p.subscriberFreeHours) || p.subscriberFreeHours < p.t1Hours || p.subscriberFreeHours > p.t3Hours) return 'pay.errSubFree'
   const fees = [p.perUseFee, p.monthlySubscriptionFee, p.feeX1, p.feeX2, p.maxOverdueFeeCap]
   if (fees.some((f) => !Number.isFinite(f) || f < 0)) return 'pay.errFees'
   return null
