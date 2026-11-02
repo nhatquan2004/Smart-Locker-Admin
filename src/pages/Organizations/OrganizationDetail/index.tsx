@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getOrganizations } from '../../../service/organization.service'
-import { getLockerStations } from '../../../service/lockerStation.service'
+import { getLockerBuildingId, getLockers, type TApiLocker } from '../../../service/lockerApi.service'
+import { AddLockerModal } from '../../../components/Lockers/AddLockerModal'
 import type { TOrganization, TOrgType } from '../../../types/organization.type'
-import type { TLockerStation } from '../../../types/lockerStation.type'
 import { AppButton } from '../../../components/common'
 import { useTranslation } from '../../../context/LanguageContext'
 import type { TranslationKey } from '../../../i18n/translations'
@@ -21,7 +21,9 @@ export function OrganizationDetailPage() {
   const { t } = useTranslation()
 
   const [org, setOrg] = useState<TOrganization | null>(null)
-  const [stations, setStations] = useState<TLockerStation[]>([])
+  const [stations, setStations] = useState<TApiLocker[]>([])
+  const [isAddStationOpen, setIsAddStationOpen] = useState(false)
+  const [stationsReload, setStationsReload] = useState(0)
 
   const [formName, setFormName] = useState('')
   const [formType, setFormType] = useState<TOrgType>('enterprise')
@@ -50,19 +52,10 @@ export function OrganizationDetailPage() {
       }
     })
 
-    getLockerStations().then((list) => {
-      const matched = list.filter((s) => s.orgId === orgId)
-      setStations(matched)
-      if (matched.length > 0) {
-        const sCount = matched[0].compartments.filter((c) => c.size === 'small').length
-        const mCount = matched[0].compartments.filter((c) => c.size === 'medium').length
-        const lCount = matched[0].compartments.filter((c) => c.size === 'large').length
-        setFormSizeS(sCount || 4)
-        setFormSizeM(mCount || 4)
-        setFormSizeL(lCount || 2)
-      }
-    })
-  }, [orgId])
+    getLockers()
+      .then((list) => setStations(list.filter((l) => getLockerBuildingId(l) === orgId)))
+      .catch(() => setStations([]))
+  }, [orgId, stationsReload])
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -311,62 +304,58 @@ export function OrganizationDetailPage() {
               <h2 className="setting-title-custom text-[16px] font-bold">{t('org.d.sec3Title')}</h2>
               <p className="setting-desc-custom text-[12px] mt-0.5">{t('org.d.sec3Desc')}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => navigate('/lockers')}
-              className="h-9 px-3.5 rounded-xl text-[12px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white transition-all cursor-pointer"
-            >
-              {t('org.d.manageClusters')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/lockers')}
+                className="h-9 px-3.5 rounded-xl text-[12px] font-bold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-600 hover:text-white transition-all cursor-pointer"
+              >
+                {t('org.d.manageClusters')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddStationOpen(true)}
+                className="h-9 px-3.5 rounded-xl text-[12px] font-bold bg-sky-600 text-white hover:bg-sky-700 transition-all cursor-pointer"
+              >
+                + {t('org.d.addStation')}
+              </button>
+            </div>
           </div>
 
           {stations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stations.map((st) => (
-                <div key={st.id} className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-block">
-                        {st.code}
-                      </span>
-                      <h4 className="font-bold text-slate-900 dark:text-white text-[14px] mt-1">{st.name}</h4>
+              {stations.map((st) => {
+                const statusKey = st.status === 'ONLINE' ? 'lk.statusOnline' : st.status === 'OFFLINE' ? 'lk.statusOffline' : 'lk.statusWarning'
+                const statusTone =
+                  st.status === 'ONLINE'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : st.status === 'OFFLINE'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                return (
+                  <div key={st._id} className="p-4 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="px-2 py-0.5 rounded text-[10.5px] font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-block">
+                          {st.code}
+                        </span>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-[14px] mt-1 truncate">{st.name}</h4>
+                        {st.locationDescription && (
+                          <p className="text-[11.5px] text-slate-500 dark:text-slate-400 truncate">{st.locationDescription}</p>
+                        )}
+                      </div>
+                      <div className={`flex items-center gap-1.5 text-[12px] font-semibold shrink-0 ${statusTone}`}>
+                        <span className="w-2 h-2 rounded-full bg-current" />
+                        <span>{t(statusKey)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Online</span>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-center font-mono text-[11px] font-medium">
-                    <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 font-semibold">
-                      S: {st.compartments.filter(c => c.size === 'small').length}
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 font-semibold">
-                      M: {st.compartments.filter(c => c.size === 'medium').length}
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 font-semibold">
-                      L: {st.compartments.filter(c => c.size === 'large').length}
-                    </div>
+                    <p className="text-[12px] font-mono font-semibold text-slate-700 dark:text-slate-300">
+                      {t('org.d.stationBoxes', { avail: st.availableBoxes ?? 0, total: st.totalBoxes })}
+                    </p>
                   </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/lockers/${st.id}`)}
-                      className="text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline"
-                    >
-                      {t('org.d.viewLayout')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/lockers/${st.id}/hardware`)}
-                      className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                    >
-                      {t('org.d.hardwareSpecs')}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-center text-slate-500 dark:text-slate-400 text-[12px]">
@@ -401,6 +390,14 @@ export function OrganizationDetailPage() {
         </div>
 
       </form>
+
+      {isAddStationOpen && org && (
+        <AddLockerModal
+          org={org}
+          onClose={() => setIsAddStationOpen(false)}
+          onCreated={() => setStationsReload((n) => n + 1)}
+        />
+      )}
 
     </div>
   )

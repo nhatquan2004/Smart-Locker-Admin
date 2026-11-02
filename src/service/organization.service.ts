@@ -56,82 +56,105 @@ const mockOrganizations: TOrganization[] = [
   },
 ]
 
-let orgStore = [...mockOrganizations]
+type TApiBuilding = {
+  _id?: string
+  id?: string
+  code?: string
+  name: string
+  address?: string
+  totalApartments?: number
+  managementEmail?: string
+  status?: string
+  createdAt?: string
+  // GeoJSON: [kinh độ, vĩ độ]
+  location?: { coordinates?: [number, number] }
+}
+
+function formatCreatedAt(value?: string): string {
+  return value ? new Date(value).toISOString().replace('T', ' ').slice(0, 16) : '2026-01-01'
+}
+
+// Đếm số trạm tủ của từng doanh nghiệp từ GET /lockers
+async function countLockersByBuilding(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  try {
+    const res = await apiClient.get<{ buildingId?: { _id?: string } | string }[]>('/lockers')
+    for (const l of res.data ?? []) {
+      const bid = typeof l.buildingId === 'string' ? l.buildingId : l.buildingId?._id
+      if (bid) counts.set(bid, (counts.get(bid) ?? 0) + 1)
+    }
+  } catch {
+    // Không lấy được danh sách tủ thì để số tủ bằng 0
+  }
+  return counts
+}
 
 export async function getOrganizations(): Promise<TOrganization[]> {
   try {
-    const res = await apiClient.get<any[]>('/buildings')
+    const [res, lockerCounts] = await Promise.all([
+      apiClient.get<TApiBuilding[]>('/buildings'),
+      countLockersByBuilding(),
+    ])
     if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map((b) => ({
-        id: b._id || b.id,
-        code: b.code || 'BLD',
-        name: b.name,
-        type: 'enterprise',
-        address: b.address || '—',
-        totalLockers: b.totalFloors || 10,
-        totalMembers: b.totalApartments || 0,
-        adminEmail: b.managementEmail || 'admin@smartlocker.vn',
-        adminName: 'Ban Quản Lý',
-        status: b.status === 'ACTIVE' ? 'active' : 'inactive',
-        createdAt: b.createdAt ? new Date(b.createdAt).toISOString().replace('T', ' ').slice(0, 16) : '2026-01-01',
-      }))
+      return res.data.map((b) => {
+        const id = (b._id || b.id) as string
+        const coords = b.location?.coordinates
+        return {
+          id,
+          code: b.code || 'BLD',
+          name: b.name,
+          type: 'enterprise',
+          address: b.address || '—',
+          latitude: coords?.[1],
+          longitude: coords?.[0],
+          totalLockers: lockerCounts.get(id) ?? 0,
+          totalMembers: b.totalApartments || 0,
+          adminEmail: b.managementEmail || 'admin@smartlocker.vn',
+          adminName: 'Ban Quản Lý',
+          status: b.status === 'ACTIVE' ? 'active' : 'inactive',
+          createdAt: formatCreatedAt(b.createdAt),
+        }
+      })
     }
   } catch (err) {
     console.warn('Could not fetch buildings from backend, falling back to local list', err)
   }
-  return [...orgStore]
+  return [...mockOrganizations]
 }
 
+// Tạo doanh nghiệp thật trên server. Lỗi được ném ra để giao diện báo cho người dùng.
 export async function createOrganization(payload: TCreateOrgPayload): Promise<TOrganization> {
-  try {
-    const res = await apiClient.post<any>('/buildings', {
-      name: payload.name,
-      code: payload.code.toUpperCase(),
-      address: payload.address,
-      totalFloors: payload.totalLockers || 10,
-      totalApartments: 50,
-      managementEmail: payload.adminEmail,
-    })
-    const b = res.data
-    const newOrg: TOrganization = {
-      id: b._id || b.id,
-      code: b.code,
-      name: b.name,
-      type: payload.type,
-      address: b.address,
-      totalLockers: b.totalFloors || payload.totalLockers,
-      totalMembers: b.totalApartments || 0,
-      adminEmail: payload.adminEmail,
-      adminName: payload.adminName,
-      status: 'active',
-      createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
-    }
-    return newOrg
-  } catch {
-    const newOrg: TOrganization = {
-      id: `org-${Date.now().toString().slice(-4)}`,
-      code: payload.code.toUpperCase(),
-      name: payload.name,
-      type: payload.type,
-      address: payload.address,
-      totalLockers: payload.totalLockers,
-      totalMembers: 0,
-      adminEmail: payload.adminEmail,
-      adminName: payload.adminName,
-      status: 'active',
-      createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
-    }
-    orgStore = [newOrg, ...orgStore]
-    return newOrg
+  const res = await apiClient.post<TApiBuilding>('/buildings', {
+    name: payload.name,
+    code: payload.code.toUpperCase(),
+    address: payload.address,
+    // Server bắt buộc hai trường này, giai đoạn thử nghiệm dùng giá trị mặc định
+    totalFloors: 10,
+    totalApartments: 50,
+    managementEmail: payload.adminEmail,
+    ...(payload.latitude !== undefined && payload.longitude !== undefined
+      ? { latitude: payload.latitude, longitude: payload.longitude }
+      : {}),
+  })
+  const b = res.data
+  return {
+    id: (b._id || b.id) as string,
+    code: b.code || payload.code.toUpperCase(),
+    name: b.name,
+    type: payload.type,
+    address: b.address || payload.address,
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    totalLockers: 0,
+    totalMembers: b.totalApartments || 0,
+    adminEmail: payload.adminEmail,
+    adminName: payload.adminName,
+    status: 'active',
+    createdAt: formatCreatedAt(b.createdAt ?? new Date().toISOString()),
   }
 }
 
 export async function deleteOrganization(id: string): Promise<boolean> {
-  try {
-    await apiClient.delete(`/buildings/${id}`)
-    return true
-  } catch {
-    orgStore = orgStore.filter((o) => o.id !== id)
-    return true
-  }
+  await apiClient.delete(`/buildings/${id}`)
+  return true
 }

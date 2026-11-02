@@ -21,6 +21,9 @@ export type TNotification = {
   category: TNotificationCategory
   priority: TNotificationPriority
   isRead: boolean
+  // Tòa nhà của sự kiện (server chỉ trả mã, không kèm tên)
+  buildingId?: string
+  type?: string
   actionUrl?: string
   createdAt: string
   updatedAt: string
@@ -84,6 +87,29 @@ export async function getMyNotifications(
   }
 }
 
+export type TNotificationInbox = { data: TNotification[]; total: number; unreadCount: number }
+
+/**
+ * Hộp thư đầy đủ cho trang Thông báo: lọc theo nhóm, mức ưu tiên, đã đọc (server lọc), kèm tổng và số chưa đọc.
+ * Khác getMyNotifications, hàm này không nuốt lỗi để trang báo được khi tải thất bại.
+ * GET /notifications trả { data, pagination: { total }, unreadCount }
+ */
+export async function listNotifications(
+  query: Pick<TNotificationQuery, 'category' | 'isRead' | 'limit'> & { priority?: TNotificationPriority },
+): Promise<TNotificationInbox> {
+  const params = new URLSearchParams()
+  if (query.limit) params.append('limit', String(query.limit))
+  if (query.category) params.append('category', query.category)
+  if (query.priority) params.append('priority', query.priority)
+  if (query.isRead !== undefined) params.append('isRead', String(query.isRead))
+  const qs = params.toString()
+  const res = await apiClient.get<{ data?: TNotification[]; pagination?: { total?: number }; unreadCount?: number }>(
+    qs ? `/notifications?${qs}` : '/notifications',
+  )
+  const data = res.data.data ?? []
+  return { data, total: res.data.pagination?.total ?? data.length, unreadCount: res.data.unreadCount ?? 0 }
+}
+
 /**
  * Lấy số lượng thông báo chưa đọc (dùng cho badge đỏ trên chuông).
  * GET /notifications/unread-count
@@ -143,6 +169,7 @@ export async function deleteNotification(notificationId: string): Promise<boolea
  * Chỉ dành cho BUILDING_ADMIN và SYSTEM_ADMIN.
  */
 export async function broadcastToBuilding(payload: TBroadcastPayload): Promise<TBroadcastResult> {
-  const res = await apiClient.post<TBroadcastResult>('/notifications/broadcast', payload)
-  return res.data
+  // Server trả { message, sentCount }
+  const res = await apiClient.post<{ message?: string; sentCount?: number }>('/notifications/broadcast', payload)
+  return { sent: res.data.sentCount ?? 0, notifications: [] }
 }

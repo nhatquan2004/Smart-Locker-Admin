@@ -11,19 +11,21 @@ import {
   LogOut,
   Menu,
   X,
-  Globe,
   Sun,
   Moon,
   ShieldAlert,
   Megaphone,
   Bell,
   MapPin,
+  Wallet,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useTranslation } from "../../context/LanguageContext";
 import lockerLogo from "../../assets/locker.png";
 import { ApprovalBell } from "./ApprovalBell";
+import { getMyBuildingName } from "../../service/buildingNames";
 import { BroadcastModal } from "../notifications/BroadcastModal";
+import { BankAccountBanner } from "./BankAccountBanner";
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -56,6 +58,23 @@ export function AdminLayout() {
   const isSuperAdmin = user?.role === "super_admin";
   const isBuildingAdmin = user?.role === "org_admin";
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+  // Tên tòa nhà của Ban quản lý, lấy từ server vì thông tin đăng nhập không có tên tòa
+  const [buildingName, setBuildingName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isBuildingAdmin) return;
+    let active = true;
+    getMyBuildingName()
+      .then((name) => {
+        if (active) setBuildingName(name);
+      })
+      .catch(() => {
+        // Không đọc được thì dùng tên có sẵn trong thông tin đăng nhập
+      });
+    return () => {
+      active = false;
+    };
+  }, [isBuildingAdmin]);
 
   const { t, language, toggleLanguage } = useTranslation();
 
@@ -73,7 +92,10 @@ export function AdminLayout() {
           ? [{ label: t("nav.organizations"), icon: <Building2 className="w-[18px] h-[18px]" />, to: "/organizations" }]
           : []),
         { label: t("nav.lockers"), icon: <Boxes className="w-[18px] h-[18px]" />, to: "/lockers" },
-        { label: t("nav.lockerMap"), icon: <MapPin className="w-[18px] h-[18px]" />, to: "/locker-map" },
+        // Vị trí thuộc về tòa nhà do Super Admin thiết lập, Ban quản lý không cần bản đồ
+        ...(isSuperAdmin
+          ? [{ label: t("nav.lockerMap"), icon: <MapPin className="w-[18px] h-[18px]" />, to: "/locker-map" }]
+          : []),
         { label: t("nav.users"), icon: <Users className="w-[18px] h-[18px]" />, to: "/users" },
         { label: t("nav.shipments"), icon: <PackageCheck className="w-[18px] h-[18px]" />, to: "/shipments" },
         { label: t("nav.issues"), icon: <ShieldAlert className="w-[18px] h-[18px]" />, to: "/issues" },
@@ -84,7 +106,14 @@ export function AdminLayout() {
       items: [
         { label: t("nav.notifications"), icon: <Bell className="w-[18px] h-[18px]" />, to: "/notifications" },
         { label: t("nav.activities"), icon: <Activity className="w-[18px] h-[18px]" />, to: "/activities" },
-        { label: t("nav.settings"), icon: <Settings className="w-[18px] h-[18px]" />, to: "/settings" },
+        // Chỉ Ban quản lý có API đọc/sửa tài khoản nhận tiền và biểu phí của tòa mình
+        ...(isBuildingAdmin
+          ? [{ label: t("nav.paymentSettings"), icon: <Wallet className="w-[18px] h-[18px]" />, to: "/payment-settings" }]
+          : []),
+        // Trang này chỉ Super Admin vào được
+        ...(isSuperAdmin
+          ? [{ label: t("nav.settings"), icon: <Settings className="w-[18px] h-[18px]" />, to: "/settings" }]
+          : []),
       ],
     },
   ];
@@ -107,90 +136,85 @@ export function AdminLayout() {
       )}
 
       {/* ── TOP HEADER (Fixed Pin Top Navbar) ── */}
-      <header className="top-navbar shrink-0 h-16 px-3.5 sm:px-6 flex items-center justify-between border-b backdrop-blur-md shadow-2xs z-[1010] transition-colors duration-200">
-        {/* Left: Brand + Scope Selector */}
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          {/* Mobile menu trigger */}
+      <header className="top-navbar shrink-0 h-16 px-3 sm:px-6 flex items-center justify-between gap-3 border-b z-[1010] transition-colors duration-200">
+        {/* Trái: logo, tên hệ thống và phạm vi quản lý */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((v) => !v)}
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+            className="lg:hidden flex items-center justify-center w-10 h-10 -ml-1 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
             aria-label={t("layout.toggleMenu")}
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
 
-          {/* Logo & Brand Name */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-white p-0.5 shadow-2xs border border-slate-200 dark:border-slate-700">
-              <img src={lockerLogo} alt="Smart Locker" className="w-full h-full object-cover rounded" />
-            </div>
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-[15px] font-bold leading-tight whitespace-nowrap text-slate-900 dark:text-white">Smart Locker</span>
-              <span className="text-[10px] font-mono font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider whitespace-nowrap">
-                {isSuperAdmin ? "SUPER ADMIN" : "ORG ADMIN"}
-              </span>
-            </div>
+            <img src={lockerLogo} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0" />
+            <span className="hidden sm:block text-[16px] font-bold tracking-tight whitespace-nowrap text-slate-900 dark:text-white">
+              Smart Locker
+            </span>
           </div>
 
-          {/* Vertical Divider */}
-          <div className="hidden lg:block h-4 w-px bg-slate-200 dark:bg-slate-800 mx-1 shrink-0" />
-
-          {/* System Scope Indicator (Visible on Desktop lg+) */}
-          <div className="hidden lg:flex items-center gap-1.5 text-[12px] min-w-0 text-slate-500 dark:text-slate-400">
-            <span>{t("nav.system")}:</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[200px] xl:max-w-[320px]" title={isSuperAdmin ? t("nav.superAdminSystem") : user?.orgName}>
-              {isSuperAdmin ? t("nav.superAdminSystem") : user?.orgName}
-            </span>
+          {/* Ai đang đăng nhập và đang quản lý phạm vi nào */}
+          <div className="hidden md:flex items-center gap-3 pl-3 ml-1 border-l border-slate-200 dark:border-slate-700 min-w-0">
+            <div className="min-w-0 leading-tight">
+              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                {isSuperAdmin ? t("role.super_admin") : t("layout.roleBuilding")}
+              </p>
+              <p
+                className="truncate max-w-[200px] xl:max-w-[320px] text-[13px] font-semibold text-slate-800 dark:text-slate-100"
+                title={isSuperAdmin ? t("nav.superAdminSystem") : (buildingName ?? user?.orgName)}
+              >
+                {isSuperAdmin ? t("layout.scopeAll") : (buildingName ?? user?.orgName)}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Right: Controls & Realtime Status */}
+        {/* Phải: hành động chính, rồi các nút tiện ích */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Language Switcher */}
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            className="h-8.5 px-3 rounded-lg flex items-center gap-1.5 text-[12px] font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0 shadow-2xs"
-            title={t("nav.langTooltip")}
-          >
-            <Globe className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-            <span>{language === 'vi' ? 'VI' : 'EN'}</span>
-          </button>
-
-          {/* Theme Switcher Button */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="h-8.5 px-3 rounded-lg flex items-center gap-1.5 text-[12px] font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0 shadow-2xs"
-            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {isDarkMode ? <Moon className="w-3.5 h-3.5 text-amber-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
-            <span className="hidden sm:inline">{isDarkMode ? "Dark" : "Light"}</span>
-          </button>
-
-          {/* Broadcast Button — chỉ hiện với Building Admin */}
           {isBuildingAdmin && (
             <button
               type="button"
               id="broadcast-notification-btn"
               onClick={() => setIsBroadcastOpen(true)}
-              className="h-8.5 px-3 rounded-lg flex items-center gap-1.5 text-[12px] font-medium border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950/80 transition-colors cursor-pointer shrink-0 shadow-2xs"
+              className="h-9 px-3 sm:px-4 rounded-xl flex items-center gap-2 text-[13px] font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-xs transition-colors cursor-pointer shrink-0"
               title={t("layout.broadcastTooltip")}
             >
-              <Megaphone className="w-3.5 h-3.5" />
+              <Megaphone className="w-4 h-4" />
               <span className="hidden sm:inline">{t("layout.broadcastShort")}</span>
             </button>
           )}
 
-          {/* Approval Bell — hiện với cả org_admin và super_admin */}
-          <ApprovalBell />
+          <div className="hidden sm:flex h-9 items-center rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 text-[12px] font-bold shrink-0" role="group" aria-label={t("nav.langTooltip")}>
+            {(["vi", "en"] as const).map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => language !== code && toggleLanguage()}
+                className={`h-8 px-2.5 rounded-[10px] uppercase transition-colors cursor-pointer ${
+                  language === code
+                    ? "bg-white text-slate-900 shadow-xs dark:bg-slate-600 dark:text-white"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                {code}
+              </button>
+            ))}
+          </div>
 
-          {/* Realtime Status Badge */}
-          <span className="hidden md:inline-flex h-8.5 px-3 rounded-lg items-center gap-2 text-[11.5px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            {t("nav.realtimeEngine")}
-          </span>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
+            title={isDarkMode ? t("layout.toLight") : t("layout.toDark")}
+            aria-label={isDarkMode ? t("layout.toLight") : t("layout.toDark")}
+          >
+            {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+
+          {/* Chuông thông báo: hiện với cả Ban quản lý và Super Admin */}
+          <ApprovalBell />
         </div>
       </header>
 
@@ -256,8 +280,8 @@ export function AdminLayout() {
                   <p className="text-[12px] font-bold truncate text-slate-900 dark:text-white" title={user?.fullName ?? "Super Admin"}>
                     {user?.fullName ?? "Super Admin"}
                   </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate" title={user?.orgName ?? "Global System"}>
-                    {user?.orgName ?? "Global System"}
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate" title={isSuperAdmin ? "Global System" : (buildingName ?? user?.orgName ?? "")}>
+                    {isSuperAdmin ? "Global System" : (buildingName ?? user?.orgName ?? "—")}
                   </p>
                 </div>
               </div>
@@ -275,6 +299,7 @@ export function AdminLayout() {
 
         {/* ── SCROLLABLE RIGHT MAIN PANEL ── */}
         <main className="flex-1 h-full overflow-y-auto p-4 sm:p-6 lg:p-8 min-w-0">
+          <BankAccountBanner />
           <Outlet />
         </main>
       </div>

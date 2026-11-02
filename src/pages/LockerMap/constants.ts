@@ -1,10 +1,6 @@
 import type { TranslationKey } from '../../i18n/translations'
 import type { LockerFilter, LockerStatus } from './types'
 
-// Tạm ẩn nút "Chi tiết" vì trang chi tiết tủ vẫn đang dùng dữ liệu mock.
-// Bật lại thành true sau khi LockersPage / LockerDetail đồng bộ với API thật.
-export const SHOW_DETAIL_LINK = false
-
 // Tâm bản đồ mặc định (TP.HCM) khi chưa có trạm tủ nào có tọa độ
 export const DEFAULT_CENTER: [number, number] = [10.762622, 106.660172]
 

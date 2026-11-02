@@ -9,7 +9,6 @@ import { LockerDetailPage } from "../pages/Lockers/LockerDetail"
 import { LockerHardwarePage } from '../pages/Lockers/LockerHardware'
 import { LockerRemoteControlPage } from "../pages/Lockers/LockerRemoteControl"
 import { ShipmentDetailPage } from "../pages/Shipments/ShipmentDetail"
-import { ShipmentOtpPage } from "../pages/Shipments/ShipmentOtp"
 import { UserDetailPage } from "../pages/Users/UserDetail"
 import { UserManagePage } from "../pages/Users/UserManage"
 import { UserHistoryPage } from "../pages/Users/UserHistory"
@@ -21,6 +20,7 @@ import { IssuesPage } from '../pages/Issues'
 import { PendingApprovalsPage } from '../pages/PendingApprovals'
 import { NotificationsPage } from '../pages/Notifications'
 import { LockerMapPage } from '../pages/LockerMap'
+import { PaymentSettingsPage } from '../pages/PaymentSettings'
 import { LoginPage } from '../pages/Auth/LoginPage'
 import { ForbiddenPage } from '../pages/Auth/ForbiddenPage'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -47,7 +47,6 @@ const router = createBrowserRouter([
           { path: 'lockers/:lockerId/remote-control', element: <LockerRemoteControlPage /> },
           { path: 'shipments', element: <ShipmentsPage /> },
           { path: 'shipments/:shipmentId', element: <ShipmentDetailPage /> },
-          { path: 'shipments/:shipmentId/otp', element: <ShipmentOtpPage /> },
           { path: 'issues', element: <IssuesPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'users/:userId', element: <UserDetailPage /> },
@@ -56,7 +55,11 @@ const router = createBrowserRouter([
           { path: 'pending-approvals', element: <PendingApprovalsPage /> },
           { path: 'notifications', element: <NotificationsPage /> },
 
-          { path: 'locker-map', element: <LockerMapPage /> },
+          // Chỉ Ban quản lý: server chỉ cho BUILDING_ADMIN đọc/sửa cấu hình thanh toán tòa mình
+          {
+            element: <RoleGuard allowedRoles={['org_admin']} />,
+            children: [{ path: 'payment-settings', element: <PaymentSettingsPage /> }],
+          },
 
           // Restricted Super Admin Only Routes
           {
@@ -64,6 +67,7 @@ const router = createBrowserRouter([
             children: [
               { path: 'organizations', element: <OrganizationsPage /> },
               { path: 'organizations/:orgId', element: <OrganizationDetailPage /> },
+              { path: 'locker-map', element: <LockerMapPage /> },
               { path: 'settings', element: <SettingsPage /> },
             ],
           },

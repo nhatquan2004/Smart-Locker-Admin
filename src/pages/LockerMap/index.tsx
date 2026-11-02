@@ -6,7 +6,7 @@ import { Maximize2, PanelLeftOpen, RefreshCw } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import './LockerMap.css'
 import { apiClient } from '../../service/api.client'
-import { getIssues } from '../../service/issue.service'
+import { getOpenIssues } from '../../service/issue.service'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useToast } from '../../context/ToastContext'
 import { useTranslation } from '../../context/LanguageContext'
@@ -15,12 +15,12 @@ import type { TIssueItem } from '../../types/issue.type'
 import { DEFAULT_CENTER } from './constants'
 import { EditLocationModal } from './EditLocationModal'
 import { LockerPanel } from './LockerPanel'
-import { LockerPopup } from './LockerPopup'
+import { GroupPopup } from './GroupPopup'
 import { getLockerIcon, PICKER_ICON } from './mapIcons'
 import { FitToLockers, FlyToMarker, MapClickPicker } from './MapHelpers'
 import { PickingBar } from './PickingBar'
-import type { FlyTarget, LockerFilter, LockerMapItem } from './types'
-import { hasCoords, normalizeText, parseCoord, statusMeta } from './utils'
+import type { FlyTarget, LockerFilter, LockerGroup, LockerMapItem } from './types'
+import { groupKey, hasCoords, normalizeText, parseCoord, statusMeta, worstStatus } from './utils'
 
 const floatingBtn =
   'flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white/95 text-slate-600 shadow-[0_4px_14px_rgba(15,23,42,0.14)] backdrop-blur transition-colors hover:bg-white hover:text-slate-900 disabled:opacity-60 dark:border-slate-700/70 dark:bg-slate-900/95 dark:text-slate-300 dark:hover:text-white'
@@ -59,7 +59,7 @@ export function LockerMapPage() {
   useEffect(() => {
     let active = true
 
-    Promise.all([apiClient.get<LockerMapItem[]>('/lockers'), getIssues()])
+    Promise.all([apiClient.get<LockerMapItem[]>('/lockers'), getOpenIssues()])
       .then(([lockersRes, issuesData]) => {
         if (!active) return
         setLockers(lockersRes.data ?? [])
@@ -135,10 +135,25 @@ export function LockerMapPage() {
     [allWithCoords],
   )
 
+  // Gộp các tủ cùng doanh nghiệp thành một ghim, đặt tại vị trí của tủ đầu tiên
+  const groups = useMemo<LockerGroup[]>(() => {
+    const byKey = new Map<string, LockerMapItem[]>()
+    for (const l of visible) {
+      const key = groupKey(l)
+      byKey.set(key, [...(byKey.get(key) ?? []), l])
+    }
+    return [...byKey.entries()].map(([key, list]) => ({
+      key,
+      lockers: list,
+      position: [list[0].coordinates!.latitude, list[0].coordinates!.longitude] as [number, number],
+      status: worstStatus(list),
+    }))
+  }, [visible])
+
   const handleSelect = (l: LockerMapItem) => {
     setSelectedId(l._id)
     if (hasCoords(l)) {
-      setFlyTarget({ lat: l.coordinates!.latitude, lng: l.coordinates!.longitude, id: l._id })
+      setFlyTarget({ lat: l.coordinates!.latitude, lng: l.coordinates!.longitude, id: groupKey(l) })
     }
   }
 
@@ -170,29 +185,60 @@ export function LockerMapPage() {
     setIsPicking(false)
   }, [])
 
-  async function handleSave(payload: { lat: number; lng: number; locationDescription: string }) {
+  async function handleSave(payload: {
+    lat: number
+    lng: number
+    locationDescription: string
+    address: string
+  }) {
     if (!editing) return
     const coordinates = { latitude: payload.lat, longitude: payload.lng }
 
+    // Vị trí thuộc về doanh nghiệp: đổi cho mọi tủ cùng doanh nghiệp để ghim không bị tách ra
+    const key = groupKey(editing)
+    const siblings = lockers.filter((l) => groupKey(l) === key)
+
+    // Địa chỉ và vị trí thuộc về doanh nghiệp nên cũng cập nhật lên doanh nghiệp
+    const buildingId = editing.buildingId?._id
+    const addressChanged = !!payload.address && payload.address !== editing.buildingId?.address
+
     try {
-      await apiClient.patch(`/lockers/${editing._id}`, {
-        coordinates,
-        locationDescription: payload.locationDescription,
-      })
+      if (buildingId) {
+        await apiClient.patch(`/buildings/${buildingId}`, {
+          ...(addressChanged ? { address: payload.address } : {}),
+          latitude: payload.lat,
+          longitude: payload.lng,
+        })
+      }
+      await Promise.all(
+        siblings.map((l) =>
+          apiClient.patch(
+            `/lockers/${l._id}`,
+            l._id === editing._id
+              ? { coordinates, locationDescription: payload.locationDescription }
+              : { coordinates },
+          ),
+        ),
+      )
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('map.saveFailed'))
+      // Một số tủ có thể đã lưu thành công, tải lại để hiển thị đúng dữ liệu thật
+      setReloadKey((n) => n + 1)
       return
     }
 
     setLockers((prev) =>
-      prev.map((item) =>
-        item._id === editing._id
-          ? { ...item, coordinates, locationDescription: payload.locationDescription }
-          : item,
-      ),
+      prev.map((item) => {
+        if (groupKey(item) !== key) return item
+        const building =
+          addressChanged && item.buildingId ? { ...item.buildingId, address: payload.address } : item.buildingId
+        return item._id === editing._id
+          ? { ...item, buildingId: building, coordinates, locationDescription: payload.locationDescription }
+          : { ...item, buildingId: building, coordinates }
+      }),
     )
     toast.success(t('map.savedToast', { code: editing.code }))
-    setFlyTarget({ lat: payload.lat, lng: payload.lng, id: editing._id })
+    setFlyTarget({ lat: payload.lat, lng: payload.lng, id: key })
     setSelectedId(editing._id)
     closeEdit()
   }
@@ -236,25 +282,29 @@ export function LockerMapPage() {
             <Marker position={[draftLatNum, draftLngNum]} icon={PICKER_ICON} zIndexOffset={1000} />
           )}
 
-          {visible.map((l) => {
-            const issueList = activeIssuesByCode.get(l.code) ?? []
+          {groups.map((g) => {
+            const hasIssue = g.lockers.some((l) => activeIssuesByCode.has(l.code))
+            const selected = g.lockers.some((l) => l._id === selectedId)
             return (
               <Marker
-                key={l._id}
-                position={[l.coordinates!.latitude, l.coordinates!.longitude]}
-                icon={getLockerIcon(statusMeta(l.status).hex, selectedId === l._id, issueList.length > 0)}
+                key={g.key}
+                position={g.position}
+                icon={getLockerIcon(statusMeta(g.status).hex, selected, hasIssue, g.lockers.length)}
                 ref={(ref) => {
-                  if (ref) markerRefs.current[l._id] = ref
-                  else delete markerRefs.current[l._id]
+                  if (ref) markerRefs.current[g.key] = ref
+                  else delete markerRefs.current[g.key]
                 }}
-                eventHandlers={{ click: () => setSelectedId(l._id) }}
+                eventHandlers={{ click: () => setSelectedId(g.lockers[0]._id) }}
               >
                 <Popup className="lm-popup" minWidth={272} maxWidth={272} closeButton>
-                  <LockerPopup
-                    locker={l}
-                    issues={issueList}
-                    onEdit={() => openEdit(l)}
-                    onOpenDetail={() => navigate(`/lockers/${l.code}`)}
+                  <GroupPopup
+                    group={g}
+                    issuesByCode={activeIssuesByCode}
+                    onEdit={(id) => {
+                      const target = lockers.find((l) => l._id === id)
+                      if (target) openEdit(target)
+                    }}
+                    onOpenDetail={(code) => navigate(`/lockers/${encodeURIComponent(code)}`)}
                     onOpenIssues={() => navigate('/issues')}
                   />
                 </Popup>

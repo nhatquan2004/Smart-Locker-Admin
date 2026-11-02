@@ -105,6 +105,15 @@ export default defineLocale(
     'um.notePh': 'Ghi chú nghiệp vụ (VD: Cư dân nhận hàng thường xuyên, ưu tiên tủ size M...)',
     'um.deleteAccount': '🗑 Xóa Tài Khoản',
     'um.saveSync': 'Lưu Thay Đổi & Đồng Bộ',
+    'um.fieldName': 'Họ và tên',
+    'um.fieldApartment': 'Căn hộ',
+    'um.roleReadonly': 'Server không cho đổi vai trò của tài khoản.',
+    'um.selfLockNotice': 'Không thể tự khóa hoặc mở khóa tài khoản của chính mình.',
+    'um.notApprovedNotice': 'Chỉ khóa hoặc mở khóa được tài khoản đã duyệt. Hồ sơ chưa duyệt hoặc bị từ chối cần xử lý ở mục Hồ sơ chờ duyệt.',
+    'um.noChange': 'Chưa có thay đổi nào để lưu.',
+    'um.saveFailed': 'Không lưu được thay đổi: {message}',
+    'um.deleteFailed': 'Không xóa được tài khoản: {message}',
+    'usr.noOrg': 'Chưa chọn doanh nghiệp để gán tài khoản quản lý.',
 
     // Lịch sử người dùng
     'uh.backToDetail': 'Quay lại chi tiết Người dùng',
@@ -117,6 +126,7 @@ export default defineLocale(
     'uh.eventCount_one': '{count} sự kiện',
 
     // Giá trị mặc định / nhãn dựng trong store
+    'store.invalidBuilding': 'Doanh nghiệp chưa hợp lệ nên chưa thể tạo tài khoản quản lý.',
     'store.defaultCompany': 'Tòa Nhà / Khu Quản Lý',
     'store.systemWide': 'Toàn Hệ Thống',
     'store.unitApartment': 'Căn {apartment}',
@@ -124,7 +134,6 @@ export default defineLocale(
     'store.unitSystemAdmin': 'Ban Quản Trị Hệ Thống',
     'store.unitShipperTeam': 'Đội Giao Hàng',
     'store.defaultUserName': 'Người dùng',
-    'store.justNow': 'Vừa xong',
     'store.justCreated': 'Vừa tạo',
     'store.noteApartment': 'Căn hộ {apartment}',
     'store.defaultOrg': 'Đơn Vị',
@@ -239,6 +248,15 @@ export default defineLocale(
     'um.notePh': 'Business notes (e.g. Frequent parcel receiver, prefers size M lockers...)',
     'um.deleteAccount': '🗑 Delete Account',
     'um.saveSync': 'Save Changes & Sync',
+    'um.fieldName': 'Full name',
+    'um.fieldApartment': 'Apartment',
+    'um.roleReadonly': 'The server does not allow changing an account role.',
+    'um.selfLockNotice': 'You cannot lock or unlock your own account.',
+    'um.notApprovedNotice': 'Only approved accounts can be locked or unlocked. Pending or rejected profiles are handled in Pending Approvals.',
+    'um.noChange': 'There are no changes to save.',
+    'um.saveFailed': 'Could not save the changes: {message}',
+    'um.deleteFailed': 'Could not delete the account: {message}',
+    'usr.noOrg': 'Select an organization to assign the manager account to.',
 
     'uh.backToDetail': 'Back to User Detail',
     'uh.eyebrow': 'User history',
@@ -249,6 +267,7 @@ export default defineLocale(
     'uh.eventCount': '{count} events',
     'uh.eventCount_one': '{count} event',
 
+    'store.invalidBuilding': 'The organization is not valid, so the manager account cannot be created yet.',
     'store.defaultCompany': 'Building / Managed Area',
     'store.systemWide': 'Entire System',
     'store.unitApartment': 'Apt {apartment}',
@@ -256,7 +275,6 @@ export default defineLocale(
     'store.unitSystemAdmin': 'System Administration',
     'store.unitShipperTeam': 'Delivery Team',
     'store.defaultUserName': 'User',
-    'store.justNow': 'Just now',
     'store.justCreated': 'Just created',
     'store.noteApartment': 'Apartment {apartment}',
     'store.defaultOrg': 'Unit',

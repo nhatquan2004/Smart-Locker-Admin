@@ -9,11 +9,12 @@ import {
   Zap,
   Users,
   ChevronRight,
-  MapPin,
 } from 'lucide-react'
 import { ActivityItem } from '../../components/Dashboard/ActivityItem'
 import { StatCard } from '../../components/Dashboard/StatCard'
 import { SystemStatusCard } from '../../components/Dashboard/SystemStatusCard'
+import { StationCard } from '../../components/Dashboard/StationCard'
+import { HealthGauge } from '../../components/Dashboard/HealthGauge'
 import { AppButton } from '../../components/common'
 import { getDashboardOverview } from '../../service/dashboard.service'
 import type { TDashboardOverview, TActivityItem } from '../../types/dashboard.type'
@@ -23,11 +24,25 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const { t, language } = useTranslation()
   const [overview, setOverview] = useState<TDashboardOverview | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    getDashboardOverview().then(setOverview)
+    getDashboardOverview()
+      .then((data) => {
+        setOverview(data)
+        setError(null)
+      })
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : ''))
   }, [language])
+
+  if (error !== null && !overview) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <p className="text-[13px] text-red-600 dark:text-red-400 text-center">{t('dash.loadFailed', { message: error })}</p>
+      </div>
+    )
+  }
 
   if (!overview) {
     return (
@@ -44,48 +59,20 @@ export function DashboardPage() {
     `${item.title} ${item.description}`.toLowerCase().includes(search.toLowerCase())
   )
 
-  const mockStationSummaries = [
-    {
-      id: 'station-1',
-      code: 'ST-TC01',
-      name: 'Trạm Tủ A - TechCorp Office',
-      location: 'Tầng 1 - Sảnh Lễ Tân TechCorp',
-      total: 12,
-      avail: 7,
-      status: 'online',
-      org: 'TechCorp Office Building',
-    },
-    {
-      id: 'station-2',
-      code: 'ST-HN01',
-      name: 'Trạm Tủ B - Nhà Trọ Hoàng Nam',
-      location: 'Sân Trước - Cổng Vào Nhà Trọ',
-      total: 10,
-      avail: 6,
-      status: 'online',
-      org: 'Khu Nhà Trọ Hoàng Nam',
-    },
-    {
-      id: 'station-3',
-      code: 'ST-BK01',
-      name: 'Trạm Tủ C - KTX ĐH Bách Khoa',
-      location: 'Tầng 1 - Sảnh Nhà KTX A3',
-      total: 16,
-      avail: 3,
-      status: 'warning',
-      org: 'Ký Túc Xá Đại Học Bách Khoa',
-    },
-    {
-      id: 'station-4',
-      code: 'ST-VH01',
-      name: 'Trạm Tủ D - Vinhomes Central',
-      location: 'Tháp Landmark 1 - Sảnh Cư Dân',
-      total: 10,
-      avail: 10,
-      status: 'online',
-      org: 'Vinhomes Central Park',
-    },
-  ]
+  // Trạm không trực tuyến hiện trước, tối đa 8 trạm; danh sách đầy đủ ở trang Quản lý tủ đồ
+  const statusOrder = { offline: 0, warning: 1, online: 2 } as const
+  const stationSummaries = [...overview.stations]
+    .sort((x, y) => statusOrder[x.status] - statusOrder[y.status] || x.name.localeCompare(y.name))
+    .slice(0, 8)
+  const { online: onlineCount, total: totalCount } = overview.health
+  const allOnline = totalCount > 0 && onlineCount === totalCount
+  // Công suất toàn bộ ngăn của các trạm đang hiển thị
+  const allCells = overview.stations.flatMap((st) => st.cells)
+  const cellTotal = allCells.length
+  const cellAvail = allCells.filter((c) => c.status === 'available').length
+  const cellOccupied = allCells.filter((c) => c.status === 'occupied').length
+  const cellMaintenance = cellTotal - cellAvail - cellOccupied
+  const cellPercent = (n: number) => (cellTotal > 0 ? (n / cellTotal) * 100 : 0)
 
   return (
     <div className="flex flex-col gap-6 max-w-[1250px]">
@@ -99,9 +86,15 @@ export function DashboardPage() {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">{t('dashboard.title')}</h1>
-              <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                {t('dash.systemOk')}
+              <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap ${
+                allOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+              }`}>
+                <span className={`w-2 h-2 rounded-full animate-pulse ${allOnline ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                {totalCount === 0
+                  ? t('dash.healthNoStation')
+                  : allOnline
+                    ? t('dash.systemOk')
+                    : t('dash.healthPartial', { online: onlineCount, total: totalCount })}
               </span>
             </div>
             <p className="text-[12.5px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{t('dashboard.desc')}</p>
@@ -137,7 +130,7 @@ export function DashboardPage() {
           <div>
             <h2 className="setting-title-custom text-[16px] font-bold">{t('dash.clustersTitle')}</h2>
             <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">
-              {t('dash.clustersDesc', { count: mockStationSummaries.length })}
+              {t('dash.clustersDesc', { count: totalCount })}
             </p>
           </div>
           <button
@@ -149,58 +142,40 @@ export function DashboardPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {mockStationSummaries.map((st) => {
-            const usedPercent = Math.round(((st.total - st.avail) / st.total) * 100)
-            return (
-              <div
-                key={st.id}
-                onClick={() => navigate(`/lockers/${st.id}/hardware`)}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-sky-400 dark:hover:border-sky-600 bg-white/50 dark:bg-slate-900/50 transition-all cursor-pointer shadow-2xs flex flex-col justify-between gap-3 group"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <span className="px-2 py-0.5 rounded text-[10.5px] font-mono font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                      {st.code}
-                    </span>
-                    <h3 className="setting-title-custom text-[13.5px] font-bold mt-1.5 truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors" title={st.name}>
-                      {st.name}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[12px] font-semibold shrink-0 pt-0.5">
-                    <span className={`w-2 h-2 rounded-full ${
-                      st.status === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-pulse'
-                    }`} />
-                    <span className={st.status === 'online' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                      {st.status === 'online' ? t('dash.stationOnline') : t('dash.stationWarning')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-[11.5px] setting-desc-custom truncate">
-                  <MapPin className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-                  <span className="truncate">{st.location}</span>
-                </div>
-
-                {/* Capacity Progress Bar */}
-                <div className="flex flex-col gap-1 mt-1">
-                  <div className="flex justify-between text-[11px] font-mono">
-                    <span className="setting-desc-custom font-medium">{t('dash.available')}: <strong className="text-emerald-600 dark:text-emerald-400">{st.avail}/{st.total}</strong></span>
-                    <span className="setting-desc-custom font-bold">{t('dash.usedPercent', { percent: usedPercent })}</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        usedPercent > 80 ? 'bg-amber-500' : 'bg-sky-500'
-                      }`}
-                      style={{ width: `${usedPercent}%` }}
-                    />
-                  </div>
-                </div>
+        {/* Công suất toàn bộ các ngăn: thanh chia theo trạng thái */}
+        {cellTotal > 0 && (
+          <div className="flex flex-col gap-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60 px-4 py-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+              <p className="setting-title-custom text-[13px] font-bold">
+                {t('dash.capSummary', { avail: cellAvail, total: cellTotal })}
+              </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] setting-desc-custom">
+                <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-emerald-300 dark:bg-emerald-500/60" />{t('dash.available')} {cellAvail}</span>
+                <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-sky-500" />{t('dash.capOccupied')} {cellOccupied}</span>
+                <span className="inline-flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-amber-400" />{t('dash.capMaintenance')} {cellMaintenance}</span>
               </div>
-            )
-          })}
-        </div>
+            </div>
+            <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+              <div className="h-full bg-emerald-300 dark:bg-emerald-500/60 transition-all duration-500" style={{ width: `${cellPercent(cellAvail)}%` }} />
+              <div className="h-full bg-sky-500 transition-all duration-500" style={{ width: `${cellPercent(cellOccupied)}%` }} />
+              <div className="h-full bg-amber-400 transition-all duration-500" style={{ width: `${cellPercent(cellMaintenance)}%` }} />
+            </div>
+          </div>
+        )}
+
+        {stationSummaries.length === 0 ? (
+          <p className="py-6 text-center text-[13px] setting-desc-custom">{t('dash.stationsEmpty')}</p>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-4">
+            {stationSummaries.map((st) => (
+              <StationCard
+                key={st.id}
+                station={st}
+                onOpen={() => navigate(`/lockers/${encodeURIComponent(st.id)}`)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── BOTTOM 2 COLUMNS (SYSTEM HEALTH + RECENT ACTIVITIES) ── */}
@@ -216,16 +191,15 @@ export function DashboardPage() {
                 <h2 className="setting-title-custom text-[16px] font-bold">{t('dash.infraTitle')}</h2>
                 <p className="setting-desc-custom text-[12px] mt-0.5 font-medium">{t('dash.infraDesc')}</p>
               </div>
-              <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{t('dash.available100')}</span>
-              </div>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {overview.statuses.map((status: any) => (
-                <SystemStatusCard key={status.id} status={status} />
-              ))}
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <HealthGauge online={onlineCount} total={totalCount} />
+              <div className="flex-1 min-w-0 flex flex-col gap-2.5">
+                {overview.statuses.map((status) => (
+                  <SystemStatusCard key={status.id} status={status} />
+                ))}
+              </div>
             </div>
           </div>
 

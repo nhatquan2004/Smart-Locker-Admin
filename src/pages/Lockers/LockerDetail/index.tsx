@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getLockerStationById, updateCompartmentStatus } from '../../../service/lockerStation.service'
-import { logActivity } from '../../../service/activity.service'
-import { useAuthStore } from '../../../store/useAuthStore'
+import { getLockerStationById, setBoxStatus, unlockBox } from '../../../service/lockerStation.service'
 import type { TCompartment, TLockerStation } from '../../../types/lockerStation.type'
 import { AppButton } from '../../../components/common'
 import { useTranslation } from '../../../context/LanguageContext'
 import type { TranslationKey } from '../../../i18n/translations'
 import { useToast } from '../../../context/ToastContext'
 import { AlertTriangle, CheckCircle2, Lock, Wrench, X } from 'lucide-react'
+
+// Server yêu cầu lý do từ 5 đến 200 ký tự khi mở khóa hoặc đổi trạng thái ngăn
+const REASON_MIN = 5
+const REASON_MAX = 200
 
 const sizeKeys: Record<string, TranslationKey> = {
   small: 'ld.size.small',
@@ -21,7 +23,6 @@ export function LockerDetailPage() {
   const { lockerId } = useParams()
   const { t } = useTranslation()
   const toast = useToast()
-  const { user: loggedUser } = useAuthStore()
 
   const [station, setStation] = useState<TLockerStation | null>(null)
   const [selectedCompartment, setSelectedCompartment] = useState<TCompartment | null>(null)
@@ -39,25 +40,43 @@ export function LockerDetailPage() {
   // Restore Confirmation Modal State
   const [showRestoreModal, setShowRestoreModal] = useState(false)
   const [restoreTargetComp, setRestoreTargetComp] = useState<{ id: string; code: string } | null>(null)
+  const [restoreReason, setRestoreReason] = useState('')
+  const [isChangingStatus, setIsChangingStatus] = useState(false)
+
+  const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    getLockerStationById(lockerId || 'station-001').then((res) => {
-      if (res) {
-        setStation(res)
-        if (res.compartments.length > 0) {
-          setSelectedCompartment(res.compartments[0])
+    getLockerStationById(lockerId ?? '')
+      .then((res) => {
+        if (res) {
+          setStation(res)
+          if (res.compartments.length > 0) {
+            setSelectedCompartment(res.compartments[0])
+          }
+        } else {
+          setNotFound(true)
         }
-      }
-    })
+      })
+      .catch(() => setNotFound(true))
   }, [lockerId])
+
+  // Tải lại trạm sau khi đổi trạng thái ngăn, giữ nguyên ngăn đang chọn
+  async function reloadStation(boxNumber?: number) {
+    const fresh = await getLockerStationById(lockerId ?? '')
+    if (!fresh) return
+    setStation(fresh)
+    setSelectedCompartment(
+      fresh.compartments.find((c) => c.boxNumber === boxNumber) ?? fresh.compartments[0] ?? null,
+    )
+  }
 
   function handleOpenUnlockModal() {
     setUnlockReason('')
     setShowUnlockModal(true)
   }
 
-  function handleConfirmRemoteUnlock() {
-    if (!unlockReason.trim() || !selectedCompartment) return
+  async function handleConfirmRemoteUnlock() {
+    if (!station || !selectedCompartment?.boxNumber || unlockReason.trim().length < REASON_MIN) return
     const compCode = selectedCompartment.code
     const reason = unlockReason.trim()
 
@@ -65,12 +84,17 @@ export function LockerDetailPage() {
     setShowUnlockModal(false)
     setUnlockMessage('')
 
-    setTimeout(() => {
-      setIsUnlocking(false)
-      setUnlockMessage(`✓ ${t('lockers.unlockLocker')} ${compCode} ${t('common.success')} (RS485 ACK)! [${t('ld.reasonTag', { reason })}]`)
+    try {
+      await unlockBox(station.code, selectedCompartment.boxNumber, reason)
+      setUnlockMessage(t('ld.unlockSent', { code: compCode }))
       toast.success(t('ld.unlockedToast', { code: compCode, reason }))
-      setTimeout(() => setUnlockMessage(''), 4000)
-    }, 600)
+      window.setTimeout(() => setUnlockMessage(''), 4000)
+    } catch (err) {
+      // Trạm ngoại tuyến, vừa mở gần đây hoặc không gửi được lệnh: hiển thị đúng lý do từ server
+      toast.error(t('ld.unlockFailed', { message: err instanceof Error ? err.message : '' }))
+    } finally {
+      setIsUnlocking(false)
+    }
   }
 
   function handleOpenMaintenanceModal() {
@@ -78,106 +102,62 @@ export function LockerDetailPage() {
     setShowMaintenanceModal(true)
   }
 
-  function handleConfirmMaintenance() {
-    if (!maintenanceReason.trim() || !selectedCompartment || !station) return
-    const compId = selectedCompartment.id
-    const compCode = selectedCompartment.code
-    const reason = maintenanceReason.trim()
+  async function handleConfirmMaintenance() {
+    if (!station || !selectedCompartment?.boxNumber || maintenanceReason.trim().length < REASON_MIN) return
+    const { boxNumber, code: compCode } = selectedCompartment
 
-    updateCompartmentStatus(station.id, compId, 'maintenance', reason).then(() => {
-      const updatedCompartments = station.compartments.map((comp) => {
-        if (comp.id === compId) {
-          return {
-            ...comp,
-            status: 'maintenance' as const,
-            note: reason,
-          }
-        }
-        return comp
-      })
-
-      setStation({ ...station, compartments: updatedCompartments })
-      setSelectedCompartment({
-        ...selectedCompartment,
-        status: 'maintenance',
-        note: reason,
-      })
+    setIsChangingStatus(true)
+    try {
+      await setBoxStatus(station.code, boxNumber, 'MAINTENANCE', maintenanceReason.trim())
       setShowMaintenanceModal(false)
-
-      logActivity({
-        actorName: loggedUser?.fullName || 'Admin',
-        actorRole: 'admin',
-        title: t('ld.logMaintTitle'),
-        description: t('ld.logMaintDesc', { code: compCode, station: station.name, reason }),
-        targetId: compId,
-        targetType: 'locker',
-        targetLabel: t('ld.logTarget', { code: compCode }),
-        category: 'hardware',
-        status: 'warning',
-        orgId: station.orgId,
-        orgName: station.orgName,
-      })
-
+      await reloadStation(boxNumber)
       toast.success(t('ld.maintToast', { code: compCode }))
-    })
+    } catch (err) {
+      toast.error(t('ld.statusFailed', { message: err instanceof Error ? err.message : '' }))
+    } finally {
+      setIsChangingStatus(false)
+    }
   }
 
   function handleRestoreCompartment(compId: string, compCode: string) {
     // Mở modal xác nhận thay vì window.confirm() — nhất quán với Bảo trì Modal
     setRestoreTargetComp({ id: compId, code: compCode })
+    setRestoreReason(t('ld.restoreDefaultReason'))
     setShowRestoreModal(true)
   }
 
-  function handleConfirmRestore() {
-    if (!restoreTargetComp || !station) return
-    const { id: compId, code: compCode } = restoreTargetComp
+  async function handleConfirmRestore() {
+    if (!restoreTargetComp || !station || restoreReason.trim().length < REASON_MIN) return
+    const comp = station.compartments.find((c) => c.id === restoreTargetComp.id)
+    if (!comp?.boxNumber) return
 
-    updateCompartmentStatus(station.id, compId, 'available').then(() => {
-      const updatedCompartments = station.compartments.map((comp) => {
-        if (comp.id === compId) {
-          return {
-            ...comp,
-            status: 'available' as const,
-            note: undefined,
-          }
-        }
-        return comp
-      })
-
-      setStation({ ...station, compartments: updatedCompartments })
-      if (selectedCompartment?.id === compId) {
-        setSelectedCompartment({
-          ...selectedCompartment,
-          status: 'available',
-          note: undefined,
-        })
-      }
-
+    setIsChangingStatus(true)
+    try {
+      await setBoxStatus(station.code, comp.boxNumber, 'AVAILABLE', restoreReason.trim())
       setShowRestoreModal(false)
       setRestoreTargetComp(null)
-
-      logActivity({
-        actorName: loggedUser?.fullName || 'Admin',
-        actorRole: 'admin',
-        title: t('ld.logRestoreTitle'),
-        description: t('ld.logRestoreDesc', { code: compCode, station: station.name }),
-        targetId: compId,
-        targetType: 'locker',
-        targetLabel: t('ld.logTarget', { code: compCode }),
-        category: 'hardware',
-        status: 'success',
-        orgId: station.orgId,
-        orgName: station.orgName,
-      })
-
-      toast.success(t('ld.restoreToast', { code: compCode }))
-    })
+      await reloadStation(comp.boxNumber)
+      toast.success(t('ld.restoreToast', { code: comp.code }))
+    } catch (err) {
+      toast.error(t('ld.statusFailed', { message: err instanceof Error ? err.message : '' }))
+    } finally {
+      setIsChangingStatus(false)
+    }
   }
 
   if (!station) {
     return (
       <div className="p-8 text-center text-slate-500">
-        <p>{t('common.loading')}</p>
+        <p>{notFound ? t('ld.notFound', { code: lockerId ?? '' }) : t('common.loading')}</p>
+        {notFound && (
+          <button
+            type="button"
+            onClick={() => navigate('/lockers')}
+            className="mt-3 text-[12px] font-bold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+          >
+            ← {t('common.back')}
+          </button>
+        )}
       </div>
     )
   }
@@ -252,7 +232,9 @@ export function LockerDetailPage() {
             <div className="p-5 rounded-2xl bg-slate-900 dark:bg-slate-950 border-4 border-slate-800 shadow-inner flex flex-col gap-4">
               <div className="flex items-center justify-between text-white text-[11px] font-mono px-2">
                 <span className="font-bold tracking-wider text-slate-300">{t('ld.masterPanel')}</span>
-                <span className="text-emerald-400 font-bold">MCU: {station.masterController.temperatureCelsius}°C · ONLINE</span>
+                <span className={`font-bold ${station.status === 'online' ? 'text-emerald-400' : station.status === 'offline' ? 'text-red-400' : 'text-amber-400'}`}>
+                  {t(station.status === 'online' ? 'lk.statusOnline' : station.status === 'offline' ? 'lk.statusOffline' : 'lk.statusWarning')} · {station.lastHeartbeat}
+                </span>
               </div>
 
               {/* Locker Doors Rack Grid */}
@@ -296,7 +278,7 @@ export function LockerDetailPage() {
 
                       {/* Lock status indicator at bottom */}
                       <div className="text-[9px] font-mono text-slate-300">
-                        {comp.hardwareState.relayLock === 'LOCKED' ? '🔒 Locked' : '🔓 Unlocked'}
+                        {comp.hardwareState.doorSwitch === 'DOOR_CLOSED' ? '🔒 ' + t('ld.doorClosed') : '🔓 ' + t('ld.doorOpen')}
                       </div>
                     </button>
                   )
@@ -338,8 +320,8 @@ export function LockerDetailPage() {
                   <p className="text-[15px] font-bold text-slate-900 dark:text-white">{selectedCompartment.currentShipment.recipientName}</p>
                   <p className="text-[12px] font-mono text-slate-700 dark:text-slate-300 font-semibold">{t('ld.phone', { phone: selectedCompartment.currentShipment.recipientPhone })}</p>
                   <div className="pt-2 border-t border-sky-200/60 dark:border-sky-800/60 flex items-center justify-between text-[12px]">
-                    <span className="setting-desc-custom">OTP:</span>
-                    <span className="font-mono font-bold text-sky-800 dark:text-sky-300 text-[14px]">{selectedCompartment.currentShipment.otpCode || '----'}</span>
+                    <span className="setting-desc-custom">{t('ld.trackingCode')}</span>
+                    <span className="font-mono font-bold text-sky-800 dark:text-sky-300">{selectedCompartment.currentShipment.shipmentCode}</span>
                   </div>
                 </div>
               ) : (
@@ -353,9 +335,9 @@ export function LockerDetailPage() {
                 <h4 className="text-[12px] font-mono font-bold setting-desc-custom uppercase">{t('lockers.hardwareSensors')}</h4>
                 <div className="grid grid-cols-2 gap-2 text-[12px]">
                   <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
-                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.relayState')}</span>
-                    <span className={`font-bold font-mono ${selectedCompartment.hardwareState.relayLock === 'LOCKED' ? 'setting-title-custom' : 'text-amber-500'}`}>
-                      {selectedCompartment.hardwareState.relayLock}
+                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.doorStatus')}</span>
+                    <span className={`font-bold font-mono ${selectedCompartment.hardwareState.doorSwitch === 'DOOR_OPEN' ? 'text-amber-500' : 'setting-title-custom'}`}>
+                      {selectedCompartment.hardwareState.doorSwitch}
                     </span>
                   </div>
 
@@ -363,20 +345,6 @@ export function LockerDetailPage() {
                     <span className="text-[10px] opacity-70 font-mono">{t('lockers.irSensor')}</span>
                     <span className="font-bold font-mono setting-title-custom">
                       {selectedCompartment.hardwareState.irObjectSensor}
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
-                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.doorStatus')}</span>
-                    <span className="font-bold font-mono setting-title-custom">
-                      {selectedCompartment.hardwareState.doorSwitch}
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl setting-input-custom flex flex-col gap-1">
-                    <span className="text-[10px] opacity-70 font-mono">{t('lockers.battery')}</span>
-                    <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                      {selectedCompartment.hardwareState.voltage}
                     </span>
                   </div>
                 </div>
@@ -402,7 +370,7 @@ export function LockerDetailPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <AppButton
                       className="h-11 text-[12.5px]"
-                      disabled={isUnlocking}
+                      disabled={isUnlocking || station.status === 'offline'}
                       onClick={handleOpenUnlockModal}
                     >
                       {isUnlocking ? t('common.saving') : `🔓 ${t('lockers.unlockLocker')}`}
@@ -410,12 +378,19 @@ export function LockerDetailPage() {
                     <button
                       type="button"
                       onClick={handleOpenMaintenanceModal}
-                      className="h-11 px-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-600 hover:text-white transition-all text-[12.5px] font-bold cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-95"
+                      disabled={selectedCompartment.status === 'occupied'}
+                      className="h-11 px-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-600 hover:text-white transition-all text-[12.5px] font-bold cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 active:scale-95"
                     >
                       <Wrench className="w-4 h-4" />
                       <span>{t('ld.setMaintenance')}</span>
                     </button>
                   </div>
+                )}
+                {station.status === 'offline' && (
+                  <p className="text-[11.5px] text-amber-700 dark:text-amber-300 text-center">{t('ld.offlineNoUnlock')}</p>
+                )}
+                {selectedCompartment.status === 'occupied' && (
+                  <p className="text-[11.5px] text-slate-500 dark:text-slate-400 text-center">{t('ld.occupiedNoMaint')}</p>
                 )}
               </div>
             </div>
@@ -472,6 +447,7 @@ export function LockerDetailPage() {
                 required
                 rows={3}
                 value={unlockReason}
+                maxLength={REASON_MAX}
                 onChange={(e) => setUnlockReason(e.target.value)}
                 placeholder={t('ld.unlockReasonPlaceholder')}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
@@ -490,10 +466,10 @@ export function LockerDetailPage() {
 
               <button
                 type="button"
-                disabled={!unlockReason.trim() || isUnlocking}
+                disabled={unlockReason.trim().length < REASON_MIN || isUnlocking}
                 onClick={handleConfirmRemoteUnlock}
                 className={`h-10 px-4 rounded-xl text-[12.5px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${
-                  !unlockReason.trim() || isUnlocking
+                  unlockReason.trim().length < REASON_MIN || isUnlocking
                     ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-75'
                     : 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer active:scale-95'
                 }`}
@@ -551,6 +527,7 @@ export function LockerDetailPage() {
                 required
                 rows={3}
                 value={maintenanceReason}
+                maxLength={REASON_MAX}
                 onChange={(e) => setMaintenanceReason(e.target.value)}
                 placeholder={t('ld.maintReasonPlaceholder')}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors"
@@ -569,10 +546,10 @@ export function LockerDetailPage() {
 
               <button
                 type="button"
-                disabled={!maintenanceReason.trim()}
+                disabled={maintenanceReason.trim().length < REASON_MIN || isChangingStatus}
                 onClick={handleConfirmMaintenance}
                 className={`h-10 px-4 rounded-xl text-[12.5px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${
-                  !maintenanceReason.trim()
+                  maintenanceReason.trim().length < REASON_MIN || isChangingStatus
                     ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-75'
                     : 'bg-amber-600 hover:bg-amber-700 text-white cursor-pointer active:scale-95'
                 }`}
@@ -620,6 +597,19 @@ export function LockerDetailPage() {
               ✅ {t('ld.restoreQ1')} <strong>{restoreTargetComp.code}</strong> {t('ld.restoreQ2')} <strong>{t('ld.restoreQ3')}</strong>{t('ld.restoreQ4')}
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">
+                {t('ld.restoreReason')} <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={2}
+                value={restoreReason}
+                maxLength={REASON_MAX}
+                onChange={(e) => setRestoreReason(e.target.value)}
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
@@ -632,7 +622,8 @@ export function LockerDetailPage() {
               <button
                 type="button"
                 onClick={handleConfirmRestore}
-                className="h-10 px-4 rounded-xl text-[12.5px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+                disabled={restoreReason.trim().length < REASON_MIN || isChangingStatus}
+                className="h-10 px-4 rounded-xl text-[12.5px] font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white cursor-pointer active:scale-95 transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{t('ld.confirmRestore')}</span>

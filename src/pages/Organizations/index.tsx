@@ -4,7 +4,8 @@ import { AppButton } from '../../components/common'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
 import { createOrganization, deleteOrganization, getOrganizations } from '../../service/organization.service'
 import { createUser } from '../../service/user.service'
-import { createLockerStation } from '../../service/lockerStation.service'
+import { geocodeAddress } from '../../utils/geocode'
+import { AddLockerModal } from '../../components/Lockers/AddLockerModal'
 import type { TCreateOrgPayload, TOrganization, TOrgType } from '../../types/organization.type'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useTranslation } from '../../context/LanguageContext'
@@ -39,11 +40,12 @@ export function OrganizationsPage() {
   const [formCode, setFormCode] = useState('')
   const [formType, setFormType] = useState<TOrgType>('enterprise')
   const [formAddress, setFormAddress] = useState('')
-  const [formSizeS, setFormSizeS] = useState(4)
-  const [formSizeM, setFormSizeM] = useState(4)
-  const [formSizeL, setFormSizeL] = useState(2)
   const [formAdminName, setFormAdminName] = useState('')
   const [formAdminEmail, setFormAdminEmail] = useState('')
+  const [formAdminPhone, setFormAdminPhone] = useState('')
+  const [formAdminPassword, setFormAdminPassword] = useState('')
+  // Doanh nghiệp vừa tạo xong, mở luôn hộp thoại thêm trạm tủ đầu tiên
+  const [stationOrg, setStationOrg] = useState<TOrganization | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -59,62 +61,70 @@ export function OrganizationsPage() {
     })
   }, [organizations, search, typeFilter])
 
-  function handleCreateOrg(e: React.FormEvent) {
+  async function handleCreateOrg(e: React.FormEvent) {
     e.preventDefault()
-    if (!formName || !formCode) return
+    if (!formName || !formCode || !formAddress.trim()) return
 
     setIsSubmitting(true)
     const adminEmail = formAdminEmail || `admin.${formCode.toLowerCase()}@smartlocker.vn`
     const adminName = formAdminName || `Admin ${formName}`
-    const totalBoxes = formSizeS + formSizeM + formSizeL
+
+    // Tìm tọa độ từ địa chỉ; không tìm được vẫn tạo doanh nghiệp bình thường
+    const coords = await geocodeAddress(formAddress).catch(() => null)
 
     const payload: TCreateOrgPayload = {
       name: formName,
       code: formCode,
       type: formType,
-      address: formAddress || t('org.defaultAddress'),
-      totalLockers: totalBoxes,
-      adminName: adminName,
-      adminEmail: adminEmail,
+      address: formAddress.trim(),
+      latitude: coords?.lat,
+      longitude: coords?.lng,
+      adminName,
+      adminEmail,
     }
 
-    createOrganization(payload).then((newOrg) => {
-      setOrganizations((prev) => [newOrg, ...prev])
-
-      createLockerStation({
-        name: t('org.stationName', { name: newOrg.name }),
-        code: `ST-${newOrg.code}`,
-        orgId: newOrg.id,
-        orgName: newOrg.name,
-        location: formAddress || t('org.defaultStationLocation'),
-        sizeS: formSizeS,
-        sizeM: formSizeM,
-        sizeL: formSizeL,
-      })
-
-      createUser({
-        fullName: adminName,
-        phone: '090' + Math.floor(1000000 + Math.random() * 9000000),
-        email: adminEmail,
-        role: 'org_admin',
-        orgId: newOrg.id,
-        companyName: newOrg.name,
-        unitNumber: t('org.adminUnitNumber'),
-      })
-
+    let newOrg: TOrganization
+    try {
+      newOrg = await createOrganization(payload)
+    } catch (err) {
+      toast.error(t('org.createFailed', { message: err instanceof Error ? err.message : '' }))
       setIsSubmitting(false)
-      setIsCreateModalOpen(false)
-      toast.success(t('org.createdToast', { name: newOrg.name }))
+      return
+    }
 
-      setFormName('')
-      setFormCode('')
-      setFormAddress('')
-      setFormAdminName('')
-      setFormAdminEmail('')
-      setFormSizeS(4)
-      setFormSizeM(4)
-      setFormSizeL(2)
-    })
+    setOrganizations((prev) => [newOrg, ...prev])
+
+    // Tài khoản quản lý chỉ tạo khi có số điện thoại thật
+    if (formAdminPhone.trim()) {
+      try {
+        await createUser({
+          fullName: adminName,
+          phone: formAdminPhone.trim(),
+          email: adminEmail,
+          password: formAdminPassword || undefined,
+          role: 'org_admin',
+          orgId: newOrg.id,
+          companyName: newOrg.name,
+          unitNumber: t('org.adminUnitNumber'),
+        })
+      } catch (err) {
+        toast.error(t('org.adminCreateFailed', { message: err instanceof Error ? err.message : '' }))
+      }
+    }
+
+    setIsSubmitting(false)
+    setIsCreateModalOpen(false)
+    toast.success(t('org.createdToast', { name: newOrg.name }))
+    if (!coords) toast.info(t('org.noCoordsToast'))
+
+    setFormName('')
+    setFormCode('')
+    setFormAddress('')
+    setFormAdminName('')
+    setFormAdminEmail('')
+    setFormAdminPhone('')
+    setFormAdminPassword('')
+    setStationOrg(newOrg)
   }
 
   function handleOpenDeleteModal(org: TOrganization) {
@@ -349,7 +359,9 @@ export function OrganizationsPage() {
                   <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldAddress')}</label>
                   <input
                     type="text"
+                    required
                     placeholder={t('org.addressPlaceholder')}
+                    title={t('org.addressRequired')}
                     value={formAddress}
                     onChange={(e) => setFormAddress(e.target.value)}
                     className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
@@ -375,46 +387,21 @@ export function OrganizationsPage() {
                     onChange={(e) => setFormAdminEmail(e.target.value)}
                     className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
                   />
-                </div>
-              </div>
-
-              {/* Compartments sizing breakdown */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
-                <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase flex items-center justify-between">
-                  <span>{t('org.sizesTitle')}</span>
-                  <span className="text-sky-600 dark:text-sky-400 font-extrabold">{t('org.sizesTotal', { count: formSizeS + formSizeM + formSizeL })}</span>
-                </h4>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">{t('org.sizeS')}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={formSizeS}
-                      onChange={(e) => setFormSizeS(Math.max(0, Number(e.target.value)))}
-                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold text-center bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">{t('org.sizeM')}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={formSizeM}
-                      onChange={(e) => setFormSizeM(Math.max(0, Number(e.target.value)))}
-                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold text-center bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 font-semibold">{t('org.sizeL')}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={formSizeL}
-                      onChange={(e) => setFormSizeL(Math.max(0, Number(e.target.value)))}
-                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold text-center bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                    />
-                  </div>
+                  <input
+                    type="tel"
+                    placeholder={t('org.adminPhonePh')}
+                    value={formAdminPhone}
+                    onChange={(e) => setFormAdminPhone(e.target.value)}
+                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder={t('org.adminPasswordPh')}
+                    value={formAdminPassword}
+                    onChange={(e) => setFormAdminPassword(e.target.value)}
+                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
                 </div>
               </div>
 
@@ -426,13 +413,22 @@ export function OrganizationsPage() {
                 >
                   {t('common.cancel')}
                 </button>
-                <AppButton type="submit" disabled={isSubmitting || !formName || !formCode}>
-                  {isSubmitting ? t('common.saving') : t('org.createBtn')}
+                <AppButton type="submit" disabled={isSubmitting || !formName || !formCode || !formAddress.trim()}>
+                  {isSubmitting ? t('org.locating') : t('org.createBtn')}
                 </AppButton>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {/* Thêm trạm tủ đầu tiên ngay sau khi tạo doanh nghiệp */}
+      {stationOrg && (
+        <AddLockerModal
+          org={stationOrg}
+          onClose={() => setStationOrg(null)}
+          onCreated={() => getOrganizations().then(setOrganizations)}
+        />
       )}
 
       {/* 2-Step Confirmation Delete Modal */}

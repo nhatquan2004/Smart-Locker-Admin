@@ -9,6 +9,8 @@ export type TIssueTimeline = {
   time: string
   actor: string
   note: string
+  // Trạng thái phiếu được chuyển tới ở mốc này (mốc "Tạo phiếu" là pending)
+  status?: TIssueStatus
 }
 
 export type TIssueItem = {

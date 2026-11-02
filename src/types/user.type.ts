@@ -21,12 +21,16 @@ export type TUser = {
   lastActive: string
   totalShipments: number
   note?: string
+  // Trạng thái duyệt gốc của server, dùng để biết có khóa/mở khóa được hay không
+  approvalStatus?: 'ACTIVE' | 'PENDING' | 'REJECTED' | 'SUSPENDED'
+  apartment?: string
 }
 
 export type TCreateUserPayload = {
   fullName: string
   phone: string
   email: string
+  password?: string
   role: TUserRole
   orgId: string
   companyName: string

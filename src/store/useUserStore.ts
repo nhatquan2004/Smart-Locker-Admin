@@ -3,6 +3,7 @@ import type { TUser, TCreateUserPayload, TUserStatItem, TUserRole, TUserStatus }
 import type { TResident, TCreateResidentPayload } from '../types/resident.type'
 import { apiClient } from '../service/api.client'
 import { tNow } from '../i18n/translate'
+import { formatDateTime } from '../i18n/format'
 
 /**
  * USER & RESIDENT ZUSTAND STORE — KẾT NỐI API THẬT (/users)
@@ -14,6 +15,8 @@ import { tNow } from '../i18n/translate'
  * -------------------------------------------------------------------------
  */
 
+export type TApprovalStatus = 'ACTIVE' | 'PENDING' | 'REJECTED' | 'SUSPENDED'
+
 export interface TBackendUser {
   _id: string
   name: string
@@ -23,8 +26,11 @@ export interface TBackendUser {
   buildingId?: string
   apartment?: string
   carrierName?: string
-  approvalStatus: 'ACTIVE' | 'PENDING' | 'REJECTED'
+  approvalStatus: TApprovalStatus
   note?: string
+  lastActiveAt?: string
+  // Chỉ có khi gọi GET /users?include=packageCount
+  packageCount?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -43,7 +49,9 @@ function mapBackendStatus(status: string): TUserStatus {
   switch (status) {
     case 'ACTIVE': return 'active'
     case 'PENDING': return 'inactive'
-    case 'REJECTED': return 'blocked'
+    // Hồ sơ bị từ chối không đăng nhập được nhưng khác tài khoản bị tạm khóa
+    case 'REJECTED': return 'inactive'
+    case 'SUSPENDED': return 'blocked'
     default: return 'active'
   }
 }
@@ -75,9 +83,12 @@ function mapBackendUserToTUser(u: TBackendUser): TUser {
     unitNumber,
     status: mapBackendStatus(u.approvalStatus || 'ACTIVE'),
     createdAt: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '2026-01-01',
-    lastActive: tNow('store.justNow'),
-    totalShipments: 0,
-    note: u.note || (u.apartment ? tNow('store.noteApartment', { apartment: u.apartment }) : undefined),
+    lastActive: u.lastActiveAt ? formatDateTime(u.lastActiveAt) : '—',
+    totalShipments: u.packageCount ?? 0,
+    // Giữ đúng ghi chú của server để khi sửa không ghi nhầm chữ mặc định lên server
+    note: u.note,
+    approvalStatus: u.approvalStatus,
+    apartment: u.apartment,
   }
 }
 
@@ -133,7 +144,7 @@ export const useUserStore = create<TUserStore>((set, get) => ({
   fetchUsers: async (companyId?: string) => {
     set({ isLoading: true })
     try {
-      const res = await apiClient.get<TBackendUser[]>('/users')
+      const res = await apiClient.get<TBackendUser[]>('/users?include=packageCount')
       const backendUsers = Array.isArray(res.data) ? res.data : []
       const mapped = backendUsers.map(mapBackendUserToTUser)
 
@@ -194,26 +205,17 @@ export const useUserStore = create<TUserStore>((set, get) => ({
   },
 
   createUser: async (payload: TCreateUserPayload) => {
-    let validBuildingId = payload.orgId
-    const isObjectId = /^[0-9a-fA-F]{24}$/.test(validBuildingId || '')
-    if (!isObjectId) {
-      try {
-        const bRes = await apiClient.get<any[]>('/buildings')
-        if (bRes.data && bRes.data.length > 0) {
-          validBuildingId = bRes.data[0]._id || bRes.data[0].id
-        }
-      } catch {
-        // fallback
-      }
-    }
-
     if (payload.role === 'org_admin') {
+      // Không tự gán sang doanh nghiệp khác: thiếu buildingId hợp lệ thì dừng lại
+      if (!/^[0-9a-fA-F]{24}$/.test(payload.orgId || '')) {
+        throw new Error(tNow('store.invalidBuilding'))
+      }
       const res = await apiClient.post<TBackendUser>('/users/building-admin', {
         name: payload.fullName,
         email: payload.email,
         phone: payload.phone,
-        password: 'AdminPassword@2026',
-        buildingId: validBuildingId,
+        password: payload.password || 'AdminPassword@2026',
+        buildingId: payload.orgId,
       })
       const mapped = mapBackendUserToTUser(res.data)
       set((state) => ({ users: [mapped, ...state.users] }))
@@ -269,25 +271,29 @@ export const useUserStore = create<TUserStore>((set, get) => ({
   },
 
   updateUser: async (idOrPhone: string, updates: Partial<TUser> & { orgName?: string }) => {
+    const target = get().users.find((u) => u.id === idOrPhone || u.phone === idOrPhone)
+    const targetId = target?.id ?? idOrPhone
+
+    // Server chỉ cho sửa tên, căn hộ, ghi chú và khóa/mở khóa (không đổi vai trò, email, SĐT)
+    const body: Record<string, unknown> = {}
+    if (updates.fullName !== undefined) body.name = updates.fullName
+    if (updates.apartment !== undefined) body.apartment = updates.apartment
+    if (updates.note !== undefined) body.note = updates.note
+    if (updates.status === 'blocked') body.approvalStatus = 'SUSPENDED'
+    if (updates.status === 'active') body.approvalStatus = 'ACTIVE'
+
+    // Lỗi từ server (không đủ quyền, tự khóa chính mình...) được ném ra cho giao diện báo
+    const res = await apiClient.patch<TBackendUser>(`/users/${targetId}`, body)
+    const saved = mapBackendUserToTUser(res.data)
+
     set((state) => {
-      const nextUsers = state.users.map((u) => {
-        if (u.id === idOrPhone || u.phone === idOrPhone) {
-          return {
-            ...u,
-            ...(updates.fullName ? { fullName: updates.fullName } : {}),
-            ...(updates.phone ? { phone: updates.phone } : {}),
-            ...(updates.email ? { email: updates.email } : {}),
-            ...(updates.status ? { status: updates.status } : {}),
-            ...(updates.role ? { role: updates.role } : {}),
-            ...(updates.unitNumber ? { unitNumber: updates.unitNumber } : {}),
-            ...(updates.note !== undefined ? { note: updates.note } : {}),
-            ...(updates.companyName ? { companyName: updates.companyName } : {}),
-            ...(updates.orgName ? { companyName: updates.orgName } : {}),
-          }
-        }
-        return u
-      })
-      return { users: nextUsers }
+      const exists = state.users.some((u) => u.id === saved.id)
+      return {
+        // Người dùng mở thẳng từ đường dẫn chưa có trong danh sách thì thêm vào để giao diện đọc lại được
+        users: exists
+          ? state.users.map((u) => (u.id === saved.id ? { ...saved, totalShipments: u.totalShipments } : u))
+          : [saved, ...state.users],
+      }
     })
     return true
   },
@@ -296,11 +302,8 @@ export const useUserStore = create<TUserStore>((set, get) => ({
     const targetUser = get().users.find((u) => u.id === idOrPhone || u.phone === idOrPhone)
     const targetId = targetUser ? targetUser.id : idOrPhone
 
-    try {
-      await apiClient.delete(`/users/${targetId}`)
-    } catch (err) {
-      console.warn('Lỗi gọi DELETE /users/:id:', err)
-    }
+    // Lỗi từ server (ví dụ không đủ quyền) được ném ra, không xóa giả trong danh sách
+    await apiClient.delete(`/users/${targetId}`)
 
     set((state) => ({
       users: state.users.filter((u) => u.id !== targetId && u.phone !== idOrPhone),

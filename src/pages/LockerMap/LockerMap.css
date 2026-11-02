@@ -11,6 +11,11 @@
   cursor: crosshair;
 }
 
+/* Làm dịu màu nền bản đồ để các tủ nổi bật hơn */
+.lm-map .leaflet-tile-pane {
+  filter: saturate(0.65) contrast(0.96) brightness(1.03);
+}
+
 /* OSM không có tile tối: đảo màu lớp nền ở dark mode (marker và popup không bị ảnh hưởng) */
 .dark .lm-map .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.9) saturate(0.7);
@@ -53,15 +58,93 @@
   transform: scale(1.14);
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--pin) 28%, transparent);
 }
-.lm-pin__alert {
+/* ── Tủ locker 3D dựng đứng trên bản đồ ── */
+.lm-cab {
+  position: relative;
+  width: 44px;
+  height: 58px;
+  cursor: pointer;
+}
+.lm-cab__svg {
+  display: block;
+  overflow: visible;
+  transform-origin: 22px 50px;
+  transition: transform 0.18s ease;
+}
+.lm-cab:hover .lm-cab__svg {
+  transform: translateY(-3px);
+}
+.lm-cab.is-selected .lm-cab__svg {
+  transform: translateY(-4px) scale(1.12);
+}
+.lm-cab__shadow {
+  fill: rgba(15, 23, 42, 0.28);
+  filter: blur(1.5px);
+}
+.lm-cab__front { fill: var(--pin); }
+.lm-cab__side { fill: color-mix(in srgb, var(--pin) 62%, #0f172a); }
+.lm-cab__top { fill: color-mix(in srgb, var(--pin) 55%, #fff); }
+.lm-cab__front,
+.lm-cab__side,
+.lm-cab__top {
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 1;
+}
+.lm-cab__doors path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.lm-cab__handles circle { fill: rgba(255, 255, 255, 0.9); }
+.lm-cab__vents path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.28);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+/* Vòng sáng dưới chân tủ khi được chọn */
+.lm-cab__ring {
   position: absolute;
-  top: -2px;
-  right: -1px;
-  width: 14px;
-  height: 14px;
+  left: 2px;
+  top: 42px;
+  width: 40px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--pin);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.lm-cab.is-selected .lm-cab__ring {
+  opacity: 0.75;
+  transform: scale(1);
+}
+.lm-cab__alert {
+  position: absolute;
+  top: 0;
+  right: 1px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
   border: 2px solid #fff;
   background: #e11d48;
+}
+/* Số tủ của doanh nghiệp, hiện khi có từ 2 tủ */
+.lm-cab__count {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  border: 2px solid #fff;
+  background: #0f172a;
+  color: #fff;
+  font: 700 10px/14px system-ui, sans-serif;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.35);
 }
 
 /* ── Popup ── */

@@ -51,11 +51,12 @@ export function UsersPage() {
   const [formPhone, setFormPhone] = useState('')
   const [formEmail, setFormEmail] = useState('')
   const [formUnit, setFormUnit] = useState('')
-  const [formOrgId, setFormOrgId] = useState<string>('org-001')
-  const [formRole, setFormRole] = useState<TUserRole>('user')
+  const [formOrgId, setFormOrgId] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isSuperAdmin = loggedUser?.role === 'super_admin'
+  // Server chỉ cho Super Admin tạo tài khoản quản lý, và Ban quản lý tạo cư dân
+  const formRole: TUserRole = isSuperAdmin ? 'org_admin' : 'user'
   const userOrgId = loggedUser?.orgId
 
   const pageTitle = isSuperAdmin ? t('users.title') : t('users.titleOrg')
@@ -79,7 +80,7 @@ export function UsersPage() {
     getOrganizations().then((orgs) => {
       setOrgsList(orgs)
       if (orgs.length > 0) {
-        setFormOrgId((prev) => (prev === 'org-001' || !prev ? orgs[0].id : prev))
+        setFormOrgId((prev) => prev || orgs[0].id)
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,12 +110,14 @@ export function UsersPage() {
       return
     }
 
-    setIsSubmitting(true)
     const selectedOrg = orgsList.find((o) => o.id === formOrgId)
-    const targetOrgId = isSuperAdmin ? formOrgId : (userOrgId || orgsList[0]?.id || '6543210fedcba98765432101')
-    const targetOrgName = isSuperAdmin
-      ? (selectedOrg?.name || 'TechCorp Office Building')
-      : (loggedUser?.orgName || 'TechCorp Office Building')
+    const targetOrgId = isSuperAdmin ? formOrgId : userOrgId
+    const targetOrgName = isSuperAdmin ? (selectedOrg?.name ?? '') : (loggedUser?.orgName ?? '')
+    if (!targetOrgId || targetOrgId === 'all') {
+      toast.error(t('usr.noOrg'))
+      return
+    }
+    setIsSubmitting(true)
 
     const payload: TCreateUserPayload = {
       fullName: formName.trim(),
@@ -425,18 +428,10 @@ export function UsersPage() {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="modal-label-custom text-[11px] font-mono uppercase font-semibold">{t('usr.fieldRole')}</label>
-                  <select
-                    value={formRole}
-                    onChange={(e) => setFormRole(e.target.value as TUserRole)}
-                    className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer"
-                  >
-                    <option value="user" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optUser')}</option>
-                    <option value="shipper" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optShipper')}</option>
-                    <option value="org_admin" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optOrgAdmin')}</option>
-                    {isSuperAdmin && (
-                      <option value="super_admin" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('usr.optSuperAdmin')}</option>
-                    )}
-                  </select>
+                  {/* Vai trò cố định theo quyền của người tạo nên chỉ hiển thị, không cho chọn */}
+                  <div className="modal-input-custom h-10 px-3.5 rounded-xl text-[13px] font-medium border flex items-center opacity-80">
+                    {formRole === 'org_admin' ? t('usr.optOrgAdmin') : t('usr.optUser')}
+                  </div>
                 </div>
               </div>
 

@@ -6,6 +6,8 @@ export type TOrganization = {
   name: string
   type: TOrgType
   address: string
+  latitude?: number
+  longitude?: number
   totalLockers: number
   totalMembers: number
   adminEmail: string
@@ -19,7 +21,8 @@ export type TCreateOrgPayload = {
   code: string
   type: TOrgType
   address: string
-  totalLockers: number
+  latitude?: number
+  longitude?: number
   adminEmail: string
   adminName: string
 }

@@ -12,6 +12,7 @@ import issues from './locales/issues'
 import notifications from './locales/notifications'
 import activities from './locales/activities'
 import settings from './locales/settings'
+import payments from './locales/payments'
 
 // Từ điển nền (điều hướng, nhãn dùng chung). Các nhóm tính năng nằm trong ./locales
 const base = {
@@ -24,7 +25,7 @@ const base = {
     'nav.users': 'Tất cả người dùng',
     'nav.activities': 'Nhật ký thao tác',
     'nav.shipments': 'Bưu kiện & Đơn gửi',
-    'nav.settings': 'Cấu hình hệ thống',
+    'nav.settings': 'Thông số hệ thống',
     'nav.logout': 'Đăng Xuất',
     'nav.system': 'Hệ thống',
     'nav.superAdminSystem': 'Toàn Hệ Thống (Platform Super Admin)',
@@ -255,7 +256,7 @@ const base = {
     'nav.users': 'User Directory',
     'nav.activities': 'Audit Logs',
     'nav.shipments': 'Parcel Shipments',
-    'nav.settings': 'System Settings',
+    'nav.settings': 'System parameters',
     'nav.logout': 'Log Out',
     'nav.system': 'System:',
     'nav.superAdminSystem': 'Global System (Platform Super Admin)',
@@ -495,6 +496,7 @@ export const translations = {
     ...notifications.vi,
     ...activities.vi,
     ...settings.vi,
+    ...payments.vi,
   },
   en: {
     ...base.en,
@@ -511,6 +513,7 @@ export const translations = {
     ...notifications.en,
     ...activities.en,
     ...settings.en,
+    ...payments.en,
   },
 }
 

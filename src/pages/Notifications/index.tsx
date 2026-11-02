@@ -1,321 +1,376 @@
-import { useEffect, useState, useCallback } from 'react'
-import {
-  Bell, Package, Cpu, ShieldAlert, Settings2, Trash2, CheckCheck,
-  Clock, RefreshCw, Loader2, Filter, MailOpen,
-} from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Bell, Building2, CheckCheck, ChevronDown, Cpu, Inbox, Loader2, MailOpen, Package, RefreshCw, Settings2, ShieldAlert, Trash2 } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { useTranslation } from '../../context/LanguageContext'
-import { formatDateTime, formatRelativeTime } from '../../i18n/format'
-import { tNow } from '../../i18n/translate'
+import { formatDate, formatDateTime, formatRelativeTime } from '../../i18n/format'
 import type { TranslationKey } from '../../i18n/translations'
+import { useAuthStore } from '../../store/useAuthStore'
+import { getBuildingNames } from '../../service/buildingNames'
 import {
-  getMyNotifications,
-  getUnreadCount,
-  markAsRead,
-  markAllAsRead,
   deleteNotification,
+  listNotifications,
+  markAllAsRead,
+  markAsRead,
   type TNotification,
   type TNotificationCategory,
+  type TNotificationPriority,
 } from '../../service/notification.service'
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// Server chỉ trả tối đa 100 thông báo mỗi lần gọi
+const FETCH_LIMIT = 100
+const PAGE_STEP = 20
 
-const CATEGORY_CONFIG: Record<TNotificationCategory, { labelKey: TranslationKey; icon: React.ReactNode; bg: string; badge: string }> = {
-  PACKAGE: {
-    labelKey: 'notif.catName.PACKAGE',
-    icon: <Package className="w-4 h-4 text-sky-500" />,
-    bg: 'bg-sky-100 dark:bg-sky-950/60 border-sky-200 dark:border-sky-800',
-    badge: 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800',
-  },
-  HARDWARE: {
-    labelKey: 'notif.catName.HARDWARE',
-    icon: <Cpu className="w-4 h-4 text-orange-500" />,
-    bg: 'bg-orange-100 dark:bg-orange-950/60 border-orange-200 dark:border-orange-800',
-    badge: 'bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
-  },
-  ACCOUNT: {
-    labelKey: 'notif.catName.ACCOUNT',
-    icon: <ShieldAlert className="w-4 h-4 text-purple-500" />,
-    bg: 'bg-purple-100 dark:bg-purple-950/60 border-purple-200 dark:border-purple-800',
-    badge: 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800',
-  },
-  SYSTEM: {
-    labelKey: 'notif.catName.SYSTEM',
-    icon: <Settings2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />,
-    bg: 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
-    badge: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700',
-  },
+const CATEGORY_CONFIG: Record<TNotificationCategory, { labelKey: TranslationKey; icon: React.ReactNode; tone: string }> = {
+  PACKAGE: { labelKey: 'notif.catName.PACKAGE', icon: <Package className="w-[17px] h-[17px]" />, tone: 'bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-300' },
+  HARDWARE: { labelKey: 'notif.catName.HARDWARE', icon: <Cpu className="w-[17px] h-[17px]" />, tone: 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-300' },
+  ACCOUNT: { labelKey: 'notif.catName.ACCOUNT', icon: <ShieldAlert className="w-[17px] h-[17px]" />, tone: 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-300' },
+  SYSTEM: { labelKey: 'notif.catName.SYSTEM', icon: <Settings2 className="w-[17px] h-[17px]" />, tone: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
 }
 
-const PRIORITY_BADGE: Record<string, string> = {
-  CRITICAL: 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
-  HIGH: 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-  NORMAL: '',
-  LOW: '',
-}
+const CATEGORIES: TNotificationCategory[] = ['SYSTEM', 'PACKAGE', 'HARDWARE', 'ACCOUNT']
+const PRIORITIES: TNotificationPriority[] = ['CRITICAL', 'HIGH', 'NORMAL', 'LOW']
 
-const FILTER_TABS: { value: 'all' | 'unread' | TNotificationCategory; labelKey: TranslationKey }[] = [
-  { value: 'all', labelKey: 'notif.filter.all' },
-  { value: 'unread', labelKey: 'notif.filter.unread' },
-  { value: 'SYSTEM', labelKey: 'notif.cat.SYSTEM' },
-  { value: 'PACKAGE', labelKey: 'notif.cat.PACKAGE' },
-  { value: 'HARDWARE', labelKey: 'notif.cat.HARDWARE' },
-  { value: 'ACCOUNT', labelKey: 'notif.cat.ACCOUNT' },
-]
+type TFolder = 'all' | 'unread' | TNotificationCategory
+type TLoaded = { key: number; items: TNotification[]; total: number; unread: number; error: string | null }
 
-// ─── COMPONENT ────────────────────────────────────────────────────────────────
+const selectCls =
+  'setting-input-custom h-9 w-full px-3 rounded-lg text-[12.5px] font-medium border focus:outline-none focus:border-sky-500 cursor-pointer'
 
 export function NotificationsPage() {
   const toast = useToast()
   const { t } = useTranslation()
+  const { user } = useAuthStore()
+  const isSuperAdmin = user?.role === 'super_admin'
 
-  const [notifications, setNotifications] = useState<TNotification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | TNotificationCategory>('all')
+  const [folder, setFolder] = useState<TFolder>('all')
+  const [priority, setPriority] = useState<TNotificationPriority | 'all'>('all')
+  const [buildingFilter, setBuildingFilter] = useState('all')
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const [names, setNames] = useState<Map<string, string>>(new Map())
+  const [now] = useState(() => Date.now())
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const [result, count] = await Promise.all([
-        getMyNotifications({ limit: 50 }),
-        getUnreadCount(),
-      ])
-      const items = Array.isArray(result) ? result : (result?.data ?? [])
-      setNotifications(items)
-      setUnreadCount(count)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : tNow('notif.loadFailed')
-      toast.error(msg)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [toast])
+  const [loaded, setLoaded] = useState<TLoaded | null>(null)
+  const loading = loaded?.key !== reloadKey
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    if (!isSuperAdmin) return
+    getBuildingNames().then(setNames)
+  }, [isSuperAdmin])
 
-  // ── Filter ──────────────────────────────────────────────────────────────
-  const filtered = notifications.filter((n) => {
-    if (activeFilter === 'all') return true
-    if (activeFilter === 'unread') return !n.isRead
-    return n.category === activeFilter
-  })
-
-  // ── Mark single as read ──────────────────────────────────────────────────
-  async function handleMarkRead(notif: TNotification) {
-    if (notif.isRead) return
-    await markAsRead(notif._id)
-    setNotifications((prev) => prev.map((n) => n._id === notif._id ? { ...n, isRead: true } : n))
-    setUnreadCount((c) => Math.max(0, c - 1))
-  }
-
-  // ── Mark all as read ──────────────────────────────────────────────────────
-  async function handleMarkAllRead() {
-    const ok = await markAllAsRead()
-    if (ok) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-      setUnreadCount(0)
-      toast.success(t('notif.markedAllRead'))
-    }
-  }
-
-  // ── Delete notification ──────────────────────────────────────────────────
-  async function handleDelete(id: string) {
-    const ok = await deleteNotification(id)
-    if (ok) {
-      setNotifications((prev) => {
-        const removed = prev.find((n) => n._id === id)
-        if (removed && !removed.isRead) setUnreadCount((c) => Math.max(0, c - 1))
-        return prev.filter((n) => n._id !== id)
+  // Tải 100 thông báo mới nhất rồi lọc ngay trên máy, để số đếm ở từng thư mục luôn đúng
+  useEffect(() => {
+    let active = true
+    listNotifications({ limit: FETCH_LIMIT })
+      .then((res) => {
+        if (active) setLoaded({ key: reloadKey, items: res.data, total: res.total, unread: res.unreadCount, error: null })
       })
-      toast.success(t('notif.deleted'))
+      .catch((err: unknown) => {
+        if (active) setLoaded({ key: reloadKey, items: [], total: 0, unread: 0, error: err instanceof Error ? err.message : '' })
+      })
+    return () => {
+      active = false
     }
+  }, [reloadKey])
+
+  const items = useMemo(() => loaded?.items ?? [], [loaded])
+
+  // Các tòa nhà có thông báo, kèm số lượng
+  const buildingOptions = useMemo(() => {
+    const count = new Map<string, number>()
+    for (const n of items) if (n.buildingId) count.set(n.buildingId, (count.get(n.buildingId) ?? 0) + 1)
+    return [...count.entries()].map(([id, n]) => ({ id, label: names.get(id) ?? id, count: n })).sort((a, b) => a.label.localeCompare(b.label))
+  }, [items, names])
+  const activeBuilding = buildingOptions.some((b) => b.id === buildingFilter) ? buildingFilter : 'all'
+
+  const categoryCount = useMemo(() => {
+    const out: Record<string, number> = {}
+    for (const n of items) out[n.category] = (out[n.category] ?? 0) + 1
+    return out
+  }, [items])
+
+  const visible = useMemo(
+    () =>
+      items.filter((n) => {
+        if (folder === 'unread' && n.isRead) return false
+        if (folder !== 'all' && folder !== 'unread' && n.category !== folder) return false
+        if (priority !== 'all' && n.priority !== priority) return false
+        if (activeBuilding !== 'all' && n.buildingId !== activeBuilding) return false
+        return true
+      }),
+    [items, folder, priority, activeBuilding],
+  )
+
+  // Số thông báo đang hiện, quay về 20 khi đổi bộ lọc
+  const viewKey = `${reloadKey}|${folder}|${priority}|${activeBuilding}`
+  const [shown, setShown] = useState({ key: viewKey, n: PAGE_STEP })
+  const shownCount = shown.key === viewKey ? shown.n : PAGE_STEP
+  const page = visible.slice(0, shownCount)
+
+  // Gom theo ngày: hôm nay, hôm qua, các ngày trước
+  const groups = useMemo(() => {
+    const todayKey = new Date(now).toDateString()
+    const yesterdayKey = new Date(now - 86_400_000).toDateString()
+    const out: { key: string; label: string; items: TNotification[] }[] = []
+    for (const n of page) {
+      const dayKey = new Date(n.createdAt).toDateString()
+      let group = out[out.length - 1]
+      if (!group || group.key !== dayKey) {
+        const label = dayKey === todayKey ? t('notif.today') : dayKey === yesterdayKey ? t('notif.yesterday') : formatDate(n.createdAt)
+        group = { key: dayKey, label, items: [] }
+        out.push(group)
+      }
+      group.items.push(n)
+    }
+    return out
+  }, [page, now, t])
+
+  function patchItems(fn: (list: TNotification[]) => TNotification[]) {
+    setLoaded((prev) => (prev ? { ...prev, items: fn(prev.items) } : prev))
   }
+
+  async function handleMarkRead(n: TNotification) {
+    if (n.isRead) return
+    const res = await markAsRead(n._id)
+    if (!res) {
+      toast.error(t('notif.actionFailed'))
+      return
+    }
+    patchItems((list) => list.map((x) => (x._id === n._id ? { ...x, isRead: true } : x)))
+    setLoaded((prev) => (prev ? { ...prev, unread: Math.max(0, prev.unread - 1) } : prev))
+  }
+
+  function handleToggle(n: TNotification) {
+    const opening = openId !== n._id
+    setOpenId(opening ? n._id : null)
+    if (opening) handleMarkRead(n)
+  }
+
+  async function handleMarkAllRead() {
+    if (!(await markAllAsRead())) {
+      toast.error(t('notif.actionFailed'))
+      return
+    }
+    patchItems((list) => list.map((x) => ({ ...x, isRead: true })))
+    setLoaded((prev) => (prev ? { ...prev, unread: 0 } : prev))
+    toast.success(t('notif.markedAllRead'))
+  }
+
+  async function handleDelete(n: TNotification) {
+    if (!(await deleteNotification(n._id))) {
+      toast.error(t('notif.actionFailed'))
+      return
+    }
+    patchItems((list) => list.filter((x) => x._id !== n._id))
+    if (!n.isRead) setLoaded((prev) => (prev ? { ...prev, unread: Math.max(0, prev.unread - 1) } : prev))
+    setOpenId(null)
+    toast.success(t('notif.deleted'))
+  }
+
+  const unread = loaded?.unread ?? 0
+  const noFilter = folder === 'all' && priority === 'all' && activeBuilding === 'all'
+
+  const folders: { id: TFolder; label: string; icon: React.ReactNode; count: number }[] = [
+    { id: 'all', label: t('notif.filter.all'), icon: <Inbox className="w-4 h-4" />, count: items.length },
+    { id: 'unread', label: t('notif.filter.unread'), icon: <MailOpen className="w-4 h-4" />, count: unread },
+    ...CATEGORIES.map((c) => ({ id: c as TFolder, label: t(CATEGORY_CONFIG[c].labelKey), icon: CATEGORY_CONFIG[c].icon, count: categoryCount[c] ?? 0 })),
+  ]
 
   return (
-    <div className="flex flex-col h-full gap-0">
-      {/* ── Page Header ── */}
-      <div className="px-6 pt-6 pb-4 shrink-0">
-        <div className="flex items-start justify-between gap-4 mb-1">
-          <div>
-            <h1 className="text-[22px] font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-              <Bell className="w-6 h-6 text-sky-500" />
-              {t('notif.pageTitle')}
-            </h1>
-            <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-1">
-              {t('notif.pageDesc')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                className="h-9 px-4 rounded-xl text-[12.5px] font-semibold flex items-center gap-1.5 border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-950/80 transition-colors cursor-pointer"
-              >
-                <CheckCheck className="w-3.5 h-3.5" />
-                {t('notif.readAll')} ({unreadCount})
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={fetchData}
-              disabled={isLoading}
-              className="h-9 px-3.5 rounded-xl text-[12.5px] font-semibold flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              {t('common.refresh')}
-            </button>
-          </div>
-        </div>
+    <div className="flex flex-col gap-6">
+      <header data-reveal>
+        <h1 className="text-[22px] font-bold text-slate-900 dark:text-white">{t('notif.pageTitle')}</h1>
+        <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 max-w-2xl">{isSuperAdmin ? t('notif.descSuper') : t('notif.descAdmin')}</p>
+      </header>
 
-        {/* Stats row */}
-        <div className="flex items-center gap-4 mt-3">
-          <div className="flex items-center gap-1.5 text-[12.5px] text-slate-500 dark:text-slate-400">
-            <Bell className="w-3.5 h-3.5" />
-            <span><strong className="text-slate-700 dark:text-slate-200">{notifications.length}</strong> {t('notif.countSuffix', { count: notifications.length })}</span>
-          </div>
-          {unreadCount > 0 && (
-            <div className="flex items-center gap-1.5 text-[12.5px] text-sky-600 dark:text-sky-400">
-              <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-              <span><strong>{unreadCount}</strong> {t('notif.unreadSuffix')}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Filter Tabs ── */}
-      <div className="px-6 border-b border-slate-200 dark:border-slate-800 shrink-0">
-        <div className="flex items-center gap-1 overflow-x-auto pb-0">
-          {FILTER_TABS.map((tab) => {
-            const count = tab.value === 'unread'
-              ? unreadCount
-              : tab.value === 'all'
-              ? notifications.length
-              : notifications.filter((n) => n.category === tab.value).length
-            return (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setActiveFilter(tab.value)}
-                className={`whitespace-nowrap px-3.5 py-2.5 text-[12px] font-semibold flex items-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
-                  activeFilter === tab.value
-                    ? 'border-sky-500 text-sky-600 dark:text-sky-400'
-                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                }`}
-              >
-                {t(tab.labelKey)}
-                {count > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeFilter === tab.value
-                      ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                  }`}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── Notification List ── */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
-            <p className="text-[13px]">{t('bell.loadingNotifs')}</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-              {activeFilter === 'unread' ? (
-                <MailOpen className="w-7 h-7 text-slate-400" />
-              ) : (
-                <Filter className="w-7 h-7 text-slate-400" />
-              )}
-            </div>
-            <div className="text-center">
-              <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-300">
-                {activeFilter === 'unread' ? t('notif.emptyUnread') : t('notif.empty')}
-              </p>
-              <p className="text-[12px] text-slate-400 mt-1">
-                {activeFilter === 'unread' ? t('notif.emptyUnreadHint') : t('notif.emptyHint')}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {filtered.map((n) => {
-              const cat = CATEGORY_CONFIG[n.category] || CATEGORY_CONFIG.SYSTEM
-              const priorityStyle = PRIORITY_BADGE[n.priority] || ''
-              return (
-                <div
-                  key={n._id}
-                  onClick={() => handleMarkRead(n)}
-                  className={`group relative flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer ${
-                    !n.isRead
-                      ? 'bg-sky-50/60 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-900/60 hover:bg-sky-50 dark:hover:bg-sky-950/30'
-                      : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+      <div data-reveal className="grid grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)] gap-5 items-start">
+        {/* Cột trái: thư mục và bộ lọc */}
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-2">
+          <nav className="flex lg:flex-col gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+            {folders.map((f, i) => (
+              <div key={f.id} className="contents">
+                {i === 2 && <span className="hidden lg:block mx-2 my-1 h-px bg-slate-100 dark:bg-slate-800" aria-hidden="true" />}
+                <button
+                  type="button"
+                  onClick={() => setFolder(f.id)}
+                  className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-semibold cursor-pointer transition-colors ${
+                    folder === f.id
+                      ? 'bg-sky-600 text-white shadow-xs dark:bg-sky-500'
+                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                   }`}
                 >
-                  {/* Unread dot */}
-                  {!n.isRead && (
-                    <span className="absolute top-4 left-1.5 w-1.5 h-1.5 rounded-full bg-sky-500" />
+                  {f.icon}
+                  <span className="flex-1 whitespace-nowrap text-left">{f.label}</span>
+                  {f.count > 0 && (
+                    <span className={`text-[11.5px] font-bold ${folder === f.id ? 'text-white/90' : f.id === 'unread' ? 'text-sky-600 dark:text-sky-300' : 'text-slate-400'}`}>{f.count}</span>
                   )}
+                </button>
+              </div>
+            ))}
+          </nav>
 
-                  {/* Category icon */}
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${cat.bg}`}>
-                    {cat.icon}
-                  </div>
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+            <p className="text-[12px] font-bold text-slate-500 dark:text-slate-400">{t('notif.moreFilters')}</p>
+            <label className="flex flex-col gap-1">
+              <span className="text-[11.5px] text-slate-500 dark:text-slate-400">{t('notif.prioLabel')}</span>
+              <select value={priority} onChange={(e) => setPriority(e.target.value as TNotificationPriority | 'all')} className={selectCls}>
+                <option value="all">{t('notif.allPrio')}</option>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {t(`notif.prioName.${p}` as TranslationKey)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {isSuperAdmin && (
+              <label className="flex flex-col gap-1">
+                <span className="text-[11.5px] text-slate-500 dark:text-slate-400">{t('notif.buildingLabel')}</span>
+                <select value={activeBuilding} onChange={(e) => setBuildingFilter(e.target.value)} className={selectCls}>
+                  <option value="all">{t('notif.allBuildings')}</option>
+                  {buildingOptions.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.label} ({b.count})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        </aside>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 pr-8">
-                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <p className={`text-[13.5px] font-semibold leading-tight ${
-                        n.isRead ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-white'
-                      }`}>
-                        {n.title}
-                      </p>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${cat.badge}`}>
-                        {t(cat.labelKey)}
-                      </span>
-                      {(n.priority === 'HIGH' || n.priority === 'CRITICAL') && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${priorityStyle}`}>
-                          {n.priority === 'CRITICAL' ? t('notif.prio.CRITICAL') : t('notif.prio.HIGH')}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[12.5px] text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
-                      {n.message}
-                    </p>
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      <span className="text-[11px] text-slate-400">{formatRelativeTime(n.createdAt)}</span>
-                      <span className="text-[11px] text-slate-300 dark:text-slate-600">·</span>
-                      <span className="text-[11px] text-slate-400">
-                        {formatDateTime(n.createdAt, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
+        {/* Cột phải: danh sách thư */}
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
+            <p className="text-[13px] text-slate-500 dark:text-slate-400">
+              <strong className="text-slate-800 dark:text-slate-100">{visible.length}</strong> {t('notif.countSuffix', { count: visible.length })}
+            </p>
+            <div className="flex items-center gap-1.5">
+              {unread > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllRead}
+                  className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-500/10 cursor-pointer"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  {t('notif.readAll')}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setReloadKey((n) => n + 1)}
+                disabled={loading}
+                className="flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12.5px] font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                {t('common.refresh')}
+              </button>
+            </div>
+          </div>
 
-                  {/* Delete button */}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-400">
+              <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
+              <p className="text-[13px]">{t('bell.loadingNotifs')}</p>
+            </div>
+          ) : loaded?.error ? (
+            <p className="py-20 text-center text-[13px] text-red-600 dark:text-red-400">{t('notif.loadFailedMsg', { message: loaded.error })}</p>
+          ) : visible.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 px-6 py-24">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                {folder === 'unread' ? <MailOpen className="w-6 h-6 text-slate-400" /> : <Bell className="w-6 h-6 text-slate-400" />}
+              </div>
+              <div className="text-center">
+                <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-300">
+                  {folder === 'unread' ? t('notif.emptyUnread') : noFilter ? t('notif.emptyNone') : t('notif.empty')}
+                </p>
+                <p className="mx-auto mt-1 max-w-md text-[12px] text-slate-500 dark:text-slate-400">
+                  {folder === 'unread' ? t('notif.emptyUnreadHint') : noFilter ? t('notif.emptyNoneHint') : t('notif.emptyHint')}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {groups.map((group) => (
+                <div key={group.key}>
+                  <h2 className="bg-slate-50 px-5 py-1.5 text-[11.5px] font-bold text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">{group.label}</h2>
+                  <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {group.items.map((n) => {
+                      const cat = CATEGORY_CONFIG[n.category] ?? CATEGORY_CONFIG.SYSTEM
+                      const open = openId === n._id
+                      const buildingName = isSuperAdmin && n.buildingId ? (names.get(n.buildingId) ?? null) : null
+                      const important = n.priority === 'CRITICAL' || n.priority === 'HIGH'
+                      return (
+                        <li key={n._id} className={open ? 'bg-sky-50/40 dark:bg-sky-500/5' : ''}>
+                          <button type="button" onClick={() => handleToggle(n)} className="flex w-full cursor-pointer items-start gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${cat.tone}`}>{cat.icon}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-center gap-2">
+                                {!n.isRead && <span className="h-2 w-2 shrink-0 rounded-full bg-sky-500" aria-hidden="true" />}
+                                <span className={`truncate text-[14px] ${n.isRead ? 'font-medium text-slate-600 dark:text-slate-300' : 'font-bold text-slate-900 dark:text-white'}`}>{n.title}</span>
+                                {important && (
+                                  <span
+                                    className={`shrink-0 rounded px-1.5 py-0.5 text-[10.5px] font-bold ${
+                                      n.priority === 'CRITICAL' ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                                    }`}
+                                  >
+                                    {t(`notif.prioName.${n.priority}` as TranslationKey)}
+                                  </span>
+                                )}
+                              </span>
+                              {!open && <span className="mt-0.5 block truncate text-[12.5px] text-slate-500 dark:text-slate-400">{n.message}</span>}
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2 pt-0.5 text-[11.5px] text-slate-400">
+                              {formatRelativeTime(n.createdAt)}
+                              <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                            </span>
+                          </button>
+
+                          {open && (
+                            <div className="pb-4 pl-[70px] pr-5">
+                              <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-slate-700 dark:text-slate-200">{n.message}</p>
+                              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12px] text-slate-500 dark:text-slate-400">
+                                <span>{formatDateTime(n.createdAt)}</span>
+                                <span>· {t(cat.labelKey)}</span>
+                                {buildingName && (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
+                                    <Building2 className="w-3.5 h-3.5" />
+                                    {buildingName}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(n)}
+                                  className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {t('bell.deleteNotif')}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+
+              {visible.length > shownCount && (
+                <div className="border-t border-slate-100 p-4 text-center dark:border-slate-800">
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(n._id) }}
-                    className="absolute top-3.5 right-3.5 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                    title={t('bell.deleteNotif')}
+                    onClick={() => setShown({ key: viewKey, n: shownCount + PAGE_STEP })}
+                    className="h-9 rounded-lg px-5 text-[13px] font-semibold text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-500/10 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    {t('notif.showMore', { count: Math.min(PAGE_STEP, visible.length - shownCount) })}
                   </button>
                 </div>
-              )
-            })}
-          </div>
-        )}
+              )}
+
+              {(loaded?.total ?? 0) > FETCH_LIMIT && <p className="border-t border-slate-100 px-5 py-3 text-center text-[12px] text-slate-500 dark:border-slate-800 dark:text-slate-400">{t('notif.capNote', { count: FETCH_LIMIT })}</p>}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )

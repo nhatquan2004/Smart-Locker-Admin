@@ -10,8 +10,12 @@ export default defineLocale(
     'nav.issues': 'Báo lỗi & Sự cố',
     'nav.notifications': 'Thông Báo',
     'layout.broadcastTooltip': 'Gửi thông báo toàn tòa nhà',
-    'layout.broadcastShort': 'Gửi TB',
+    'layout.broadcastShort': 'Gửi thông báo',
+    'layout.roleBuilding': 'Ban quản lý',
     'layout.toggleMenu': 'Mở/đóng menu',
+    'layout.scopeAll': 'Toàn hệ thống',
+    'layout.toLight': 'Chuyển sang giao diện sáng',
+    'layout.toDark': 'Chuyển sang giao diện tối',
 
     // Chuông thông báo
     'bell.title': 'Thông Báo',
@@ -95,8 +99,12 @@ export default defineLocale(
     'nav.issues': 'Issues & Incidents',
     'nav.notifications': 'Notifications',
     'layout.broadcastTooltip': 'Send a notice to the whole building',
-    'layout.broadcastShort': 'Notify',
+    'layout.broadcastShort': 'Send notice',
+    'layout.roleBuilding': 'Building management',
     'layout.toggleMenu': 'Toggle menu',
+    'layout.scopeAll': 'All systems',
+    'layout.toLight': 'Switch to light mode',
+    'layout.toDark': 'Switch to dark mode',
 
     'bell.title': 'Notifications',
     'bell.markAllRead': 'Mark all as read',

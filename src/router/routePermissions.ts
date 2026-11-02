@@ -14,6 +14,7 @@ export const RoutePermissionsConfig = {
     { path: '/organizations', allowedRoles: ['super_admin'] as TUserRole[] },
     { path: '/organizations/:orgId', allowedRoles: ['super_admin'] as TUserRole[] },
     { path: '/settings', allowedRoles: ['super_admin'] as TUserRole[] },
+    { path: '/locker-map', allowedRoles: ['super_admin'] as TUserRole[] },
   ],
 }
 
