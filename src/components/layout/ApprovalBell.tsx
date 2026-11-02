@@ -284,12 +284,12 @@ export function ApprovalBell() {
               return !v
             })
           }}
-          className="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer"
           title={t('bell.title')}
         >
           <Bell className="w-4 h-4" />
           {totalBadge > 0 && (
-            <span className="absolute top-0 right-0 min-w-[17px] h-[17px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center leading-none ring-2 ring-white dark:ring-slate-900">
+            <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center leading-none ring-2 ring-white dark:ring-slate-900">
               {totalBadge > 99 ? '99+' : totalBadge}
             </span>
           )}

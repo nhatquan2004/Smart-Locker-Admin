@@ -11,7 +11,6 @@ import {
   LogOut,
   Menu,
   X,
-  Globe,
   Sun,
   Moon,
   ShieldAlert,
@@ -150,29 +149,36 @@ export function AdminLayout() {
           </button>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            <img src={lockerLogo} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
-            <span className="hidden sm:block text-[16px] font-semibold tracking-tight whitespace-nowrap text-slate-900 dark:text-white">
+            <img src={lockerLogo} alt="" className="w-9 h-9 rounded-xl object-cover shrink-0" />
+            <span className="hidden sm:block text-[16px] font-bold tracking-tight whitespace-nowrap text-slate-900 dark:text-white">
               Smart Locker
             </span>
           </div>
 
-          {/* Phạm vi quản lý: Toàn hệ thống hoặc tên đơn vị của Ban quản lý */}
-          <div className="hidden md:flex items-center gap-1.5 h-7 pl-2.5 pr-3 rounded-full bg-slate-100 dark:bg-slate-800/80 text-[12px] font-medium text-slate-600 dark:text-slate-300 min-w-0">
-            <Building2 className="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
-            <span className="truncate max-w-[180px] xl:max-w-[300px]" title={isSuperAdmin ? t("nav.superAdminSystem") : (buildingName ?? user?.orgName)}>
-              {isSuperAdmin ? t("layout.scopeAll") : (buildingName ?? user?.orgName)}
-            </span>
+          {/* Ai đang đăng nhập và đang quản lý phạm vi nào */}
+          <div className="hidden md:flex items-center gap-3 pl-3 ml-1 border-l border-slate-200 dark:border-slate-700 min-w-0">
+            <div className="min-w-0 leading-tight">
+              <p className="text-[10.5px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                {isSuperAdmin ? t("role.super_admin") : t("layout.roleBuilding")}
+              </p>
+              <p
+                className="truncate max-w-[200px] xl:max-w-[320px] text-[13px] font-semibold text-slate-800 dark:text-slate-100"
+                title={isSuperAdmin ? t("nav.superAdminSystem") : (buildingName ?? user?.orgName)}
+              >
+                {isSuperAdmin ? t("layout.scopeAll") : (buildingName ?? user?.orgName)}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Phải: các nút tiện ích dạng icon, không viền để header gọn */}
-        <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+        {/* Phải: hành động chính, rồi các nút tiện ích */}
+        <div className="flex items-center gap-2 shrink-0">
           {isBuildingAdmin && (
             <button
               type="button"
               id="broadcast-notification-btn"
               onClick={() => setIsBroadcastOpen(true)}
-              className="h-9 px-2.5 sm:px-3 mr-1 rounded-full flex items-center gap-1.5 text-[12.5px] font-medium bg-slate-900 text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white transition-colors cursor-pointer shrink-0"
+              className="h-9 px-3 sm:px-4 rounded-xl flex items-center gap-2 text-[13px] font-semibold bg-sky-600 text-white hover:bg-sky-700 shadow-xs transition-colors cursor-pointer shrink-0"
               title={t("layout.broadcastTooltip")}
             >
               <Megaphone className="w-4 h-4" />
@@ -180,36 +186,35 @@ export function AdminLayout() {
             </button>
           )}
 
-          <button
-            type="button"
-            onClick={toggleLanguage}
-            className="h-9 px-2.5 rounded-full flex items-center gap-1.5 text-[12.5px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-            title={t("nav.langTooltip")}
-          >
-            <Globe className="w-4 h-4" />
-            <span>{language === 'vi' ? 'VI' : 'EN'}</span>
-          </button>
+          <div className="hidden sm:flex h-9 items-center rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5 text-[12px] font-bold shrink-0" role="group" aria-label={t("nav.langTooltip")}>
+            {(["vi", "en"] as const).map((code) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => language !== code && toggleLanguage()}
+                className={`h-8 px-2.5 rounded-[10px] uppercase transition-colors cursor-pointer ${
+                  language === code
+                    ? "bg-white text-slate-900 shadow-xs dark:bg-slate-600 dark:text-white"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+              >
+                {code}
+              </button>
+            ))}
+          </div>
 
           <button
             type="button"
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+            className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors cursor-pointer shrink-0"
             title={isDarkMode ? t("layout.toLight") : t("layout.toDark")}
             aria-label={isDarkMode ? t("layout.toLight") : t("layout.toDark")}
           >
             {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </button>
 
-          {/* Approval Bell — hiện với cả org_admin và super_admin */}
+          {/* Chuông thông báo: hiện với cả Ban quản lý và Super Admin */}
           <ApprovalBell />
-
-          {/* Trạng thái kết nối realtime, chỉ là một chấm nhỏ kèm chú thích khi rê chuột */}
-          <span
-            className="hidden md:flex items-center justify-center w-9 h-9 shrink-0"
-            title={t("nav.realtimeEngine")}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/15" />
-          </span>
         </div>
       </header>
 

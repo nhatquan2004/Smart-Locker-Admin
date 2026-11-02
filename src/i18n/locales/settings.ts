@@ -1,14 +1,76 @@
 import { defineLocale } from '../defineLocale'
 
-// Mô tả từng nhóm cấu hình (nhãn từng dòng nằm trong từ điển nền)
+// Trang Thông số vận hành (giá trị lấy từ mã nguồn server) và bảng dùng chung (phân trang)
 export default defineLocale(
   {
-    'settings.sectionBadge': 'CẤU HÌNH HỆ THỐNG',
-    'settings.secDesc.otp': 'Cấu hình thời gian hiệu lực, retry và quy tắc cấp lại OTP.',
-    'settings.secDesc.locker': 'Thiết lập hành vi mở khóa, cluster và timeout mặc định.',
-    'settings.secDesc.hardware': 'Điều chỉnh heartbeat, timeout và auto refresh phần cứng.',
-    'settings.secDesc.notification': 'Thiết lập cảnh báo lỗi, shipment bất thường và log quản trị.',
-    'settings.secDesc.preferences': 'Tùy chọn hiển thị, ngôn ngữ và timezone cho admin panel.',
+    'set.title': 'Thông số vận hành',
+    'set.desc': 'Các quy tắc và mốc thời gian server đang áp dụng cho bưu kiện, tủ và dữ liệu.',
+    'set.noteTitle': 'Chỉ xem',
+    'set.noteBody':
+      'Các thông số này do server quy định cố định trong mã nguồn nên chưa chỉnh được từ web. Riêng tài khoản nhận tiền và biểu phí do Ban quản lý từng tòa tự cấu hình ở trang Cấu hình thanh toán.',
+
+    'set.life.title': 'Vòng đời một bưu kiện',
+    'set.life.desc': 'Từ lúc shipper bỏ hàng vào tủ đến khi cư dân nhận hoặc Ban quản lý thu hồi.',
+
+    'set.s1.title': 'Gửi hàng',
+    'set.s1.otp': 'Mã OTP xác minh shipper',
+    'set.s1.resend': 'Gửi lại mã sau',
+    'set.s1.sendMax': 'Giới hạn gửi mã',
+    'set.s1.unlock': 'Ngăn mở để bỏ hàng',
+    'set.s1.confirm': 'Chờ cảm biến xác nhận',
+
+    'set.s2.title': 'Lưu kho',
+    'set.s2.free': 'Miễn phí lưu kho',
+    'set.s2.warn': 'Nhắc cư dân trước hạn',
+    'set.s2.overdue': 'Chuyển sang quá hạn',
+    'set.s2.cron': 'Kiểm tra quá hạn',
+
+    'set.s3.title': 'Nhận hàng',
+    'set.s3.methods': 'Cách nhận',
+    'set.s3.reissue': 'Cấp lại OTP cách nhau',
+    'set.s3.appLock': 'Nhập sai trên app',
+    'set.s3.faceLock': 'Nhận diện khuôn mặt sai',
+
+    'set.s4.title': 'Thu hồi về kho',
+    'set.s4.action': 'Khi thu hồi',
+    'set.s4.pickup': 'Cư dân nhận lại',
+    'set.s4.who': 'Người thực hiện',
+
+    'set.dev.title': 'Tủ & thiết bị',
+    'set.dev.desc': 'Cách server theo dõi và điều khiển trạm tủ.',
+    'set.dev.offline': 'Báo offline khi mất tín hiệu',
+    'set.dev.unlock': 'Mở khóa từ xa cách nhau',
+
+    'set.sec.title': 'Giới hạn truy cập',
+    'set.sec.desc': 'Chống dò mã và gửi yêu cầu dồn dập, tính theo từng địa chỉ IP.',
+    'set.sec.api': 'Mặc định mọi API',
+    'set.sec.auth': 'Đăng nhập, gửi mã xác minh',
+
+    'set.data.title': 'Lưu trữ dữ liệu',
+    'set.data.desc': 'Server tự xóa dữ liệu cũ để gọn cơ sở dữ liệu.',
+    'set.data.log': 'Nhật ký thao tác',
+    'set.data.notif': 'Thông báo',
+
+    // Đơn vị và cách đọc giá trị
+    'set.u.sec': '{count} giây',
+    'set.u.sec_one': '{count} giây',
+    'set.u.min': '{count} phút',
+    'set.u.min_one': '{count} phút',
+    'set.u.hour': '{count} giờ',
+    'set.u.hour_one': '{count} giờ',
+    'set.u.day': '{count} ngày',
+    'set.u.day_one': '{count} ngày',
+    'set.v.upTo': 'Tối đa {value}',
+    'set.v.perHour': '{count} lần mỗi giờ',
+    'set.v.perMin': '{count} yêu cầu mỗi phút',
+    'set.v.lock': '{max} lần sai trong {window} phút, khóa {lock} phút',
+    'set.v.byTier1': 'Theo mốc T1 của tòa',
+    'set.v.byTier3': 'Theo mốc T3 của tòa',
+    'set.v.everyHour': 'Mỗi giờ',
+    'set.v.methods': 'OTP, QR hoặc khuôn mặt',
+    'set.v.returnAction': 'Giải phóng ngăn, mở cửa lấy hàng',
+    'set.v.returnPickup': 'Trực tiếp tại Ban quản lý',
+    'set.v.manager': 'Ban quản lý',
 
     // Bảng dùng chung (phân trang)
     'table.showing': 'Hiển thị',
@@ -21,12 +83,73 @@ export default defineLocale(
     'table.pageOf': 'Trang {page} / {total}',
   },
   {
-    'settings.sectionBadge': 'SYSTEM CONFIG',
-    'settings.secDesc.otp': 'Configure OTP validity time, retries and re-issue rules.',
-    'settings.secDesc.locker': 'Configure unlock behavior, clusters and default timeouts.',
-    'settings.secDesc.hardware': 'Adjust heartbeat, timeout and hardware auto-refresh.',
-    'settings.secDesc.notification': 'Configure error alerts, abnormal shipment alerts and admin logs.',
-    'settings.secDesc.preferences': 'Display, language and timezone preferences for the admin panel.',
+    'set.title': 'Operating parameters',
+    'set.desc': 'The rules and time limits the server currently applies to parcels, lockers and data.',
+    'set.noteTitle': 'View only',
+    'set.noteBody':
+      'These values are fixed in the server code, so they cannot be changed from the web yet. Only the receiving bank account and the fee schedule are set by each building\'s management on the Payment settings page.',
+
+    'set.life.title': 'Life of a parcel',
+    'set.life.desc': 'From the moment the shipper drops it in the locker until the resident collects it or management takes it back.',
+
+    'set.s1.title': 'Drop-off',
+    'set.s1.otp': 'Shipper verification OTP',
+    'set.s1.resend': 'Resend a code after',
+    'set.s1.sendMax': 'Code sending limit',
+    'set.s1.unlock': 'Compartment stays open for',
+    'set.s1.confirm': 'Waiting for sensor confirmation',
+
+    'set.s2.title': 'Storage',
+    'set.s2.free': 'Free storage',
+    'set.s2.warn': 'Remind the resident before expiry',
+    'set.s2.overdue': 'Becomes overdue',
+    'set.s2.cron': 'Overdue check',
+
+    'set.s3.title': 'Pickup',
+    'set.s3.methods': 'Ways to collect',
+    'set.s3.reissue': 'Reissue OTP at most every',
+    'set.s3.appLock': 'Wrong attempts in the app',
+    'set.s3.faceLock': 'Failed face recognition',
+
+    'set.s4.title': 'Return to storage',
+    'set.s4.action': 'When returned',
+    'set.s4.pickup': 'Resident collects it',
+    'set.s4.who': 'Done by',
+
+    'set.dev.title': 'Lockers & devices',
+    'set.dev.desc': 'How the server monitors and controls locker stations.',
+    'set.dev.offline': 'Marked offline after no signal for',
+    'set.dev.unlock': 'Remote unlock at most every',
+
+    'set.sec.title': 'Rate limits',
+    'set.sec.desc': 'Protection against code guessing and request floods, counted per IP address.',
+    'set.sec.api': 'Default for every API',
+    'set.sec.auth': 'Sign-in and verification codes',
+
+    'set.data.title': 'Data retention',
+    'set.data.desc': 'The server removes old data automatically to keep the database small.',
+    'set.data.log': 'Activity log',
+    'set.data.notif': 'Notifications',
+
+    'set.u.sec': '{count} seconds',
+    'set.u.sec_one': '{count} second',
+    'set.u.min': '{count} minutes',
+    'set.u.min_one': '{count} minute',
+    'set.u.hour': '{count} hours',
+    'set.u.hour_one': '{count} hour',
+    'set.u.day': '{count} days',
+    'set.u.day_one': '{count} day',
+    'set.v.upTo': 'Up to {value}',
+    'set.v.perHour': '{count} times per hour',
+    'set.v.perMin': '{count} requests per minute',
+    'set.v.lock': '{max} failures within {window} min, locked for {lock} min',
+    'set.v.byTier1': 'Building\'s T1 mark',
+    'set.v.byTier3': 'Building\'s T3 mark',
+    'set.v.everyHour': 'Every hour',
+    'set.v.methods': 'OTP, QR or face',
+    'set.v.returnAction': 'Frees the compartment and opens the door',
+    'set.v.returnPickup': 'In person at building management',
+    'set.v.manager': 'Building management',
 
     'table.showing': 'Showing',
     'table.of': 'of',
