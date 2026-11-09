@@ -209,3 +209,39 @@
 .dark .lm-map .leaflet-control-attribution a {
   color: #cbd5e1;
 }
+
+/* ── Vị trí của tôi ── */
+.lm-me {
+  position: relative;
+  width: 22px;
+  height: 22px;
+}
+.lm-me__dot {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #2563eb;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.4);
+}
+.lm-me__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.3);
+  animation: lm-me-pulse 2s ease-out infinite;
+}
+@keyframes lm-me-pulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Ngăn chi tiết mở bên phải: đẩy nút thu phóng sang trái để không bị che */
+.lm-map.has-drawer .leaflet-bottom.leaflet-right {
+  right: 408px;
+}
+@media (max-width: 767px) {
+  .lm-map.has-drawer .leaflet-bottom.leaflet-right {
+    right: 0;
+  }
+}

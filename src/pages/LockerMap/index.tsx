@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { MapContainer, Marker, Popup, TileLayer, ZoomControl } from 'react-leaflet'
+import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, ZoomControl } from 'react-leaflet'
 import type L from 'leaflet'
-import { useNavigate } from 'react-router-dom'
-import { Maximize2, PanelLeftOpen, RefreshCw } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Loader2, LocateFixed, Maximize2, PanelLeftOpen, RefreshCw } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import './LockerMap.css'
 import { apiClient } from '../../service/api.client'
@@ -11,13 +11,15 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { useToast } from '../../context/ToastContext'
 import { useTranslation } from '../../context/LanguageContext'
 import { tNow } from '../../i18n/translate'
+import { getCurrentPosition, getRoute, type LatLng, type RouteResult } from '../../utils/routing'
 import type { TIssueItem } from '../../types/issue.type'
 import { DEFAULT_CENTER } from './constants'
 import { EditLocationModal } from './EditLocationModal'
 import { LockerPanel } from './LockerPanel'
+import { LockerDetailDrawer } from './LockerDetailDrawer'
 import { GroupPopup } from './GroupPopup'
-import { getLockerIcon, PICKER_ICON } from './mapIcons'
-import { FitToLockers, FlyToMarker, MapClickPicker } from './MapHelpers'
+import { getLockerIcon, MY_LOCATION_ICON, PICKER_ICON } from './mapIcons'
+import { FitToBounds, FitToLockers, FlyToMarker, MapClickPicker } from './MapHelpers'
 import { PickingBar } from './PickingBar'
 import type { FlyTarget, LockerFilter, LockerGroup, LockerMapItem } from './types'
 import { groupKey, hasCoords, normalizeText, parseCoord, statusMeta, worstStatus } from './utils'
@@ -45,6 +47,15 @@ export function LockerMapPage() {
   const [filter, setFilter] = useState<LockerFilter>('ALL')
   const [panelOpen, setPanelOpen] = useState(true)
   const markerRefs = useRef<Record<string, L.Marker>>({})
+
+  // Ngăn chi tiết của một trạm tủ, vị trí của người dùng và tuyến đường tới trạm
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const detailRef = useRef<string | null>(null)
+  const [myPos, setMyPos] = useState<(LatLng & { accuracy: number }) | null>(null)
+  const [route, setRoute] = useState<{ lockerId: string; result: RouteResult } | null>(null)
+  const [navBusy, setNavBusy] = useState<'locating' | 'routing' | null>(null)
+  const [routeFit, setRouteFit] = useState(0)
 
   // Chỉnh sửa vị trí
   const [editing, setEditing] = useState<LockerMapItem | null>(null)
@@ -80,6 +91,28 @@ export function LockerMapPage() {
       active = false
     }
   }, [reloadKey])
+
+  useEffect(() => {
+    detailRef.current = detailId
+  }, [detailId])
+
+  // Tạo xong trạm tủ thì được đưa tới đây kèm ?focus=<mã tủ>: chọn sẵn tủ đó và mở ngăn chi tiết
+  const focusCode = searchParams.get('focus')
+  useEffect(() => {
+    if (!focusCode || lockers.length === 0) return
+    const timer = window.setTimeout(() => {
+      const target = lockers.find((l) => l.code === focusCode.toUpperCase())
+      if (target) {
+        setSelectedId(target._id)
+        setDetailId(target._id)
+        if (hasCoords(target)) {
+          setFlyTarget({ lat: target.coordinates!.latitude, lng: target.coordinates!.longitude, id: groupKey(target) })
+        }
+      }
+      setSearchParams({}, { replace: true })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [focusCode, lockers, setSearchParams])
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -152,14 +185,55 @@ export function LockerMapPage() {
 
   const handleSelect = (l: LockerMapItem) => {
     setSelectedId(l._id)
+    setDetailId(l._id)
     if (hasCoords(l)) {
       setFlyTarget({ lat: l.coordinates!.latitude, lng: l.coordinates!.longitude, id: groupKey(l) })
     }
   }
 
+  // Đã mở ngăn chi tiết thì không bật thêm popup để khỏi chồng chéo
   const handleArrived = useCallback((id: string) => {
+    if (detailRef.current) return
     markerRefs.current[id]?.openPopup()
   }, [])
+
+  // ── Vị trí của tôi và chỉ đường ──
+  async function locateMe(): Promise<(LatLng & { accuracy: number }) | null> {
+    try {
+      const pos = await getCurrentPosition()
+      setMyPos(pos)
+      return pos
+    } catch (err) {
+      const code = err instanceof Error ? err.message : ''
+      toast.error(t(code === 'denied' ? 'map2.locDenied' : code === 'unsupported' ? 'map2.locUnsupported' : 'map2.locUnavailable'))
+      return null
+    }
+  }
+
+  async function handleLocateMe() {
+    if (navBusy) return
+    setNavBusy('locating')
+    const pos = await locateMe()
+    setNavBusy(null)
+    if (pos) setFlyTarget({ lat: pos.lat, lng: pos.lng, id: '__me__' })
+  }
+
+  async function handleDirections(l: LockerMapItem) {
+    if (!hasCoords(l) || navBusy) return
+    setNavBusy('locating')
+    const from = myPos ?? (await locateMe())
+    if (!from) {
+      setNavBusy(null)
+      return
+    }
+    setNavBusy('routing')
+    const result = await getRoute(from, { lat: l.coordinates!.latitude, lng: l.coordinates!.longitude })
+    setRoute({ lockerId: l._id, result })
+    setRouteFit((n) => n + 1)
+    setNavBusy(null)
+  }
+
+  const routePoints = useMemo<[number, number][]>(() => route?.result.coords ?? [], [route])
 
   // ── Chỉnh sửa vị trí ──
   const openEdit = (l: LockerMapItem) => {
@@ -243,6 +317,9 @@ export function LockerMapPage() {
     closeEdit()
   }
 
+  const detail = lockers.find((l) => l._id === detailId) ?? null
+  const showDrawer = detail !== null && !isPicking
+
   const draftLatNum = parseCoord(draftLat, -90, 90)
   const draftLngNum = parseCoord(draftLng, -180, 180)
   const showDraftPin = editing !== null && draftLatNum !== null && draftLngNum !== null
@@ -254,7 +331,7 @@ export function LockerMapPage() {
 
   return (
     <div className="relative -m-4 h-[calc(100%+2rem)] overflow-hidden sm:-m-6 sm:h-[calc(100%+3rem)] lg:-m-8 lg:h-[calc(100%+4rem)]">
-      <div className={`lm-map absolute inset-0 isolate ${isPicking ? 'is-picking' : ''}`}>
+      <div className={`lm-map absolute inset-0 isolate ${isPicking ? 'is-picking' : ''} ${showDrawer ? 'has-drawer' : ''}`}>
         <MapContainer
           center={DEFAULT_CENTER}
           zoom={13}
@@ -270,6 +347,23 @@ export function LockerMapPage() {
 
           <FitToLockers points={fitPoints} signal={fitSignal} />
           <FlyToMarker target={flyTarget} onArrived={handleArrived} />
+          <FitToBounds points={routePoints} signal={routeFit} />
+
+          {route && (
+            <>
+              <Polyline positions={route.result.coords} pathOptions={{ color: '#ffffff', weight: 9, opacity: 0.9 }} />
+              <Polyline
+                positions={route.result.coords}
+                pathOptions={{ color: '#2563eb', weight: 5, dashArray: route.result.source === 'straight' ? '8 8' : undefined }}
+              />
+            </>
+          )}
+          {myPos && (
+            <>
+              <Circle center={[myPos.lat, myPos.lng]} radius={myPos.accuracy} pathOptions={{ color: '#2563eb', weight: 1, fillOpacity: 0.08 }} />
+              <Marker position={[myPos.lat, myPos.lng]} icon={MY_LOCATION_ICON} zIndexOffset={900} title={t('map2.youAreHere')} />
+            </>
+          )}
           <MapClickPicker
             active={isPicking}
             onPick={(lat, lng) => {
@@ -304,7 +398,12 @@ export function LockerMapPage() {
                       const target = lockers.find((l) => l._id === id)
                       if (target) openEdit(target)
                     }}
-                    onOpenDetail={(code) => navigate(`/lockers/${encodeURIComponent(code)}`)}
+                    onOpenDetail={(code) => {
+                      const target = lockers.find((l) => l.code === code)
+                      if (!target) return
+                      setSelectedId(target._id)
+                      setDetailId(target._id)
+                    }}
                     onOpenIssues={() => navigate('/issues')}
                   />
                 </Popup>
@@ -350,6 +449,15 @@ export function LockerMapPage() {
         )}
         <button
           type="button"
+          onClick={() => void handleLocateMe()}
+          title={t('map2.myLocation')}
+          disabled={navBusy !== null}
+          className={`${floatingBtn} ${myPos ? '!text-blue-600' : ''}`}
+        >
+          {navBusy === 'locating' ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
           onClick={() => setFitSignal((n) => n + 1)}
           title={t('map.fitAll')}
           disabled={fitPoints.length === 0}
@@ -368,6 +476,23 @@ export function LockerMapPage() {
         </button>
       </div>
 
+      {showDrawer && detail && (
+        <LockerDetailDrawer
+          key={detail._id}
+          locker={detail}
+          issueCount={activeIssuesByCode.get(detail.code)?.length ?? 0}
+          myPos={myPos}
+          route={route?.lockerId === detail._id ? route.result : null}
+          navBusy={navBusy}
+          onClose={() => setDetailId(null)}
+          onEdit={() => openEdit(detail)}
+          onDirections={() => void handleDirections(detail)}
+          onClearRoute={() => setRoute(null)}
+          onOpenFull={() => navigate(`/lockers/${encodeURIComponent(detail.code)}`)}
+          onOpenIssues={() => navigate('/issues')}
+        />
+      )}
+
       {editing && isPicking && (
         <PickingBar
           lockerCode={editing.code}
@@ -385,6 +510,8 @@ export function LockerMapPage() {
           lat={draftLat}
           lng={draftLng}
           hidden={isPicking}
+          orgName={editing.buildingId?.name ?? ''}
+          siblingCount={lockers.filter((l) => groupKey(l) === groupKey(editing)).length}
           onCoordsChange={(lat, lng) => {
             setDraftLat(lat)
             setDraftLng(lng)

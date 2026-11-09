@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bell, Building2, CheckCheck, ChevronDown, Cpu, Inbox, Loader2, MailOpen, Package, RefreshCw, Settings2, ShieldAlert, Trash2 } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ArrowUpRight, Bell, Building2, CheckCheck, ChevronDown, Cpu, Inbox, Loader2, MailOpen, Package, RefreshCw, Settings2, ShieldAlert, Trash2 } from 'lucide-react'
 import { useToast } from '../../context/ToastContext'
 import { useTranslation } from '../../context/LanguageContext'
 import { formatDate, formatDateTime, formatRelativeTime } from '../../i18n/format'
 import type { TranslationKey } from '../../i18n/translations'
 import { useAuthStore } from '../../store/useAuthStore'
 import { getBuildingNames } from '../../service/buildingNames'
+import { getPendingResidents, type TPendingResident } from '../../service/approval.service'
+import { ResidentApprovalModal } from '../../components/notifications/ResidentApprovalModal'
+import { getNotificationTarget } from '../../utils/notificationLink'
 import {
+  NOTIFICATIONS_CHANGED_EVENT,
   deleteNotification,
+  emitNotificationsChanged,
   listNotifications,
   markAllAsRead,
   markAsRead,
@@ -41,11 +47,20 @@ export function NotificationsPage() {
   const { t } = useTranslation()
   const { user } = useAuthStore()
   const isSuperAdmin = user?.role === 'super_admin'
+  const isBuildingAdmin = user?.role === 'org_admin'
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // Chuông chuyển tới đây kèm ?open=<mã thông báo> để mở sẵn thông báo đó
+  const openParam = searchParams.get('open')
 
   const [folder, setFolder] = useState<TFolder>('all')
   const [priority, setPriority] = useState<TNotificationPriority | 'all'>('all')
   const [buildingFilter, setBuildingFilter] = useState('all')
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openState, setOpenState] = useState<{ param: string | null; id: string | null } | null>(null)
+  const expandedId = openState && openState.param === openParam ? openState.id : openParam
+  const [reviewing, setReviewing] = useState<TPendingResident | null>(null)
+  // Tăng lên khi có thông báo mới hoặc thay đổi ở nơi khác, để tải lại âm thầm không hiện vòng xoay
+  const [liveTick, setLiveTick] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
   const [names, setNames] = useState<Map<string, string>>(new Map())
   const [now] = useState(() => Date.now())
@@ -71,7 +86,14 @@ export function NotificationsPage() {
     return () => {
       active = false
     }
-  }, [reloadKey])
+  }, [reloadKey, liveTick])
+
+  // Chuông báo có thông báo mới hoặc vừa đổi: tải lại ngay
+  useEffect(() => {
+    const onChanged = () => setLiveTick((n) => n + 1)
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged)
+    return () => window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged)
+  }, [])
 
   const items = useMemo(() => loaded?.items ?? [], [loaded])
 
@@ -138,12 +160,47 @@ export function NotificationsPage() {
     }
     patchItems((list) => list.map((x) => (x._id === n._id ? { ...x, isRead: true } : x)))
     setLoaded((prev) => (prev ? { ...prev, unread: Math.max(0, prev.unread - 1) } : prev))
+    emitNotificationsChanged()
   }
 
   function handleToggle(n: TNotification) {
-    const opening = openId !== n._id
-    setOpenId(opening ? n._id : null)
+    const opening = expandedId !== n._id
+    setOpenState({ param: openParam, id: opening ? n._id : null })
     if (opening) handleMarkRead(n)
+  }
+
+  // Mở thông báo từ chuông: đánh dấu đã đọc và cuộn tới nó
+  useEffect(() => {
+    if (!openParam || loaded?.key !== reloadKey) return
+    const target = loaded.items.find((n) => n._id === openParam)
+    if (!target) return
+    if (!target.isRead) {
+      void markAsRead(target._id).then((res) => {
+        if (!res) return
+        patchItems((list) => list.map((x) => (x._id === target._id ? { ...x, isRead: true } : x)))
+        setLoaded((prev) => (prev ? { ...prev, unread: Math.max(0, prev.unread - 1) } : prev))
+        emitNotificationsChanged()
+      })
+    }
+    const timer = window.setTimeout(() => document.getElementById(`notif-${openParam}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80)
+    return () => window.clearTimeout(timer)
+    // Chỉ chạy khi đổi thông báo cần mở hoặc dữ liệu vừa tải xong
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openParam, loaded?.key])
+
+  // Mở hồ sơ cư dân chờ duyệt để duyệt ngay trong hộp thư
+  async function handleReview(residentId: string) {
+    try {
+      const pending = await getPendingResidents()
+      const found = pending.find((r) => r._id === residentId)
+      if (!found) {
+        toast.info(t('notif.residentDone'))
+        return
+      }
+      setReviewing(found)
+    } catch (err) {
+      toast.error(t('notif.residentLoadFailed', { message: err instanceof Error ? err.message : '' }))
+    }
   }
 
   async function handleMarkAllRead() {
@@ -153,6 +210,7 @@ export function NotificationsPage() {
     }
     patchItems((list) => list.map((x) => ({ ...x, isRead: true })))
     setLoaded((prev) => (prev ? { ...prev, unread: 0 } : prev))
+    emitNotificationsChanged()
     toast.success(t('notif.markedAllRead'))
   }
 
@@ -163,7 +221,8 @@ export function NotificationsPage() {
     }
     patchItems((list) => list.filter((x) => x._id !== n._id))
     if (!n.isRead) setLoaded((prev) => (prev ? { ...prev, unread: Math.max(0, prev.unread - 1) } : prev))
-    setOpenId(null)
+    setOpenState({ param: openParam, id: null })
+    emitNotificationsChanged()
     toast.success(t('notif.deleted'))
   }
 
@@ -296,11 +355,12 @@ export function NotificationsPage() {
                   <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                     {group.items.map((n) => {
                       const cat = CATEGORY_CONFIG[n.category] ?? CATEGORY_CONFIG.SYSTEM
-                      const open = openId === n._id
+                      const open = expandedId === n._id
+                      const target = getNotificationTarget(n, isBuildingAdmin)
                       const buildingName = isSuperAdmin && n.buildingId ? (names.get(n.buildingId) ?? null) : null
                       const important = n.priority === 'CRITICAL' || n.priority === 'HIGH'
                       return (
-                        <li key={n._id} className={open ? 'bg-sky-50/40 dark:bg-sky-500/5' : ''}>
+                        <li key={n._id} id={`notif-${n._id}`} className={open ? 'bg-sky-50/40 dark:bg-sky-500/5' : ''}>
                           <button type="button" onClick={() => handleToggle(n)} className="flex w-full cursor-pointer items-start gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                             <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${cat.tone}`}>{cat.icon}</span>
                             <span className="min-w-0 flex-1">
@@ -337,10 +397,20 @@ export function NotificationsPage() {
                                     {buildingName}
                                   </span>
                                 )}
+                                {target && (
+                                  <button
+                                    type="button"
+                                    onClick={() => (target.kind === 'review-resident' ? void handleReview(target.residentId) : navigate(target.path))}
+                                    className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 font-semibold text-white hover:bg-sky-700"
+                                  >
+                                    {t(target.labelKey, target.kind === 'route' ? target.labelParams : undefined)}
+                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handleDelete(n)}
-                                  className="ml-auto flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 cursor-pointer"
+                                  className={`${target ? '' : 'ml-auto'} flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 cursor-pointer`}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                   {t('bell.deleteNotif')}
@@ -372,6 +442,17 @@ export function NotificationsPage() {
           )}
         </section>
       </div>
+      {reviewing && (
+        <ResidentApprovalModal
+          resident={reviewing}
+          onClose={() => setReviewing(null)}
+          onDone={() => {
+            setReviewing(null)
+            setLiveTick((n) => n + 1)
+            emitNotificationsChanged()
+          }}
+        />
+      )}
     </div>
   )
 }

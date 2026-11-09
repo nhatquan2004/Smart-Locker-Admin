@@ -128,10 +128,16 @@ export async function createOrganization(payload: TCreateOrgPayload): Promise<TO
     name: payload.name,
     code: payload.code.toUpperCase(),
     address: payload.address,
-    // Server bắt buộc hai trường này, giai đoạn thử nghiệm dùng giá trị mặc định
-    totalFloors: 10,
-    totalApartments: 50,
+    totalFloors: payload.totalFloors,
+    totalApartments: payload.totalApartments,
     managementEmail: payload.adminEmail,
+    ...(payload.hotline ? { hotline: payload.hotline } : {}),
+    bankAccount: {
+      bankBin: payload.bankAccount.bankBin.trim(),
+      bankName: payload.bankAccount.bankName.trim() || undefined,
+      accountNumber: payload.bankAccount.accountNumber.trim(),
+      accountName: payload.bankAccount.accountName.trim().toUpperCase(),
+    },
     ...(payload.latitude !== undefined && payload.longitude !== undefined
       ? { latitude: payload.latitude, longitude: payload.longitude }
       : {}),

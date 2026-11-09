@@ -72,3 +72,24 @@ export function MapClickPicker({
   })
   return null
 }
+
+// Thu phóng cho vừa một tuyến đường mỗi khi `signal` đổi
+export function FitToBounds({
+  points,
+  signal,
+}: {
+  points: [number, number][]
+  signal: number
+}) {
+  const map = useMap()
+  const lastSignal = useRef(0)
+
+  useEffect(() => {
+    if (signal === 0 || lastSignal.current === signal || points.length === 0) return
+    lastSignal.current = signal
+    // Chừa chỗ cho danh sách bên trái và ngăn chi tiết bên phải
+    map.fitBounds(points, { paddingTopLeft: [380, 70], paddingBottomRight: [420, 50], maxZoom: 17 })
+  }, [points, signal, map])
+
+  return null
+}

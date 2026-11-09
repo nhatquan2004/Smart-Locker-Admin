@@ -24,6 +24,8 @@ export type TNotification = {
   // Tòa nhà của sự kiện (server chỉ trả mã, không kèm tên)
   buildingId?: string
   type?: string
+  // Mã tham chiếu server gắn kèm: residentId, issueId, ticketCode, packageId...
+  metadata?: Record<string, unknown>
   actionUrl?: string
   createdAt: string
   updatedAt: string
@@ -85,6 +87,12 @@ export async function getMyNotifications(
   } catch {
     return { data: [], total: 0, page: 1, limit: 20 }
   }
+}
+
+// Báo cho chuông và hộp thư rằng thông báo vừa thay đổi (có thông báo mới, đã đọc, đã xóa) để cùng cập nhật ngay
+export const NOTIFICATIONS_CHANGED_EVENT = 'smart-locker:notifications-changed'
+export function emitNotificationsChanged() {
+  window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT))
 }
 
 export type TNotificationInbox = { data: TNotification[]; total: number; unreadCount: number }

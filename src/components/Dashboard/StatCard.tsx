@@ -1,6 +1,6 @@
 import type { TDashboardStat } from "../../types/dashboard.type"
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Boxes, CheckCircle2, PackageCheck } from 'lucide-react'
+import { AlertTriangle, Boxes, CheckCircle2, PackageCheck, ShieldAlert } from 'lucide-react'
 
 type TProps = {
   stat: TDashboardStat
@@ -38,6 +38,8 @@ const statIcons: Record<TDashboardStat['id'], React.ReactNode> = {
   'available-lockers': <CheckCircle2 className="w-5 h-5" />,
   'active-shipments': <PackageCheck className="w-5 h-5" />,
   'overdue-shipments': <AlertTriangle className="w-5 h-5" />,
+  'escalated-issues': <ShieldAlert className="w-5 h-5" />,
+  'urgent-issues': <AlertTriangle className="w-5 h-5" />,
 }
 
 export function StatCard({ stat }: TProps) {
