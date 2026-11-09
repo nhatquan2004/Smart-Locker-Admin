@@ -50,7 +50,11 @@ const reporterRoleMap: Record<string, TIssueItem['reporterRole']> = {
   BUILDING_ADMIN: 'org_admin',
 }
 
+// Ghi chú server tự điền khi Ban quản lý chuyển phiếu mà không nhập gì
+const DEFAULT_ESCALATE_NOTE = 'Leo thang lên Super Admin'
+
 function mapIssue(i: TApiIssue, names: Map<string, string>): TIssueItem {
+  const esc = [...(i.timeline ?? [])].reverse().find((tl) => tl.toStatus === 'ESCALATED')
   const buildingId = typeof i.buildingId === 'string' ? i.buildingId : i.buildingId?._id
   const locker = typeof i.lockerId === 'object' ? i.lockerId : undefined
 
@@ -68,11 +72,15 @@ function mapIssue(i: TApiIssue, names: Map<string, string>): TIssueItem {
     priority: i.priority.toLowerCase() as TIssuePriority,
     status: i.status.toLowerCase() as TIssueStatus,
     escalatedToSuperAdmin: i.escalatedToSuperAdmin,
+    escalation: esc
+      ? { by: esc.actorName ?? '—', at: formatDateTime(esc.at), note: esc.note && esc.note !== DEFAULT_ESCALATE_NOTE ? esc.note : undefined }
+      : undefined,
     title: i.title,
     description: i.description,
     attachments: (i.attachments ?? []).map((a) => a.url),
     assignee: i.assignee?.name,
     createdAt: formatDateTime(i.createdAt),
+    createdAtIso: i.createdAt,
     updatedAt: formatDateTime(i.updatedAt),
     resolutionNote: i.resolutionNote,
     // Server ghi theo thứ tự thời gian, hiển thị mới nhất lên đầu
@@ -153,6 +161,18 @@ export async function getIssueCounts(scope: Pick<TIssueQuery, 'buildingId'> = {}
   return { pending, inProgress, escalated, urgentOpen: urgentPending + urgentProgress + urgentEscalated }
 }
 
+// Super Admin chỉ làm việc với phiếu Ban quản lý đã chuyển lên. Server chưa có bộ lọc theo cờ này nên lấy theo từng trạng thái
+// (tối đa 100 phiếu mới nhất mỗi trạng thái) rồi lọc ở phía client.
+const ESCALATED_FLOW_STATUSES: TIssueStatus[] = ['escalated', 'in_progress', 'resolved', 'closed']
+
+export async function getEscalatedIssues(query: Omit<TIssueQuery, 'status' | 'page' | 'limit'> = {}): Promise<TIssueItem[]> {
+  const pages = await Promise.all(ESCALATED_FLOW_STATUSES.map((status) => getIssues({ ...query, status, limit: 100 })))
+  return pages
+    .flatMap((p) => p.items)
+    .filter((i) => i.escalatedToSuperAdmin)
+    .sort((a, b) => b.createdAtIso.localeCompare(a.createdAtIso))
+}
+
 // Các chuyển trạng thái server cho phép qua PATCH /issues/:id/status (ESCALATED đi qua API leo thang riêng)
 const TRANSITIONS: Record<TIssueStatus, TIssueStatus[]> = {
   pending: ['in_progress', 'resolved'],
@@ -162,9 +182,14 @@ const TRANSITIONS: Record<TIssueStatus, TIssueStatus[]> = {
   closed: [],
 }
 
-export function canTransition(from: TIssueStatus, to: TIssueStatus, isSuperAdmin: boolean): boolean {
-  // Phiếu đã chuyển lên Super Admin thì Ban quản lý không được tự xử lý
-  if (from === 'escalated' && !isSuperAdmin) return false
+// Phiếu đã chuyển lên Super Admin mà chưa xử lý xong thì Ban quản lý chỉ được xem
+export function isLockedForBuilding(issue: Pick<TIssueItem, 'status' | 'escalatedToSuperAdmin'>): boolean {
+  return !!issue.escalatedToSuperAdmin && (issue.status === 'escalated' || issue.status === 'in_progress')
+}
+
+export function canTransition(issue: Pick<TIssueItem, 'status' | 'escalatedToSuperAdmin'>, to: TIssueStatus, isSuperAdmin: boolean): boolean {
+  const from = issue.status
+  if (!isSuperAdmin && isLockedForBuilding(issue)) return false
   return TRANSITIONS[from].includes(to)
 }
 

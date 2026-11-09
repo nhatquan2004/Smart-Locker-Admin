@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppButton } from '../../components/common'
 import { EmptyState } from '../../components/shared/EmptyState/EmptyState'
-import { createOrganization, deleteOrganization, getOrganizations } from '../../service/organization.service'
-import { createUser } from '../../service/user.service'
-import { geocodeAddress } from '../../utils/geocode'
+import { deleteOrganization, getOrganizations } from '../../service/organization.service'
+import { CreateOrgModal } from '../../components/Organizations/CreateOrgModal'
 import { AddLockerModal } from '../../components/Lockers/AddLockerModal'
-import type { TCreateOrgPayload, TOrganization, TOrgType } from '../../types/organization.type'
+import type { TOrganization, TOrgType } from '../../types/organization.type'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useTranslation } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
@@ -35,18 +34,8 @@ export function OrganizationsPage() {
     commercial: { label: t('org.typeCommercial'), style: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' },
   }
 
-  // Form states for creating new org
-  const [formName, setFormName] = useState('')
-  const [formCode, setFormCode] = useState('')
-  const [formType, setFormType] = useState<TOrgType>('enterprise')
-  const [formAddress, setFormAddress] = useState('')
-  const [formAdminName, setFormAdminName] = useState('')
-  const [formAdminEmail, setFormAdminEmail] = useState('')
-  const [formAdminPhone, setFormAdminPhone] = useState('')
-  const [formAdminPassword, setFormAdminPassword] = useState('')
   // Doanh nghiệp vừa tạo xong, mở luôn hộp thoại thêm trạm tủ đầu tiên
   const [stationOrg, setStationOrg] = useState<TOrganization | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     getOrganizations().then(setOrganizations)
@@ -60,72 +49,6 @@ export function OrganizationsPage() {
       return matchSearch && matchType
     })
   }, [organizations, search, typeFilter])
-
-  async function handleCreateOrg(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formName || !formCode || !formAddress.trim()) return
-
-    setIsSubmitting(true)
-    const adminEmail = formAdminEmail || `admin.${formCode.toLowerCase()}@smartlocker.vn`
-    const adminName = formAdminName || `Admin ${formName}`
-
-    // Tìm tọa độ từ địa chỉ; không tìm được vẫn tạo doanh nghiệp bình thường
-    const coords = await geocodeAddress(formAddress).catch(() => null)
-
-    const payload: TCreateOrgPayload = {
-      name: formName,
-      code: formCode,
-      type: formType,
-      address: formAddress.trim(),
-      latitude: coords?.lat,
-      longitude: coords?.lng,
-      adminName,
-      adminEmail,
-    }
-
-    let newOrg: TOrganization
-    try {
-      newOrg = await createOrganization(payload)
-    } catch (err) {
-      toast.error(t('org.createFailed', { message: err instanceof Error ? err.message : '' }))
-      setIsSubmitting(false)
-      return
-    }
-
-    setOrganizations((prev) => [newOrg, ...prev])
-
-    // Tài khoản quản lý chỉ tạo khi có số điện thoại thật
-    if (formAdminPhone.trim()) {
-      try {
-        await createUser({
-          fullName: adminName,
-          phone: formAdminPhone.trim(),
-          email: adminEmail,
-          password: formAdminPassword || undefined,
-          role: 'org_admin',
-          orgId: newOrg.id,
-          companyName: newOrg.name,
-          unitNumber: t('org.adminUnitNumber'),
-        })
-      } catch (err) {
-        toast.error(t('org.adminCreateFailed', { message: err instanceof Error ? err.message : '' }))
-      }
-    }
-
-    setIsSubmitting(false)
-    setIsCreateModalOpen(false)
-    toast.success(t('org.createdToast', { name: newOrg.name }))
-    if (!coords) toast.info(t('org.noCoordsToast'))
-
-    setFormName('')
-    setFormCode('')
-    setFormAddress('')
-    setFormAdminName('')
-    setFormAdminEmail('')
-    setFormAdminPhone('')
-    setFormAdminPassword('')
-    setStationOrg(newOrg)
-  }
 
   function handleOpenDeleteModal(org: TOrganization) {
     setDeleteTargetOrg(org)
@@ -295,131 +218,15 @@ export function OrganizationsPage() {
         />
       )}
 
-      {/* Create Org Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col my-8">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h3 className="text-[17px] font-bold text-slate-900 dark:text-white">{t('org.createTitle')}</h3>
-                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">{t('org.createDesc')}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateOrg} className="p-5 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldName')} <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={t('org.namePlaceholder')}
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 font-bold"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldCode')} <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={t('org.codePlaceholder')}
-                    value={formCode}
-                    onChange={(e) => setFormCode(e.target.value.toUpperCase())}
-                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono font-bold bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldType')}</label>
-                  <select
-                    value={formType}
-                    onChange={(e) => setFormType(e.target.value as TOrgType)}
-                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 cursor-pointer"
-                  >
-                    <option value="enterprise">{t('org.optEnterprise')}</option>
-                    <option value="apartment">{t('org.optApartment')}</option>
-                    <option value="dormitory">{t('org.optDormitory')}</option>
-                    <option value="commercial">{t('org.optCommercial')}</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('org.fieldAddress')}</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={t('org.addressPlaceholder')}
-                    title={t('org.addressRequired')}
-                    value={formAddress}
-                    onChange={(e) => setFormAddress(e.target.value)}
-                    className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              {/* Admin info */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 flex flex-col gap-3">
-                <h4 className="text-[12px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase">{t('org.adminSection')}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder={t('org.adminNamePh')}
-                    value={formAdminName}
-                    onChange={(e) => setFormAdminName(e.target.value)}
-                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                  />
-                  <input
-                    type="email"
-                    placeholder={t('org.adminEmailPh')}
-                    value={formAdminEmail}
-                    onChange={(e) => setFormAdminEmail(e.target.value)}
-                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                  />
-                  <input
-                    type="tel"
-                    placeholder={t('org.adminPhonePh')}
-                    value={formAdminPhone}
-                    onChange={(e) => setFormAdminPhone(e.target.value)}
-                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] font-mono bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                  />
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    placeholder={t('org.adminPasswordPh')}
-                    value={formAdminPassword}
-                    onChange={(e) => setFormAdminPassword(e.target.value)}
-                    className="h-9.5 px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  {t('common.cancel')}
-                </button>
-                <AppButton type="submit" disabled={isSubmitting || !formName || !formCode || !formAddress.trim()}>
-                  {isSubmitting ? t('org.locating') : t('org.createBtn')}
-                </AppButton>
-              </div>
-            </form>
-          </div>
-        </div>
+        <CreateOrgModal
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreated={(org) => {
+            setOrganizations((prev) => [org, ...prev])
+            setIsCreateModalOpen(false)
+            setStationOrg(org)
+          }}
+        />
       )}
 
       {/* Thêm trạm tủ đầu tiên ngay sau khi tạo doanh nghiệp */}

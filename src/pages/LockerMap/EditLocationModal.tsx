@@ -12,6 +12,9 @@ type Props = {
   lng: string
   // Ẩn tạm thời (không hủy) khi đang ghim trên bản đồ để giữ nguyên dữ liệu đã nhập
   hidden: boolean
+  // Doanh nghiệp / khu trọ của tủ và số tủ cùng dùng chung vị trí đó
+  orgName: string
+  siblingCount: number
   onCoordsChange: (lat: string, lng: string) => void
   onPickOnMap: () => void
   onGeocoded: (lat: number, lng: number) => void
@@ -34,6 +37,8 @@ export function EditLocationModal({
   lat,
   lng,
   hidden,
+  orgName,
+  siblingCount,
   onCoordsChange,
   onPickOnMap,
   onGeocoded,
@@ -136,7 +141,7 @@ export function EditLocationModal({
 
         <div className="custom-scrollbar space-y-4 overflow-y-auto px-5 pb-5 pt-2">
           <div>
-            <label className={labelCls}>{t('map.byAddress')}</label>
+            <label className={labelCls}>{t('map2.addrLabel')}</label>
             <div className="flex gap-2">
               <input
                 value={address}
@@ -163,7 +168,6 @@ export function EditLocationModal({
             </div>
             <p className="mt-1.5 text-[11.5px] text-slate-400">
               {t('map.osmNote')}
-              {locker.buildingId && ' ' + t('map.addressSaveNote')}
             </p>
           </div>
 
@@ -206,7 +210,7 @@ export function EditLocationModal({
           </div>
 
           <div>
-            <label className={labelCls}>{t('map.descLabel')}</label>
+            <label className={labelCls}>{t('map2.descLabel')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -215,6 +219,15 @@ export function EditLocationModal({
               className={`${inputCls} resize-none py-2`}
             />
           </div>
+        </div>
+
+        <div className="mx-5 mb-4 rounded-xl bg-sky-50 px-3.5 py-3 text-[12px] leading-relaxed text-sky-900 dark:bg-sky-500/10 dark:text-sky-100">
+          <p className="font-semibold">{t('map2.editsTitle')}</p>
+          <ul className="mt-1 list-disc pl-4">
+            <li>{t('map2.editCoords', { count: siblingCount, org: orgName || locker.name })}</li>
+            {locker.buildingId && <li>{t('map2.editAddress', { org: orgName })}</li>}
+            <li>{t('map2.editDesc', { code: locker.code })}</li>
+          </ul>
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3 dark:border-slate-800 dark:bg-slate-900">

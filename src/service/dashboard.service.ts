@@ -45,8 +45,18 @@ async function loadRecentActivities(): Promise<TActivityItem[]> {
 type TShipmentCounts = Awaited<ReturnType<typeof getShipmentCounts>>
 type TIssueData = { open: number; urgent: number }
 
+export type TDashboardScope = 'system' | 'building'
+
 // Số sự cố đang mở = chờ xử lý + đang xử lý + đã chuyển lên Super Admin
-async function loadIssueData(): Promise<TIssueData> {
+async function loadIssueData(scope: TDashboardScope): Promise<TIssueData> {
+    // Super Admin chỉ nhận các phiếu Ban quản lý đã chuyển lên
+    if (scope === 'system') {
+        const [escalated, urgent] = await Promise.all([
+            getIssues({ status: 'escalated', limit: 1 }),
+            getIssues({ status: 'escalated', priority: 'urgent', limit: 1 }),
+        ])
+        return { open: escalated.total, urgent: urgent.total }
+    }
     const [counts, inProgress] = await Promise.all([
         getIssueCounts(),
         getIssues({ status: 'in_progress', limit: 1 }),
@@ -69,7 +79,7 @@ function toStation(s: TLockerStation): TDashboardStation {
     }
 }
 
-function buildStats(stations: TLockerStation[], shipments: TShipmentCounts | null): TDashboardStat[] {
+function buildStats(stations: TLockerStation[], shipments: TShipmentCounts | null, issues: TIssueData | null, scope: TDashboardScope): TDashboardStat[] {
     const compartments = stations.flatMap((s) => s.compartments)
     const total = compartments.length
     const avail = compartments.filter((c) => c.status === 'available').length
@@ -97,7 +107,28 @@ function buildStats(stations: TLockerStation[], shipments: TShipmentCounts | nul
         },
     ]
 
-    if (shipments) {
+    if (scope === 'system') {
+        stats.push(
+            {
+                id: 'escalated-issues',
+                label: tNow('dash.stat.escalated'),
+                value: issues ? String(issues.open) : UNKNOWN,
+                change: issues ? tNow('dash.stat.escalatedChange', { count: issues.urgent }) : UNKNOWN,
+                trend: issues && issues.open > 0 ? 'down' : 'neutral',
+                description: tNow('dash.stat.escalatedDesc'),
+                accent: 'purple',
+            },
+            {
+                id: 'urgent-issues',
+                label: tNow('dash.stat.urgentIssues'),
+                value: issues ? String(issues.urgent) : UNKNOWN,
+                change: UNKNOWN,
+                trend: issues && issues.urgent > 0 ? 'down' : 'neutral',
+                description: tNow('dash.stat.urgentIssuesDesc'),
+                accent: 'orange',
+            },
+        )
+    } else if (shipments) {
         const waiting = shipments.WAITING_FOR_PICKUP
         const overdue = shipments.OVERDUE
         const inLockers = waiting + overdue
@@ -193,11 +224,12 @@ function buildStatuses(stations: TLockerStation[], issues: TIssueData | null): T
 
 // Thẻ thống kê, tình trạng vận hành và danh sách trạm tính từ trạm tủ, bưu kiện, sự cố và nhật ký thật.
 // Server tự giới hạn theo quyền: Super Admin thấy toàn hệ thống, Ban quản lý chỉ thấy tòa của mình.
-export async function getDashboardOverview(): Promise<TDashboardOverview> {
+export async function getDashboardOverview(scope: TDashboardScope): Promise<TDashboardOverview> {
     const [stationsResult, shipmentsResult, issuesResult, activities] = await Promise.allSettled([
         getLockerStations(),
-        getShipmentCounts(),
-        loadIssueData(),
+        // Bưu kiện chỉ thuộc về Ban quản lý nên Super Admin không tải
+        scope === 'system' ? Promise.resolve(null) : getShipmentCounts(),
+        loadIssueData(scope),
         loadRecentActivities(),
     ]).then((results) => [results[0], results[1], results[2], results[3].status === 'fulfilled' ? results[3].value : []] as const)
 
@@ -209,7 +241,7 @@ export async function getDashboardOverview(): Promise<TDashboardOverview> {
     const issues = issuesResult.status === 'fulfilled' ? issuesResult.value : null
 
     return {
-        stats: buildStats(stations, shipments),
+        stats: buildStats(stations, shipments, issues, scope),
         statuses: buildStatuses(stations, issues),
         activities,
         quickActions: [
@@ -218,11 +250,17 @@ export async function getDashboardOverview(): Promise<TDashboardOverview> {
                 label: tNow('dash.quick.map'),
                 helper: tNow('dash.quick.mapHelper'),
             },
-            {
-                id: 'quick-shipments',
-                label: tNow('dash.quick.parcels'),
-                helper: tNow('dash.quick.parcelsHelper'),
-            },
+            scope === 'system'
+                ? {
+                    id: 'quick-issues',
+                    label: tNow('dash.quick.issues'),
+                    helper: tNow('dash.quick.issuesHelper'),
+                }
+                : {
+                    id: 'quick-shipments',
+                    label: tNow('dash.quick.parcels'),
+                    helper: tNow('dash.quick.parcelsHelper'),
+                },
             {
                 id: 'quick-users',
                 label: tNow('dash.quick.users'),

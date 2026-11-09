@@ -70,6 +70,20 @@ export const DEFAULT_PRICING_POLICY: TPricingPolicy = {
   maxOverdueFeeCap: 25000,
 }
 
+// Một số ngân hàng phổ biến để Ban quản lý chọn nhanh mã BIN theo chuẩn NAPAS
+export const COMMON_BANKS: { bin: string; name: string }[] = [
+  { bin: '970422', name: 'MB Bank' },
+  { bin: '970436', name: 'Vietcombank' },
+  { bin: '970407', name: 'Techcombank' },
+  { bin: '970415', name: 'VietinBank' },
+  { bin: '970418', name: 'BIDV' },
+  { bin: '970405', name: 'Agribank' },
+  { bin: '970416', name: 'ACB' },
+  { bin: '970432', name: 'VPBank' },
+  { bin: '970423', name: 'TPBank' },
+  { bin: '970403', name: 'Sacombank' },
+]
+
 const EMPTY_BANK: TBankAccount = { bankBin: '', bankName: '', accountNumber: '', accountName: '' }
 
 // Server chỉ tạo được mã QR khi có đủ mã BIN, số tài khoản và tên chủ tài khoản

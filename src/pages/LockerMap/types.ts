@@ -11,6 +11,7 @@ export interface LockerMapItem {
   occupiedBoxes?: number
   locationDescription?: string
   lastHeartbeatAt?: string
+  macAddress?: string
   coordinates?: { latitude: number; longitude: number }
   buildingId?: { _id: string; name: string; code: string; address?: string }
 }

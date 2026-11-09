@@ -22,7 +22,7 @@ import {
 import { useAuthStore } from "../../store/useAuthStore";
 import { useTranslation } from "../../context/LanguageContext";
 import lockerLogo from "../../assets/locker.png";
-import { ApprovalBell } from "./ApprovalBell";
+import { NotificationBell } from "./NotificationBell";
 import { getMyBuildingName } from "../../service/buildingNames";
 import { BroadcastModal } from "../notifications/BroadcastModal";
 import { BankAccountBanner } from "./BankAccountBanner";
@@ -97,7 +97,10 @@ export function AdminLayout() {
           ? [{ label: t("nav.lockerMap"), icon: <MapPin className="w-[18px] h-[18px]" />, to: "/locker-map" }]
           : []),
         { label: t("nav.users"), icon: <Users className="w-[18px] h-[18px]" />, to: "/users" },
-        { label: t("nav.shipments"), icon: <PackageCheck className="w-[18px] h-[18px]" />, to: "/shipments" },
+        // Bưu kiện thuộc nghiệp vụ của từng tòa nhà, Super Admin không xử lý
+        ...(isBuildingAdmin
+          ? [{ label: t("nav.shipments"), icon: <PackageCheck className="w-[18px] h-[18px]" />, to: "/shipments" }]
+          : []),
         { label: t("nav.issues"), icon: <ShieldAlert className="w-[18px] h-[18px]" />, to: "/issues" },
       ],
     },
@@ -214,7 +217,7 @@ export function AdminLayout() {
           </button>
 
           {/* Chuông thông báo: hiện với cả Ban quản lý và Super Admin */}
-          <ApprovalBell />
+          <NotificationBell />
         </div>
       </header>
 

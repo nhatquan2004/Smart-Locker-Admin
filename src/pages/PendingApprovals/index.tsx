@@ -316,12 +316,12 @@ export function PendingApprovalsPage() {
                     {[
                       { label: t('approval.fieldName'), value: selectedResident.name, icon: <User className="w-3.5 h-3.5" /> },
                       { label: t('approval.fieldPhone'), value: selectedResident.phone, mono: true },
-                      { label: 'Email', value: selectedResident.email, mono: true },
                       { label: t('approval.fieldApartment'), value: selectedResident.apartment, icon: <Building2 className="w-3.5 h-3.5" /> },
+                      { label: 'Email', value: selectedResident.email, mono: true, wide: true },
                     ].map((f) => (
-                      <div key={f.label} className="flex flex-col gap-0.5">
+                      <div key={f.label} className={`flex min-w-0 flex-col gap-0.5 ${f.wide ? 'col-span-2' : ''}`}>
                         <span className="text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{f.label}</span>
-                        <span className={`text-[13px] font-semibold text-slate-900 dark:text-white ${f.mono ? 'font-mono' : ''}`}>{f.value || '—'}</span>
+                        <span className={`text-[13px] font-semibold text-slate-900 dark:text-white [overflow-wrap:anywhere] ${f.mono ? 'font-mono' : ''}`}>{f.value || '—'}</span>
                       </div>
                     ))}
                   </div>

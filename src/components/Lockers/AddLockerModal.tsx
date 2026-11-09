@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Check, Copy, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, Check, Copy, MapPin, X } from 'lucide-react'
 import { AppButton } from '../common'
 import { useTranslation } from '../../context/LanguageContext'
 import { useToast } from '../../context/ToastContext'
@@ -59,6 +60,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 export function AddLockerModal({ org, onClose, onCreated }: TProps) {
   const { t } = useTranslation()
   const toast = useToast()
+  const navigate = useNavigate()
 
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
@@ -153,8 +155,24 @@ export function AddLockerModal({ org, onClose, onCreated }: TProps) {
             <CopyRow label={t('ci.topic')} value={`smartlocker/${created.code}/status`} />
           </div>
 
-          <div className="flex justify-end p-5 pt-0">
-            <AppButton onClick={onClose}>{t('ci.done')}</AppButton>
+          <div className="flex flex-wrap justify-end gap-2.5 p-5 pt-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 px-4 rounded-xl text-[12.5px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              {t('ci.done')}
+            </button>
+            <AppButton
+              onClick={() => {
+                onClose()
+                navigate(`/locker-map?focus=${encodeURIComponent(created.code)}`)
+              }}
+              className="flex items-center gap-1.5"
+            >
+              <MapPin className="w-4 h-4" />
+              {t('ci.viewOnMap')}
+            </AppButton>
           </div>
         </div>
       </div>

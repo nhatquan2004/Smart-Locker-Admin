@@ -15,13 +15,14 @@ export const RoutePermissionsConfig = {
     { path: '/organizations/:orgId', allowedRoles: ['super_admin'] as TUserRole[] },
     { path: '/settings', allowedRoles: ['super_admin'] as TUserRole[] },
     { path: '/locker-map', allowedRoles: ['super_admin'] as TUserRole[] },
+    // Bưu kiện là nghiệp vụ của từng tòa nhà nên chỉ Ban quản lý xử lý
+    { path: '/shipments', allowedRoles: ['org_admin'] as TUserRole[] },
+    { path: '/shipments/:shipmentId', allowedRoles: ['org_admin'] as TUserRole[] },
   ],
 }
 
 export function isRouteAllowed(pathname: string, userRole?: TUserRole): boolean {
   if (!userRole) return false
-  if (userRole === 'super_admin') return true
-
   for (const perm of RoutePermissionsConfig.permissions) {
     const regexPath = new RegExp('^' + perm.path.replace(/:[^\s/]+/g, '[^/]+') + '$')
     if (regexPath.test(pathname)) {

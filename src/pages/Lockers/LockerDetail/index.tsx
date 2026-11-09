@@ -6,6 +6,7 @@ import { AppButton } from '../../../components/common'
 import { useTranslation } from '../../../context/LanguageContext'
 import type { TranslationKey } from '../../../i18n/translations'
 import { useToast } from '../../../context/ToastContext'
+import { useAuthStore } from '../../../store/useAuthStore'
 import { AlertTriangle, CheckCircle2, Lock, Wrench, X } from 'lucide-react'
 
 // Server yêu cầu lý do từ 5 đến 200 ký tự khi mở khóa hoặc đổi trạng thái ngăn
@@ -23,6 +24,8 @@ export function LockerDetailPage() {
   const { lockerId } = useParams()
   const { t } = useTranslation()
   const toast = useToast()
+  // Super Admin không xem được người nhận hàng trong ngăn tủ
+  const isSuperAdmin = useAuthStore((state) => state.user?.role === 'super_admin')
 
   const [station, setStation] = useState<TLockerStation | null>(null)
   const [selectedCompartment, setSelectedCompartment] = useState<TCompartment | null>(null)
@@ -311,7 +314,11 @@ export function LockerDetailPage() {
               )}
 
               {/* Parcel / Shipment Info if Occupied */}
-              {selectedCompartment.currentShipment ? (
+              {selectedCompartment.currentShipment && isSuperAdmin ? (
+                <div className="p-4 rounded-xl setting-input-custom text-center text-[12px] font-bold">
+                  <span>{t('lockers.statusOccupied')}</span>
+                </div>
+              ) : selectedCompartment.currentShipment ? (
                 <div className="p-4 rounded-xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/80 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-mono font-bold text-sky-700 dark:text-sky-300">{t('shipments.title')}</span>

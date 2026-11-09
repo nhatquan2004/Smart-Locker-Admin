@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getShipments } from '../../../service/shipment.service'
 import { getActivities } from '../../../service/activity.service'
+import { getUserById } from '../../../service/user.service'
+import type { TUser } from '../../../types/user.type'
 import { UserRoleBadge } from "../../../components/Users/UserRoleBadge"
 import { UserStatusBadge } from "../../../components/Users/UserStatusBadge"
 import { ShipmentStatusBadge } from "../../../components/Shipments/ShipmentStatusBadge"
@@ -18,6 +20,7 @@ import {
 } from 'lucide-react'
 
 import { useUserStore } from '../../../store/useUserStore'
+import { useAuthStore } from '../../../store/useAuthStore'
 
 export function UserDetailPage() {
   const navigate = useNavigate()
@@ -25,18 +28,39 @@ export function UserDetailPage() {
   const { t } = useTranslation()
 
   const masterUsers = useUserStore((state) => state.users)
+  // Bưu kiện chỉ Ban quản lý được xem, Super Admin chỉ xem hồ sơ và nhật ký thao tác
+  const isSuperAdmin = useAuthStore((state) => state.user?.role === 'super_admin')
   // Bưu kiện của người dùng, tìm theo SĐT trên server (người nhận hoặc shipper)
   const [userShipments, setUserShipments] = useState<TShipment[]>([])
   const [shipmentTotal, setShipmentTotal] = useState(0)
   // Nhật ký thao tác của chính người dùng này, lọc theo actorId trên server
   const [userActivities, setUserActivities] = useState<TActivityItem[]>([])
   const [activityTotal, setActivityTotal] = useState(0)
-  const [activeTab, setActiveTab] = useState<'shipments' | 'activities'>('shipments')
+  const [activeTab, setActiveTab] = useState<'shipments' | 'activities'>(isSuperAdmin ? 'activities' : 'shipments')
   const [loading, setLoading] = useState(true)
 
-  const user = useMemo(() => {
-    return masterUsers.find((u) => u.id === userId) || null
-  }, [masterUsers, userId])
+  // Mở thẳng từ đường dẫn (ví dụ từ thông báo) hoặc tải lại trang thì danh sách người dùng trong bộ nhớ còn trống,
+  // nên phải tải riêng người này từ server. null nghĩa là server không có hoặc không đủ quyền xem.
+  const [fetched, setFetched] = useState<{ id: string; user: TUser | null } | null>(null)
+  const inStore = useMemo(() => masterUsers.find((u) => u.id === userId) || null, [masterUsers, userId])
+  const fetchedUser = fetched && fetched.id === userId ? fetched : null
+  const user = inStore ?? fetchedUser?.user ?? null
+  const notFound = !inStore && fetchedUser !== null && fetchedUser.user === null
+
+  useEffect(() => {
+    if (!userId || inStore) return
+    let active = true
+    getUserById(userId)
+      .then((u) => {
+        if (active) setFetched({ id: userId, user: u ?? null })
+      })
+      .catch(() => {
+        if (active) setFetched({ id: userId, user: null })
+      })
+    return () => {
+      active = false
+    }
+  }, [userId, inStore])
 
   useEffect(() => {
     if (!userId) return
@@ -62,7 +86,7 @@ export function UserDetailPage() {
 
   const userPhone = user?.phone
   useEffect(() => {
-    if (!userPhone || userPhone === '—') return
+    if (isSuperAdmin || !userPhone || userPhone === '—') return
     let active = true
     getShipments({ search: userPhone, limit: 50 })
       .then((res) => {
@@ -78,7 +102,22 @@ export function UserDetailPage() {
     return () => {
       active = false
     }
-  }, [userPhone])
+  }, [userPhone, isSuperAdmin])
+
+  if (notFound) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
+        <p className="text-[14px] font-semibold text-slate-700 dark:text-slate-300">{t('ud.notFound')}</p>
+        <button
+          type="button"
+          onClick={() => navigate('/users')}
+          className="inline-flex cursor-pointer items-center gap-1.5 text-[12.5px] font-bold text-sky-600 hover:underline dark:text-sky-400"
+        >
+          <ArrowLeft className="w-4 h-4" /> {t('ud.backToList')}
+        </button>
+      </div>
+    )
+  }
 
   if (loading || !user) {
     return (
@@ -216,6 +255,7 @@ export function UserDetailPage() {
           </div>
 
           <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            {!isSuperAdmin && (
             <button
               type="button"
               onClick={() => setActiveTab('shipments')}
@@ -227,6 +267,7 @@ export function UserDetailPage() {
               <PackageCheck className="w-4 h-4" />
               {t('ud.tabOrders', { count: shipmentTotal })}
             </button>
+            )}
 
             <button
               type="button"

@@ -7,6 +7,7 @@ import { formatCurrencyVnd } from '../../i18n/format'
 import type { TranslationKey } from '../../i18n/translations'
 import {
   DEFAULT_PRICING_POLICY,
+  COMMON_BANKS,
   buildPricingTiers,
   getMyBuildingPayment,
   isBankAccountComplete,
@@ -14,20 +15,6 @@ import {
   type TBankAccount,
   type TPricingPolicy,
 } from '../../service/payment.service'
-
-// Một số ngân hàng phổ biến để Ban quản lý chọn nhanh mã BIN theo chuẩn NAPAS
-const COMMON_BANKS: { bin: string; name: string }[] = [
-  { bin: '970422', name: 'MB Bank' },
-  { bin: '970436', name: 'Vietcombank' },
-  { bin: '970407', name: 'Techcombank' },
-  { bin: '970415', name: 'VietinBank' },
-  { bin: '970418', name: 'BIDV' },
-  { bin: '970405', name: 'Agribank' },
-  { bin: '970416', name: 'ACB' },
-  { bin: '970432', name: 'VPBank' },
-  { bin: '970423', name: 'TPBank' },
-  { bin: '970403', name: 'Sacombank' },
-]
 
 const inputCls =
   'h-10 w-full px-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-[13px] bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-sky-500'

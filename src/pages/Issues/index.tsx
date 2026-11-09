@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import {
   canTransition,
   escalateIssue,
+  getEscalatedIssues,
+  getIssueById,
   getIssueCounts,
   getIssues,
+  isLockedForBuilding,
   updateIssueStatus,
   type TIssueCounts,
 } from '../../service/issue.service'
@@ -17,7 +21,7 @@ import { AppTable } from '../../components/common/AppTable'
 import { useToast } from '../../context/ToastContext'
 import { useTranslation } from '../../context/LanguageContext'
 import type { TranslationKey } from '../../i18n/translations'
-import { Search, ChevronLeft, ChevronRight, Check, Image as ImageIcon, Phone, X, ArrowUpRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Check, Image as ImageIcon, Phone, X, ArrowUpRight, Building2, ShieldAlert } from 'lucide-react'
 
 const priorityStyle: Record<TIssuePriority, { labelKey: TranslationKey; dot: string; text: string }> = {
   urgent: { labelKey: 'is.prio.urgent', dot: 'bg-red-500', text: 'text-red-600 dark:text-red-400 font-semibold' },
@@ -51,6 +55,29 @@ const reporterRoleKeys: Record<TIssueItem['reporterRole'], TranslationKey> = {
 const FLOW: TIssueStatus[] = ['pending', 'in_progress', 'resolved', 'closed']
 
 const PAGE_SIZE = 20
+
+// Ai đang chịu trách nhiệm phiếu: dòng này nằm đầu ngăn kéo để không ai phải đoán
+function ownerBanner(i: TIssueItem, isSuperAdmin: boolean): { key: TranslationKey; tone: 'sky' | 'purple' | 'emerald' } {
+  const done = i.status === 'resolved' || i.status === 'closed'
+  if (!i.escalatedToSuperAdmin) return done ? { key: 'is.own.buildingDone', tone: 'emerald' } : { key: 'is.own.building', tone: 'sky' }
+  if (done) return { key: 'is.own.sysDone', tone: 'emerald' }
+  if (i.status === 'escalated') return { key: isSuperAdmin ? 'is.own.sysWaitMine' : 'is.own.sysWait', tone: 'purple' }
+  return { key: 'is.own.sysWorking', tone: 'purple' }
+}
+
+const bannerTone = {
+  sky: 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200',
+  purple: 'border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-200',
+  emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
+} as const
+
+const kpiTone = {
+  amber: 'text-amber-600 dark:text-amber-400',
+  sky: 'text-sky-600 dark:text-sky-400',
+  purple: 'text-purple-600 dark:text-purple-400',
+  red: 'text-red-600 dark:text-red-400',
+  emerald: 'text-emerald-600 dark:text-emerald-400',
+} as const
 
 const filterSelectCls =
   'setting-input-custom h-10 px-3.5 rounded-xl text-[13px] border focus:outline-none focus:border-sky-500 cursor-pointer'
@@ -130,18 +157,46 @@ export function IssuesPage() {
   const [noteInput, setNoteInput] = useState('')
   const [escalateReasonInput, setEscalateReasonInput] = useState('')
   const [showEscalateModal, setShowEscalateModal] = useState(false)
+  // Super Admin: toàn bộ phiếu đã được Ban quản lý chuyển lên (lọc theo tab ở phía client)
+  const [saAll, setSaAll] = useState<TIssueItem[]>([])
 
   const [filter, setFilter] = useState<TIssueFilter>({
     search: '',
     companyId: 'all',
     category: 'all',
     priority: 'all',
-    status: 'all',
+    // Super Admin vào là thấy ngay các phiếu đang chờ mình tiếp nhận
+    status: loggedUser?.role === 'super_admin' ? 'escalated' : 'all',
   })
   // Từ khóa đã dừng gõ, chỉ lúc này mới gửi lên server
   const [search, setSearch] = useState('')
 
   const isSuperAdmin = loggedUser?.role === 'super_admin'
+
+  // Thông báo ở chuông chuyển tới đây kèm ?open=<mã phiếu>: mở sẵn phiếu đó
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openIssueId = searchParams.get('open')
+  useEffect(() => {
+    if (!openIssueId) return
+    let active = true
+    getIssueById(openIssueId)
+      .then((issue) => {
+        if (!active) return
+        setSelectedTicket(issue)
+        setNoteInput('')
+      })
+      .catch((err: unknown) => {
+        if (active) toast.error(t('is.actionFailed', { message: err instanceof Error ? err.message : '' }))
+      })
+      .finally(() => {
+        if (active) setSearchParams({}, { replace: true })
+      })
+    return () => {
+      active = false
+    }
+    // Chỉ chạy khi có mã phiếu mới cần mở
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openIssueId])
 
   // Đổi bất kỳ bộ lọc nào thì quay về trang 1
   const filterKey = [filter.status, filter.priority, filter.category, filter.companyId, search].join('|')
@@ -162,6 +217,7 @@ export function IssuesPage() {
   const buildingId = filter.companyId === 'all' ? undefined : filter.companyId
 
   useEffect(() => {
+    if (isSuperAdmin) return
     let active = true
     getIssues({
       status: filter.status === 'all' ? undefined : filter.status,
@@ -191,7 +247,35 @@ export function IssuesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey, page, reloadKey])
 
+  // Super Admin chỉ thấy phiếu đã được Ban quản lý chuyển lên
   useEffect(() => {
+    if (!isSuperAdmin) return
+    let active = true
+    getEscalatedIssues({
+      priority: filter.priority === 'all' ? undefined : filter.priority,
+      category: filter.category === 'all' ? undefined : filter.category,
+      buildingId,
+      search,
+    })
+      .then((items) => {
+        if (!active) return
+        setSaAll(items)
+        setError(null)
+      })
+      .catch((err: unknown) => {
+        if (!active) return
+        setError(err instanceof Error ? err.message : '')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [isSuperAdmin, filter.priority, filter.category, buildingId, search, reloadKey])
+
+  useEffect(() => {
+    if (isSuperAdmin) return
     let active = true
     getIssueCounts({ buildingId })
       .then((c) => {
@@ -203,7 +287,7 @@ export function IssuesPage() {
     return () => {
       active = false
     }
-  }, [buildingId, reloadKey])
+  }, [isSuperAdmin, buildingId, reloadKey])
 
   // Esc đóng hộp thoại đang mở trên cùng
   useEffect(() => {
@@ -218,7 +302,11 @@ export function IssuesPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedTicket, previewImage, showEscalateModal])
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  // Super Admin lọc theo tab và chia trang ở phía client, Ban quản lý do server lọc và chia trang
+  const saView = useMemo(() => saAll.filter((i) => filter.status === 'all' || i.status === filter.status), [saAll, filter.status])
+  const shownIssues = isSuperAdmin ? saView.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) : issues
+  const shownTotal = isSuperAdmin ? saView.length : total
+  const totalPages = Math.max(1, Math.ceil(shownTotal / PAGE_SIZE))
 
   function openTicket(iss: TIssueItem) {
     setSelectedTicket(iss)
@@ -228,6 +316,7 @@ export function IssuesPage() {
   // Cập nhật phiếu vừa xử lý trong danh sách và tải lại số đếm
   function applyUpdated(updated: TIssueItem) {
     setIssues((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
+    setSaAll((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
     setSelectedTicket(updated)
     setReloadKey((n) => n + 1)
   }
@@ -267,20 +356,46 @@ export function IssuesPage() {
     }
   }
 
-  const tabs: { id: TIssueFilter['status']; labelKey: TranslationKey; count?: number }[] = [
-    { id: 'all', labelKey: 'is.tab.all' },
-    { id: 'pending', labelKey: 'is.st.pending', count: counts?.pending },
-    { id: 'in_progress', labelKey: 'is.st.in_progress', count: counts?.inProgress },
-    { id: 'escalated', labelKey: 'is.st.escalated', count: counts?.escalated },
-    { id: 'resolved', labelKey: 'is.st.resolved' },
-    { id: 'closed', labelKey: 'is.st.closed' },
-  ]
+  const tabs: { id: TIssueFilter['status']; labelKey: TranslationKey }[] = isSuperAdmin
+    ? [
+        { id: 'escalated', labelKey: 'is.tab.saEscalated' },
+        { id: 'in_progress', labelKey: 'is.st.in_progress' },
+        { id: 'resolved', labelKey: 'is.st.resolved' },
+        { id: 'closed', labelKey: 'is.st.closed' },
+        { id: 'all', labelKey: 'is.tab.all' },
+      ]
+    : [
+        { id: 'all', labelKey: 'is.tab.all' },
+        { id: 'pending', labelKey: 'is.st.pending' },
+        { id: 'in_progress', labelKey: 'is.st.in_progress' },
+        { id: 'escalated', labelKey: 'is.st.escalated' },
+        { id: 'resolved', labelKey: 'is.st.resolved' },
+        { id: 'closed', labelKey: 'is.st.closed' },
+      ]
+
+  // Thẻ tóm tắt đầu trang, bấm vào để lọc nhanh
+  type TKpi = { id: string; label: TranslationKey; hint: TranslationKey; value: number | undefined; tone: keyof typeof kpiTone; status?: TIssueStatus; urgent?: boolean }
+  const saCount = (s: TIssueStatus) => saAll.filter((i) => i.status === s).length
+  const saUrgent = saAll.filter((i) => i.priority === 'urgent' && i.status !== 'resolved' && i.status !== 'closed').length
+  const kpis: TKpi[] = isSuperAdmin
+    ? [
+        { id: 'escalated', label: 'is.kpi.sa.escalated', hint: 'is.kpi.sa.escalatedHint', value: saCount('escalated'), tone: 'purple', status: 'escalated' },
+        { id: 'in_progress', label: 'is.kpi.sa.in_progress', hint: 'is.kpi.sa.in_progressHint', value: saCount('in_progress'), tone: 'sky', status: 'in_progress' },
+        { id: 'resolved', label: 'is.kpi.sa.resolved', hint: 'is.kpi.sa.resolvedHint', value: saCount('resolved'), tone: 'emerald', status: 'resolved' },
+        { id: 'urgent', label: 'is.kpi.urgent', hint: 'is.kpi.urgentHint', value: saUrgent, tone: 'red', urgent: true },
+      ]
+    : [
+        { id: 'pending', label: 'is.kpi.pending', hint: 'is.kpi.pendingHint', value: counts?.pending, tone: 'amber', status: 'pending' },
+        { id: 'in_progress', label: 'is.kpi.in_progress', hint: 'is.kpi.in_progressHint', value: counts?.inProgress, tone: 'sky', status: 'in_progress' },
+        { id: 'escalated', label: 'is.kpi.escalated', hint: 'is.kpi.escalatedHint', value: counts?.escalated, tone: 'purple', status: 'escalated' },
+        { id: 'urgent', label: 'is.kpi.urgent', hint: 'is.kpi.urgentHint', value: counts?.urgentOpen, tone: 'red', urgent: true },
+      ]
 
   // Các nút chuyển trạng thái của phiếu đang mở, theo đúng bảng chuyển hợp lệ của server
   const ticket = selectedTicket
-  const stepTargets: TIssueStatus[] = ticket ? (['in_progress', 'resolved', 'closed'] as TIssueStatus[]).filter((to) => canTransition(ticket.status, to, isSuperAdmin)) : []
+  const stepTargets: TIssueStatus[] = ticket ? (['in_progress', 'resolved', 'closed'] as TIssueStatus[]).filter((to) => canTransition(ticket, to, isSuperAdmin)) : []
   const canResolve = stepTargets.includes('resolved')
-  const lockedForAdmin = ticket?.status === 'escalated' && !isSuperAdmin
+  const lockedForAdmin = !!ticket && !isSuperAdmin && isLockedForBuilding(ticket)
 
   function actionButton(to: TIssueStatus) {
     if (!ticket) return null
@@ -317,13 +432,33 @@ export function IssuesPage() {
           <h1 className="text-[22px] font-bold text-slate-900 dark:text-white">{t('is.title')}</h1>
           <p className="mt-1 text-[13px] text-slate-600 dark:text-slate-400 max-w-2xl">{isSuperAdmin ? t('is.descSuper') : t('is.descAdmin')}</p>
         </div>
-        {(counts?.urgentOpen ?? 0) > 0 && (
-          <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-[12px] font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-300">
-            <span className="h-2 w-2 rounded-full bg-red-500" />
-            {t('is.urgentCount', { count: counts?.urgentOpen ?? 0 })}
-          </span>
-        )}
       </header>
+
+      <section data-reveal className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {kpis.map((k) => {
+          const active = k.urgent ? filter.priority === 'urgent' : filter.status === k.status && filter.priority === 'all'
+          return (
+            <button
+              key={k.id}
+              type="button"
+              onClick={() =>
+                setFilter((p) =>
+                  k.urgent ? { ...p, priority: 'urgent', status: 'all' } : { ...p, priority: 'all', status: k.status ?? 'all' },
+                )
+              }
+              className={`flex flex-col gap-1 rounded-2xl border p-4 text-left transition-all cursor-pointer ${
+                active
+                  ? 'border-sky-500 bg-sky-50/60 shadow-sm ring-1 ring-sky-500/30 dark:border-sky-400 dark:bg-sky-500/10'
+                  : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900'
+              }`}
+            >
+              <span className="text-[12px] font-semibold text-slate-500 dark:text-slate-400">{t(k.label)}</span>
+              <span className={`font-mono text-[28px] font-bold leading-none ${kpiTone[k.tone]}`}>{k.value ?? '—'}</span>
+              <span className="text-[11.5px] text-slate-500 dark:text-slate-400">{t(k.hint)}</span>
+            </button>
+          )
+        })}
+      </section>
 
       <div data-reveal className="flex flex-col gap-4">
         {/* Tab trạng thái */}
@@ -342,9 +477,6 @@ export function IssuesPage() {
                 }`}
               >
                 {t(tab.labelKey)}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className="rounded-full bg-slate-200 px-1.5 text-[11px] font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">{tab.count}</span>
-                )}
               </button>
             )
           })}
@@ -461,14 +593,24 @@ export function IssuesPage() {
                 {
                   key: 'status',
                   title: t('is.colStatus'),
-                  render: (iss) => <StatusChip status={iss.status} />,
+                  render: (iss) => (
+                    <div className="flex flex-col items-start gap-1">
+                      <StatusChip status={iss.status} />
+                      {iss.escalatedToSuperAdmin && iss.status !== 'escalated' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-300">
+                          <ShieldAlert className="w-3 h-3" />
+                          {t('is.tagSystem')}
+                        </span>
+                      )}
+                    </div>
+                  ),
                 },
                 {
                   key: 'actions',
                   title: '',
                   align: 'right',
                   render: (iss) => {
-                    const open = iss.status !== 'closed' && !(iss.status === 'escalated' && !isSuperAdmin)
+                    const open = iss.status !== 'closed' && (isSuperAdmin || !isLockedForBuilding(iss))
                     return (
                       <button
                         type="button"
@@ -486,15 +628,15 @@ export function IssuesPage() {
                   },
                 },
               ]}
-              data={issues}
+              data={shownIssues}
               keyExtractor={(iss) => iss.id}
               pageSize={PAGE_SIZE}
               minWidth="980px"
               emptyState={<EmptyState title={t('is.emptyTitle')} description={t('is.emptyDesc')} />}
             />
-            {total > PAGE_SIZE && (
+            {shownTotal > PAGE_SIZE && (
               <div className="flex items-center justify-between gap-3 mt-3 text-[12px] text-slate-600 dark:text-slate-400">
-                <span>{t('is.pageInfo', { page, pages: totalPages, total })}</span>
+                <span>{t('is.pageInfo', { page, pages: totalPages, total: shownTotal })}</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -550,13 +692,33 @@ export function IssuesPage() {
               </div>
 
               <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
+                {(() => {
+                  const owner = ownerBanner(ticket, isSuperAdmin)
+                  return (
+                    <div className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-semibold ${bannerTone[owner.tone]}`}>
+                      {ticket.escalatedToSuperAdmin ? <ShieldAlert className="w-4 h-4 shrink-0" /> : <Building2 className="w-4 h-4 shrink-0" />}
+                      <span>{t(owner.key, { org: ticket.orgName })}</span>
+                    </div>
+                  )
+                })()}
+
                 <Stepper status={ticket.status} />
+
+                {ticket.escalation && (
+                  <section className="flex flex-col gap-1.5 rounded-2xl border border-purple-200 bg-purple-50/60 p-4 dark:border-purple-500/30 dark:bg-purple-500/10">
+                    <h4 className="text-[12px] font-bold text-purple-800 dark:text-purple-300">{t('is.escInfoTitle')}</h4>
+                    <p className="text-[13px] text-slate-800 dark:text-slate-100">{t('is.escInfoBy', { name: ticket.escalation.by, time: ticket.escalation.at })}</p>
+                    {ticket.escalation.note && (
+                      <p className="whitespace-pre-line rounded-lg bg-white/70 p-2.5 text-[12.5px] leading-relaxed text-slate-700 dark:bg-slate-900/50 dark:text-slate-200">{ticket.escalation.note}</p>
+                    )}
+                  </section>
+                )}
 
                 {/* Việc cần làm tiếp */}
                 <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
                   <h4 className="text-[13px] font-bold text-slate-900 dark:text-white">{t('is.nextTitle')}</h4>
                   {lockedForAdmin ? (
-                    <p className="text-[12.5px] leading-relaxed text-purple-700 dark:text-purple-300">{t('is.escalatedLocked')}</p>
+                    <p className="text-[12.5px] leading-relaxed text-purple-700 dark:text-purple-300">{t(ticket.status === 'escalated' ? 'is.escalatedLocked' : 'is.saWorking')}</p>
                   ) : (
                     <p className="text-[12.5px] leading-relaxed text-slate-600 dark:text-slate-300">{t(`is.hint.${ticket.status}` as TranslationKey)}</p>
                   )}
@@ -718,6 +880,14 @@ export function IssuesPage() {
             <div onClick={(e) => e.stopPropagation()} className="flex w-full max-w-md flex-col gap-4 rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900">
               <h3 className="text-[17px] font-bold text-slate-900 dark:text-white">{t('is.escTitle')}</h3>
               <p className="text-[13px] leading-relaxed text-slate-600 dark:text-slate-300">{t('is.escBody', { code: ticket.ticketCode })}</p>
+              <ul className="flex flex-col gap-1.5 rounded-xl bg-slate-50 p-3.5 text-[12.5px] leading-relaxed text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                {(['is.escP1', 'is.escP2', 'is.escP3'] as const).map((k) => (
+                  <li key={k} className="flex gap-2">
+                    <Check className="mt-0.5 w-3.5 h-3.5 shrink-0 text-purple-500" />
+                    <span>{t(k)}</span>
+                  </li>
+                ))}
+              </ul>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12px] font-semibold text-slate-700 dark:text-slate-300">{t('is.escReasonLabel')}</label>

@@ -174,6 +174,7 @@ export default defineLocale(
     'ci.copy': 'Sao chép',
     'ci.copied': 'Đã sao chép',
     'ci.done': 'Tôi đã lưu lại',
+    'ci.viewOnMap': 'Xem trên bản đồ',
     'rc.hardwareDetail': 'Chi tiết phần cứng',
     'rc.opStatus': 'Tình trạng vận hành',
     'rc.opStatusTitle': 'Trạng thái vận hành',
@@ -380,5 +381,6 @@ export default defineLocale(
     'ci.copy': 'Copy',
     'ci.copied': 'Copied',
     'ci.done': 'I have saved it',
+    'ci.viewOnMap': 'View on the map',
   },
 )

@@ -27,11 +27,15 @@ export type TIssueItem = {
   priority: TIssuePriority
   status: TIssueStatus
   escalatedToSuperAdmin?: boolean
+  // Lần Ban quản lý chuyển phiếu lên Super Admin: ai chuyển, lúc nào, kèm ghi chú gì
+  escalation?: { by: string; at: string; note?: string }
   title: string
   description: string
   attachments?: string[]
   assignee?: string
   createdAt: string
+  // Dạng ISO để sắp xếp, createdAt là chuỗi đã định dạng để hiển thị
+  createdAtIso: string
   updatedAt: string
   resolutionNote?: string
   timeline: TIssueTimeline[]

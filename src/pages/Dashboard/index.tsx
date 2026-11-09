@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../../store/useAuthStore'
 import {
   LayoutDashboard,
   Boxes,
@@ -9,6 +10,7 @@ import {
   Zap,
   Users,
   ChevronRight,
+  ShieldAlert,
 } from 'lucide-react'
 import { ActivityItem } from '../../components/Dashboard/ActivityItem'
 import { StatCard } from '../../components/Dashboard/StatCard'
@@ -26,15 +28,17 @@ export function DashboardPage() {
   const [overview, setOverview] = useState<TDashboardOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  // Super Admin theo dõi cả hệ thống, bưu kiện chỉ thuộc Ban quản lý
+  const isSuperAdmin = useAuthStore((state) => state.user?.role === 'super_admin')
 
   useEffect(() => {
-    getDashboardOverview()
+    getDashboardOverview(isSuperAdmin ? 'system' : 'building')
       .then((data) => {
         setOverview(data)
         setError(null)
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : ''))
-  }, [language])
+  }, [language, isSuperAdmin])
 
   if (error !== null && !overview) {
     return (
@@ -106,6 +110,7 @@ export function DashboardPage() {
             <Boxes className="w-4 h-4" />
             {t('dash.manageClusters')}
           </AppButton>
+          {!isSuperAdmin && (
           <button
             type="button"
             onClick={() => navigate('/shipments')}
@@ -114,6 +119,7 @@ export function DashboardPage() {
             <PackageCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             {t('dash.lookupParcels')}
           </button>
+          )}
         </div>
       </section>
 
@@ -213,7 +219,7 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {overview.quickActions.map((action, index) => {
                 const targetMap: Record<string, string> = {
-                  'quick-lockers': '/lockers', 'quick-shipments': '/shipments', 'quick-users': '/users',
+                  'quick-lockers': '/lockers', 'quick-shipments': '/shipments', 'quick-issues': '/issues', 'quick-users': '/users',
                   lockers: '/lockers', shipments: '/shipments', users: '/users',
                 }
                 const fallbackTargets = ['/lockers', '/shipments', '/users']
@@ -221,7 +227,9 @@ export function DashboardPage() {
 
                 const actionIcons = [
                   <Boxes key="1" className="w-4 h-4 text-sky-600 dark:text-sky-400" />,
-                  <PackageCheck key="2" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+                  action.id === 'quick-issues'
+                    ? <ShieldAlert key="2" className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    : <PackageCheck key="2" className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
                   <Users key="3" className="w-4 h-4 text-purple-600 dark:text-purple-400" />,
                 ]
 

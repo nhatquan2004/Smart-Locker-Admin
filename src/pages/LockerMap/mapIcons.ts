@@ -71,3 +71,11 @@ export const PICKER_ICON = L.divIcon({
   iconAnchor: [18, 44],
   popupAnchor: [0, -42],
 })
+
+// Chấm xanh thể hiện vị trí hiện tại của người dùng
+export const MY_LOCATION_ICON = L.divIcon({
+  className: '',
+  html: '<div class="lm-me"><span class="lm-me__pulse"></span><span class="lm-me__dot"></span></div>',
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+})
